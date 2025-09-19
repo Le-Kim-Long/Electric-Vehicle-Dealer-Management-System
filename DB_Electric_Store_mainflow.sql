@@ -26,8 +26,18 @@ go
 CREATE TABLE KhuVuc (
     MaKhuVuc INT PRIMARY KEY IDENTITY(1,1),
     TenKhuVuc NVARCHAR(100) NOT NULL UNIQUE, -- Ví dụ: Hà Nội, TP.HCM, Đà Nẵng
-    MoTa NVARCHAR(255) NULL
 );
+
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 1');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 3');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 5');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 7');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 10');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Quận 12');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Bình Thạnh');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Gò Vấp');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Tân Bình');
+INSERT INTO KhuVuc (TenKhuVuc) VALUES (N'Thủ Đức');
 
 --2. Tạo bảng đại lý đại lý
 CREATE TABLE DaiLy (
@@ -45,18 +55,105 @@ CREATE TABLE DaiLy (
     CONSTRAINT FK_DaiLy_KhuVuc FOREIGN KEY (MaKhuVuc) REFERENCES KhuVuc(MaKhuVuc)
 );
 
+-- Quận 1
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Nguyễn Huệ', N'123 Nguyễn Huệ, Quận 1, TP.HCM', '0283111222', 'evnguyenhue@example.com', 'HD001', 1500000000, 1);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Lê Lợi', N'45 Lê Lợi, Quận 1, TP.HCM', '0283222333', 'evleloi@example.com', 'HD002', 1400000000, 1);
+
+
+-- Quận 3
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Võ Văn Tần', N'56 Võ Văn Tần, Quận 3, TP.HCM', '0283444555', 'evvovantan@example.com', 'HD003', 1200000000, 2);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Nguyễn Đình Chiểu', N'78 Nguyễn Đình Chiểu, Quận 3, TP.HCM', '0283555666', 'evnguyendinhchieu@example.com', 'HD004', 1300000000, 2);
+
+
+-- Quận 5
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Trần Hưng Đạo', N'90 Trần Hưng Đạo, Quận 5, TP.HCM', '0283666777', 'evtranhungdao@example.com', 'HD005', 1000000000, 3);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV An Dương Vương', N'45 An Dương Vương, Quận 5, TP.HCM', '0283777888', 'evanduongvuong@example.com', 'HD006', 1100000000, 3);
+
+
+-- Quận 7
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Nguyễn Văn Linh', N'12 Nguyễn Văn Linh, Quận 7, TP.HCM', '0283888999', 'evnguyenvanlinh@example.com', 'HD007', 1500000000, 4);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Phú Mỹ Hưng', N'88 Tôn Dật Tiên, Quận 7, TP.HCM', '0283999000', 'evphumyhung@example.com', 'HD008', 1600000000, 4);
+
+
+-- Quận 10
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV 3 Tháng 2', N'45 Đường 3/2, Quận 10, TP.HCM', '0284000111', 'ev3thang2@example.com', 'HD009', 1200000000, 5);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Sư Vạn Hạnh', N'67 Sư Vạn Hạnh, Quận 10, TP.HCM', '0284111222', 'evsuvanhahn@example.com', 'HD010', 1300000000, 5);
+
+
+-- Quận 12
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Hà Huy Giáp', N'23 Hà Huy Giáp, Quận 12, TP.HCM', '0284222333', 'evhahuygiap@example.com', 'HD011', 1100000000, 6);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Nguyễn Ảnh Thủ', N'78 Nguyễn Ảnh Thủ, Quận 12, TP.HCM', '0284333444', 'evnguyenanhthu@example.com', 'HD012', 1150000000, 6);
+
+
+-- Bình Thạnh
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Điện Biên Phủ', N'123 Điện Biên Phủ, Bình Thạnh, TP.HCM', '0284444555', 'evdienbienphu@example.com', 'HD013', 1250000000, 7);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Bạch Đằng', N'56 Bạch Đằng, Bình Thạnh, TP.HCM', '0284555666', 'evbachdang@example.com', 'HD014', 1300000000, 7);
+
+
+-- Gò Vấp
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Quang Trung', N'45 Quang Trung, Gò Vấp, TP.HCM', '0284666777', 'evquangtrung@example.com', 'HD015', 1150000000, 8);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Nguyễn Oanh', N'90 Nguyễn Oanh, Gò Vấp, TP.HCM', '0284777888', 'evnguyenoanh@example.com', 'HD016', 1180000000, 8);
+
+
+-- Tân Bình
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Lý Thường Kiệt', N'34 Lý Thường Kiệt, Tân Bình, TP.HCM', '0284888999', 'evlythuongkiet@example.com', 'HD017', 1220000000, 9);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Cộng Hòa', N'78 Cộng Hòa, Tân Bình, TP.HCM', '0284999000', 'evconghoa@example.com', 'HD018', 1250000000, 9);
+
+
+-- Thủ Đức
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Võ Văn Ngân', N'123 Võ Văn Ngân, Thủ Đức, TP.HCM', '0285111222', 'evvovanngan@example.com', 'HD019', 1350000000, 10);
+
+INSERT INTO DaiLy (TenDaiLy, DiaChi, SoDienThoai, Email, SoHopDong, HanMucCongNo, MaKhuVuc)
+VALUES (N'Đại lý EV Kha Vạn Cân', N'67 Kha Vạn Cân, Thủ Đức, TP.HCM', '0285222333', 'evkhavancan@example.com', 'HD020', 1380000000, 10);
+
+
 --Tạo bảng vai trò người dùng
 CREATE TABLE VaiTro (
     MaVaiTro INT PRIMARY KEY IDENTITY(1,1),
-    TenVaiTro NVARCHAR(50) NOT NULL UNIQUE,   -- Admin / EVMStaff / DaiLy / KhachHang
+    TenVaiTro NVARCHAR(50) NOT NULL UNIQUE,   -- Admin / EVMStaff / DealerStaff / DealerManager / KhachHang
     MoTa NVARCHAR(255) NULL
 );
+
+INSERT INTO VaiTro (TenVaiTro, MoTa) VALUES 
+(N'Admin', N'Quản trị viên hệ thống với toàn quyền quản lý'),
+(N'EVMStaff', N'Nhân viên quản lý hệ thống xe điện'),
+(N'DealerStaff', N'Nhân viên đại lý'),
+(N'DealerManager', N'Quản lý đại lý'),
+(N'KhachHang', N'Khách hàng sử dụng hệ thống');
 
 --3. Tạo bảng người dùng
 CREATE TABLE NguoiDung (
     MaNguoiDung INT PRIMARY KEY IDENTITY(1,1),
     TenDangNhap NVARCHAR(50) NOT NULL UNIQUE,
-    MatKhau NVARCHAR(255) NOT NULL,            -- lưu mật khẩu hash
+    MatKhau NVARCHAR(255) NOT NULL,            
     HoTen NVARCHAR(100) NOT NULL,
     Email NVARCHAR(100) NULL,
     SoDienThoai NVARCHAR(20) NULL,
@@ -71,20 +168,80 @@ CREATE TABLE NguoiDung (
     CONSTRAINT FK_NguoiDung_VaiTro FOREIGN KEY (MaVaiTro) REFERENCES VaiTro(MaVaiTro)
 );
 
+INSERT INTO NguoiDung (TenDangNhap, MatKhau, HoTen, Email, SoDienThoai, DiaChi, MaVaiTro) VALUES 
+(N'admin', N'admin123', N'Nguyễn Quản Trị', N'admin@evms.com', N'0901234567', N'Hà Nội', 1),
+(N'evmstaff1', N'evm123', N'Trần Văn Quản Lý', N'evm1@evms.com', N'0912345678', N'TP. Hồ Chí Minh', 2),
+(N'dealer1', N'dealer123', N'Lê Thị Nhân Viên', N'dealer1@evms.com', N'0923456789', N'Đà Nẵng', 3),
+(N'manager1', N'manager123', N'Phạm Văn Quản Lý', N'manager1@evms.com', N'0934567890', N'Cần Thơ', 4),
+(N'customer1', N'cust123', N'Hoàng Thị Khách', N'customer1@gmail.com', N'0945678901', N'Hải Phòng', 5),
+(N'evmstaff2', N'evm456', N'Đỗ Thị Nhân Viên', N'evm2@evms.com', N'0956789012', N'Nha Trang', 2),
+(N'dealer2', N'dealer456', N'Vũ Văn Đại Lý', N'dealer2@evms.com', N'0967890123', N'Huế', 3),
+(N'manager2', N'manager456', N'Mai Thị Quản Lý', N'manager2@evms.com', N'0978901234', N'Bình Dương', 4),
+(N'customer2', N'cust456', N'Ngô Văn Khách', N'customer2@gmail.com', N'0989012345', N'Đồng Nai', 5),
+(N'customer3', N'cust789', N'Đặng Thị Khách', N'customer3@gmail.com', N'0990123456', N'Bà Rịa - Vũng Tàu', 5);
+
 --4. Tạo bảng xe
 CREATE TABLE Xe (
     MaXe INT PRIMARY KEY IDENTITY(1,1),
-	MaDaiLy INT NOT NULL,
     TenXe NVARCHAR(100) NOT NULL,       -- Tên mẫu xe (VD: VinFast VF e34)
-    PhienBan NVARCHAR(50),              -- Phiên bản (Standard, Premium,...)
     MauSac NVARCHAR(50),                -- Màu sắc
     GiaBan DECIMAL(18,2),               -- Giá bán niêm yết 
 	XuatXu NVARCHAR(50),
 	NamSanXuat INT NULL,
 	TrangThai NVARCHAR(50) DEFAULT N'Đang bán' -- Đang bán, Ngừng bán
 
-	CONSTRAINT FK_Xe_DaiLy FOREIGN KEY (MaDaiLy) REFERENCES DaiLy(MaDaiLy)
 );
+
+-- VF3
+INSERT INTO Xe (TenXe, MauSac, GiaBan, XuatXu, NamSanXuat)
+VALUES 
+(N'VinFast VF3', N'Trắng', 340000000, N'Việt Nam', 2025),
+(N'VinFast VF3', N'Đen',   350000000, N'Việt Nam', 2025),
+(N'VinFast VF3', N'Đỏ',    360000000, N'Việt Nam', 2025);
+
+-- VF5
+INSERT INTO Xe (TenXe, MauSac, GiaBan, XuatXu, NamSanXuat)
+VALUES 
+(N'VinFast VF5', N'Trắng', 440000000, N'Việt Nam', 2025),
+(N'VinFast VF5', N'Đen',   450000000, N'Việt Nam', 2025),
+(N'VinFast VF5', N'Đỏ',    465000000, N'Việt Nam', 2025);
+
+-- VF7
+INSERT INTO Xe (TenXe, MauSac, GiaBan, XuatXu, NamSanXuat)
+VALUES 
+(N'VinFast VF7', N'Trắng', 740000000, N'Việt Nam', 2025),
+(N'VinFast VF7', N'Đen',   755000000, N'Việt Nam', 2025),
+(N'VinFast VF7', N'Đỏ',    770000000, N'Việt Nam', 2025);
+
+-- VF8
+INSERT INTO Xe (TenXe, MauSac, GiaBan, XuatXu, NamSanXuat)
+VALUES 
+(N'VinFast VF8', N'Trắng', 940000000, N'Việt Nam', 2025),
+(N'VinFast VF8', N'Đen',   960000000, N'Việt Nam', 2025),
+(N'VinFast VF8', N'Đỏ',    980000000, N'Việt Nam', 2025);
+
+-- VF9
+INSERT INTO Xe (TenXe, MauSac, GiaBan, XuatXu, NamSanXuat)
+VALUES 
+(N'VinFast VF9', N'Trắng', 1180000000, N'Việt Nam', 2025),
+(N'VinFast VF9', N'Đen',   1200000000, N'Việt Nam', 2025),
+(N'VinFast VF9', N'Đỏ',    1220000000, N'Việt Nam', 2025);
+
+CREATE TABLE TonKho (
+    MaTonKho INT PRIMARY KEY IDENTITY(1,1),
+    MaDaiLy INT NOT NULL,
+    MaXe INT NOT NULL,
+    SoLuong INT NOT NULL DEFAULT 0,
+
+    CONSTRAINT FK_TonKho_DaiLy FOREIGN KEY (MaDaiLy) REFERENCES DaiLy(MaDaiLy),
+    CONSTRAINT FK_TonKho_Xe FOREIGN KEY (MaXe) REFERENCES Xe(MaXe),
+    CONSTRAINT UQ_TonKho UNIQUE (MaDaiLy, MaXe) -- Mỗi đại lý chỉ có 1 dòng tồn kho cho 1 loại xe
+);
+
+INSERT INTO TonKho (MaDaiLy, MaXe, SoLuong)
+SELECT d.MaDaiLy, x.MaXe, ABS(CHECKSUM(NEWID())) % 16 + 5
+FROM DaiLy d
+CROSS JOIN Xe x;
 
 --5. Tạo bảng cấu hình xe
 CREATE TABLE CauHinhXe (
@@ -92,62 +249,51 @@ CREATE TABLE CauHinhXe (
     MaXe INT NOT NULL,
 
     -- Pin
-    DungLuongPin DECIMAL(5,2) NULL,        -- kWh
+    DungLuongPin DECIMAL(6,2) NULL,        -- kWh
     LoaiPin NVARCHAR(50) NULL,             -- Lithium-ion, LFP...
+	ThoiGianSacDay INT NULL,			   -- Phut
     QuangDuong INT NULL,                   -- km
 
     -- Động cơ
-    CongSuat NVARCHAR(50) NULL,            -- Công suất động cơ
-    MoMenXoan NVARCHAR(50) NULL,           -- Mô-men xoắn
-    SoDongCo NVARCHAR(50) NULL,            -- Số động cơ (single/dual motor)
-    TangToc NVARCHAR(50) NULL,             -- Tăng tốc 0–100 km/h
-    TocDoToiDa NVARCHAR(50) NULL,          -- Tốc độ tối đa
+    CongSuat DECIMAL(6,2) NULL,            -- kW
+    MoMenXoan DECIMAL(6,2) NULL,           -- Nm
 
     -- Kích thước & trọng lượng
-    KichThuoc NVARCHAR(100) NULL,          -- Dài x Rộng x Cao
-    ChieuDaiCoSo NVARCHAR(50) NULL,        -- Chiều dài cơ sở
-    TrongLuong NVARCHAR(50) NULL,          -- Trọng lượng (kg)
-    DungTichKhoangHanhLy NVARCHAR(50) NULL,-- Khoang hành lý (L)
+    Dai DECIMAL(6,2) NULL,                 -- mm
+    Rong DECIMAL(6,2) NULL,                -- mm
+    Cao DECIMAL(6,2) NULL,                 -- mm
+    ChieuDaiCoSo DECIMAL(6,2) NULL,        -- mm
+    TrongLuong DECIMAL(6,2) NULL,          -- kg
+    DungTichKhoangHanhLy DECIMAL(6,2) NULL,-- L
 
     CONSTRAINT FK_CauHinh_Xe FOREIGN KEY (MaXe) REFERENCES Xe(MaXe)
 );
 
---6. Tạo bảng tính năng xe
-CREATE TABLE TinhNangXe (
-    MaTinhNang INT PRIMARY KEY IDENTITY(1,1),
-    MaXe INT NOT NULL,
+-- VF3 (Mini EV)
+INSERT INTO CauHinhXe (MaXe, DungLuongPin, LoaiPin, ThoiGianSacDay, QuangDuong, CongSuat, MoMenXoan, Dai, Rong, Cao, ChieuDaiCoSo, TrongLuong, DungTichKhoangHanhLy)
+SELECT MaXe, 18.64, N'LFP', 240, 210, 32, 110, 3190, 1670, 1600, 2075, 990, 285
+FROM Xe WHERE TenXe = N'VinFast VF3';
 
-    -- Hệ truyền động
-    HeDanDong NVARCHAR(50) NULL,    -- FWD, RWD, AWD
+-- VF5 (Crossover hạng A)
+INSERT INTO CauHinhXe (MaXe, DungLuongPin, LoaiPin, ThoiGianSacDay, QuangDuong, CongSuat, MoMenXoan, Dai, Rong, Cao, ChieuDaiCoSo, TrongLuong, DungTichKhoangHanhLy)
+SELECT MaXe, 37.23, N'LFP', 300, 300, 70, 135, 3967, 1723, 1570, 2510, 1320, 350
+FROM Xe WHERE TenXe = N'VinFast VF5';
 
-    -- Hệ thống an toàn
-    PhanhABS BIT NULL,              -- Chống bó cứng phanh
-    TuiKhi BIT NULL,                -- Túi khí
-    CanhBaoVaCham BIT NULL,         -- Cảnh báo va chạm
-    HoTroGiuLanDuong BIT NULL,      -- Hỗ trợ giữ làn
-    Camera360 BIT NULL,             -- Camera 360 độ
-    CruiseControl BIT NULL,         -- Kiểm soát hành trình
+-- VF7 (SUV cỡ C)
+INSERT INTO CauHinhXe (MaXe, DungLuongPin, LoaiPin, ThoiGianSacDay, QuangDuong, CongSuat, MoMenXoan, Dai, Rong, Cao, ChieuDaiCoSo, TrongLuong, DungTichKhoangHanhLy)
+SELECT MaXe, 75.30, N'Lithium-ion', 420, 450, 150, 320, 4545, 1890, 1635, 2850, 1800, 450
+FROM Xe WHERE TenXe = N'VinFast VF7';
 
-    -- Hệ thống giải trí & tiện nghi
-    ManHinh NVARCHAR(50) NULL,      -- Kích thước màn hình
-    AmThanh NVARCHAR(50) NULL,      -- Âm thanh (Bose, B&O…)
-    KetNoiBluetooth BIT NULL,       
-    HoTroAppleCarPlay BIT NULL,     
-    HoTroAndroidAuto BIT NULL,      
-    DieuHoaTuDong BIT NULL,         
-    GheDa BIT NULL,                 
-    GheNgoiCoSuoi BIT NULL,         
+-- VF8 (SUV cỡ D)
+INSERT INTO CauHinhXe (MaXe, DungLuongPin, LoaiPin, ThoiGianSacDay, QuangDuong, CongSuat, MoMenXoan, Dai, Rong, Cao, ChieuDaiCoSo, TrongLuong, DungTichKhoangHanhLy)
+SELECT MaXe, 87.70, N'Lithium-ion', 480, 471, 300, 500, 4750, 1934, 1667, 2950, 2100, 500
+FROM Xe WHERE TenXe = N'VinFast VF8';
 
-    -- Hệ thống sạc (xe điện)
-    LoaiSac NVARCHAR(50) NULL,      
-    CongSuatSac NVARCHAR(50) NULL,  
-    ThoiGianSacDay NVARCHAR(50) NULL,  
-    ThoiGianSacNhanh NVARCHAR(50) NULL, 
-    CongSacChuan NVARCHAR(50) NULL,     
+-- VF9 (SUV cỡ E)
+INSERT INTO CauHinhXe (MaXe, DungLuongPin, LoaiPin, ThoiGianSacDay, QuangDuong, CongSuat, MoMenXoan, Dai, Rong, Cao, ChieuDaiCoSo, TrongLuong, DungTichKhoangHanhLy)
+SELECT MaXe, 92.00, N'Lithium-ion', 500, 485, 300, 620, 5118, 2000, 1696, 3150, 2500, 600
+FROM Xe WHERE TenXe = N'VinFast VF9';
 
-    CONSTRAINT FK_TinhNangXe_Xe FOREIGN KEY (MaXe) REFERENCES Xe(MaXe),
-    CONSTRAINT UQ_TinhNangXe UNIQUE (MaXe)  -- Mỗi xe chỉ có 1 bộ tính năng
-);
 
 --9. Tạo bảng lịch hẹn 
 CREATE TABLE LichHenLaiThu (
@@ -292,6 +438,12 @@ CREATE TABLE KhuyenMaiXe (
     CONSTRAINT FK_KM_Xe FOREIGN KEY (MaXe) REFERENCES Xe(MaXe),
     CONSTRAINT FK_KM_DaiLy FOREIGN KEY (MaDaiLy) REFERENCES DaiLy(MaDaiLy)
 );
+
+INSERT INTO KhuyenMaiXe (MaXe, MaDaiLy, TenKhuyenMai, MoTa, PhanTramGiam, NgayBatDau, NgayKetThuc)
+VALUES 
+(1, NULL, N'Khuyến mãi Tết 2025 - VF3', N'Giảm 5% cho VF3 (Trắng)', 5.00, '2025-01-20', '2025-02-10'),
+(2, NULL, N'Khuyến mãi Tết 2025 - VF3', N'Giảm 5% cho VF3 (Đen)', 5.00, '2025-01-20', '2025-02-10'),
+(3, NULL, N'Khuyến mãi Tết 2025 - VF3', N'Giảm 5% cho VF3 (Đỏ)', 5.00, '2025-01-20', '2025-02-10');
 
 --17. Tạo bảng lưu thông tin phân phối từ hãng xe cho đại lý
 CREATE TABLE LenhPhanPhoi (
