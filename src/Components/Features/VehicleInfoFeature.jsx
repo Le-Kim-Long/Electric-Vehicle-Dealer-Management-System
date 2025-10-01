@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './VehicleInfoFeature.css';
-import { useTestDrive } from '../DealerStaff';
 
 const VehicleInfoFeature = () => {
-  const { addTestDriveBooking, addQuoteRequest } = useTestDrive();
   const [vehicles, setVehicles] = useState([]);
   const [filteredVehicles, setFilteredVehicles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,14 +9,11 @@ const VehicleInfoFeature = () => {
   const [filterVersion, setFilterVersion] = useState('all');
   const [filterPrice, setFilterPrice] = useState('all');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [showTestDriveModal, setShowTestDriveModal] = useState(false);
-  const [testDriveVehicle, setTestDriveVehicle] = useState(null);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [quoteVehicle, setQuoteVehicle] = useState(null);
+  const [selectedColor, setSelectedColor] = useState({});
 
-  // Mock data for vehicles - Based on actual database XE table with colors and prices
+  // Mock data for vehicles với hình ảnh từ public/images/
   const mockVehicles = [
-    // VF3 Eco
+    // VF3 Eco - Giữ nguyên 2 màu ban đầu
     {
       id: 1,
       name: 'VinFast VF3 Eco',
@@ -28,11 +23,15 @@ const VehicleInfoFeature = () => {
       priceRange: '240 - 250 triệu',
       colors: ['Trắng', 'Đen'],
       colorPrices: { 'Trắng': 240000000, 'Đen': 250000000 },
+      images: {
+        'Trắng': '/images/vf3 trang.png',
+        'Đen': '/images/vf3 den.png'
+      },
+      defaultImage: '/images/vf3 trang.png',
       stock: 15,
       range: 210,
       charging: '240 phút (AC)',
       power: 32,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '18.64 kWh (LFP)',
         seats: 4,
@@ -46,7 +45,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF3 Plus
+    // VF3 Plus - 4 màu
     {
       id: 2,
       name: 'VinFast VF3 Plus',
@@ -55,12 +54,18 @@ const VehicleInfoFeature = () => {
       price: 300000000,
       priceRange: '300 - 310 triệu',
       colors: ['Trắng', 'Đen', 'Đỏ', 'Xanh dương'],
-      colorPrices: { 'Trắng': 310000000, 'Đen': 300000000, 'Đỏ': 300000000, 'Xanh dương': 310000000 },
+      colorPrices: { 'Trắng': 300000000, 'Đen': 310000000, 'Đỏ': 305000000, 'Xanh dương': 310000000 },
+      images: {
+        'Trắng': '/images/vf3 trang.png',
+        'Đen': '/images/vf3 den.png',
+        'Đỏ': '/images/vf3 do.png',
+        'Xanh dương': '/images/vf3 xanh duong.png'
+      },
+      defaultImage: '/images/vf3 trang.png',
       stock: 12,
       range: 210,
       charging: '240 phút (AC)',
       power: 35,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '18.64 kWh (LFP)',
         seats: 4,
@@ -74,7 +79,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF5 Eco
+    // VF5 Eco - Giữ nguyên 2 màu ban đầu
     {
       id: 3,
       name: 'VinFast VF5 Eco',
@@ -84,11 +89,15 @@ const VehicleInfoFeature = () => {
       priceRange: '370 - 375 triệu',
       colors: ['Trắng', 'Đen'],
       colorPrices: { 'Trắng': 370000000, 'Đen': 375000000 },
+      images: {
+        'Trắng': '/images/vf5 trang.png',
+        'Đen': '/images/vf5 den.png'
+      },
+      defaultImage: '/images/vf5 trang.png',
       stock: 10,
       range: 320,
       charging: '360 phút (AC)',
       power: 70,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '37.23 kWh (NMC)',
         seats: 5,
@@ -102,7 +111,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF5 Plus
+    // VF5 Plus - 4 màu
     {
       id: 4,
       name: 'VinFast VF5 Plus',
@@ -112,11 +121,17 @@ const VehicleInfoFeature = () => {
       priceRange: '420 - 435 triệu',
       colors: ['Trắng', 'Đen', 'Đỏ', 'Xanh dương'],
       colorPrices: { 'Trắng': 420000000, 'Đen': 425000000, 'Đỏ': 430000000, 'Xanh dương': 435000000 },
+      images: {
+        'Trắng': '/images/vf5 trang.png',
+        'Đen': '/images/vf5 den.png',
+        'Đỏ': '/images/vf5 do.png',
+        'Xanh dương': '/images/vf5 xanh duong.png'
+      },
+      defaultImage: '/images/vf5 trang.png',
       stock: 8,
       range: 320,
       charging: '360 phút (AC)',
       power: 75,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '37.23 kWh (NMC)',
         seats: 5,
@@ -130,7 +145,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF7 Eco
+    // VF7 Eco - Giữ nguyên 2 màu ban đầu
     {
       id: 5,
       name: 'VinFast VF7 Eco',
@@ -140,11 +155,15 @@ const VehicleInfoFeature = () => {
       priceRange: '650 - 655 triệu',
       colors: ['Trắng', 'Đen'],
       colorPrices: { 'Trắng': 650000000, 'Đen': 655000000 },
+      images: {
+        'Trắng': '/images/vf7 trang.jpg',
+        'Đen': '/images/vf7 den.jpg'
+      },
+      defaultImage: '/images/vf7 trang.jpg',
       stock: 6,
       range: 450,
       charging: '480 phút (AC)',
       power: 130,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '75.30 kWh (NMC)',
         seats: 5,
@@ -158,21 +177,28 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF7 Plus
+    // VF7 Plus - 5 màu
     {
       id: 6,
       name: 'VinFast VF7 Plus',
       brand: 'VinFast',
       type: 'SUV',
       price: 720000000,
-      priceRange: '720 - 740 triệu',
+      priceRange: '720 - 745 triệu',
       colors: ['Trắng', 'Đen', 'Đỏ', 'Xanh dương', 'Xanh rêu'],
-      colorPrices: { 'Trắng': 720000000, 'Đen': 725000000, 'Đỏ': 730000000, 'Xanh dương': 735000000, 'Xanh rêu': 740000000 },
+      colorPrices: { 'Trắng': 720000000, 'Đen': 725000000, 'Đỏ': 735000000, 'Xanh dương': 740000000, 'Xanh rêu': 745000000 },
+      images: {
+        'Trắng': '/images/vf7 trang.jpg',
+        'Đen': '/images/vf7 den.jpg',
+        'Đỏ': '/images/vf7 do.jpg',
+        'Xanh dương': '/images/vf7 xanh duong.jpg',
+        'Xanh rêu': '/images/vf7 xanh reu.jpg'
+      },
+      defaultImage: '/images/vf7 trang.jpg',
       stock: 4,
       range: 450,
       charging: '480 phút (AC)',
       power: 150,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '75.30 kWh (NMC)',
         seats: 5,
@@ -186,7 +212,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'low-stock'
     },
-    // VF8 Eco
+    // VF8 Eco - Giữ nguyên 3 màu ban đầu
     {
       id: 7,
       name: 'VinFast VF8 Eco',
@@ -196,11 +222,16 @@ const VehicleInfoFeature = () => {
       priceRange: '950 - 970 triệu',
       colors: ['Trắng', 'Đen', 'Đỏ'],
       colorPrices: { 'Trắng': 950000000, 'Đen': 960000000, 'Đỏ': 970000000 },
+      images: {
+        'Trắng': '/images/vf8 trang.webp',
+        'Đen': '/images/vf8 den.png',
+        'Đỏ': '/images/vf8 do.jpg'
+      },
+      defaultImage: '/images/vf8 trang.webp',
       stock: 5,
       range: 460,
       charging: '500 phút (AC)',
       power: 150,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '82.00 kWh (NMC)',
         seats: 5,
@@ -214,21 +245,28 @@ const VehicleInfoFeature = () => {
       },
       status: 'available'
     },
-    // VF8 Plus
+    // VF8 Plus - 5 màu
     {
       id: 8,
       name: 'VinFast VF8 Plus',
       brand: 'VinFast',
       type: 'SUV',
       price: 1050000000,
-      priceRange: '1.05 - 1.09 tỷ',
+      priceRange: '1.05 - 1.08 tỷ',
       colors: ['Trắng', 'Đen', 'Đỏ', 'Xanh dương', 'Xanh rêu'],
-      colorPrices: { 'Trắng': 1050000000, 'Đen': 1060000000, 'Đỏ': 1070000000, 'Xanh dương': 1080000000, 'Xanh rêu': 1090000000 },
+      colorPrices: { 'Trắng': 1050000000, 'Đen': 1060000000, 'Đỏ': 1070000000, 'Xanh dương': 1075000000, 'Xanh rêu': 1080000000 },
+      images: {
+        'Trắng': '/images/vf8 trang.webp',
+        'Đen': '/images/vf8 den.png',
+        'Đỏ': '/images/vf8 do.jpg',
+        'Xanh dương': '/images/vf8 xanh duong.png',
+        'Xanh rêu': '/images/vf8 xanh reu.webp'
+      },
+      defaultImage: '/images/vf8 trang.webp',
       stock: 3,
       range: 470,
       charging: '500 phút (AC)',
       power: 220,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '87.70 kWh (NMC)',
         seats: 5,
@@ -242,7 +280,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'low-stock'
     },
-    // VF9 Eco
+    // VF9 Eco - Giữ nguyên 2 màu ban đầu
     {
       id: 9,
       name: 'VinFast VF9 Eco',
@@ -252,11 +290,15 @@ const VehicleInfoFeature = () => {
       priceRange: '1.25 - 1.26 tỷ',
       colors: ['Trắng', 'Đen'],
       colorPrices: { 'Trắng': 1250000000, 'Đen': 1260000000 },
+      images: {
+        'Trắng': '/images/vf9 trang.jpg',
+        'Đen': '/images/vf9 den.png'
+      },
+      defaultImage: '/images/vf9 trang.jpg',
       stock: 2,
       range: 480,
       charging: '600 phút (AC)',
       power: 300,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '92.00 kWh (NMC)',
         seats: 7,
@@ -270,7 +312,7 @@ const VehicleInfoFeature = () => {
       },
       status: 'low-stock'
     },
-    // VF9 Plus
+    // VF9 Plus - 5 màu
     {
       id: 10,
       name: 'VinFast VF9 Plus',
@@ -280,11 +322,18 @@ const VehicleInfoFeature = () => {
       priceRange: '1.35 - 1.39 tỷ',
       colors: ['Trắng', 'Đen', 'Đỏ', 'Xanh dương', 'Xanh rêu'],
       colorPrices: { 'Trắng': 1350000000, 'Đen': 1360000000, 'Đỏ': 1370000000, 'Xanh dương': 1380000000, 'Xanh rêu': 1390000000 },
+      images: {
+        'Trắng': '/images/vf9 trang.jpg',
+        'Đen': '/images/vf9 den.png',
+        'Đỏ': '/images/vf9 do.png',
+        'Xanh dương': '/images/vf9 xanh duong.png',
+        'Xanh rêu': '/images/vf9 xanh reu.png'
+      },
+      defaultImage: '/images/vf9 trang.jpg',
       stock: 1,
       range: 480,
       charging: '600 phút (AC)',
       power: 320,
-      image: 'https://via.placeholder.com/300x200',
       specs: {
         battery: '92.00 kWh (NMC)',
         seats: 7,
@@ -303,6 +352,13 @@ const VehicleInfoFeature = () => {
   useEffect(() => {
     setVehicles(mockVehicles);
     setFilteredVehicles(mockVehicles);
+    
+    // Initialize selected color for each vehicle (default to first color)
+    const initialColors = {};
+    mockVehicles.forEach(vehicle => {
+      initialColors[vehicle.id] = vehicle.colors[0];
+    });
+    setSelectedColor(initialColors);
   }, []);
 
   useEffect(() => {
@@ -336,13 +392,6 @@ const VehicleInfoFeature = () => {
     setFilteredVehicles(filtered);
   }, [searchTerm, filterBrand, filterVersion, filterPrice, vehicles]);
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(price);
-  };
-
   const getStatusBadge = (status, stock) => {
     if (status === 'out-of-stock' || stock === 0) {
       return <span className="status-badge out-of-stock">Hết hàng</span>;
@@ -353,14 +402,21 @@ const VehicleInfoFeature = () => {
     }
   };
 
-  const handleTestDrive = (vehicle) => {
-    setTestDriveVehicle(vehicle);
-    setShowTestDriveModal(true);
+  const handleColorChange = (vehicleId, color) => {
+    setSelectedColor(prev => ({
+      ...prev,
+      [vehicleId]: color
+    }));
   };
 
-  const handleQuote = (vehicle) => {
-    setQuoteVehicle(vehicle);
-    setShowQuoteModal(true);
+  const getCurrentImage = (vehicle) => {
+    const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
+    return vehicle.images[currentColor] || vehicle.defaultImage;
+  };
+
+  const getCurrentPrice = (vehicle) => {
+    const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
+    return vehicle.colorPrices[currentColor];
   };
 
   return (
@@ -418,7 +474,14 @@ const VehicleInfoFeature = () => {
         {filteredVehicles.map(vehicle => (
           <div key={vehicle.id} className="vehicle-card">
             <div className="vehicle-image">
-              <img src={vehicle.image} alt={vehicle.name} />
+              <img 
+                src={getCurrentImage(vehicle)} 
+                alt={`${vehicle.name} - ${selectedColor[vehicle.id] || vehicle.colors[0]}`}
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  e.target.src = 'https://via.placeholder.com/300x200?text=VinFast+' + vehicle.name.split(' ')[1];
+                }}
+              />
               {getStatusBadge(vehicle.status, vehicle.stock)}
             </div>
             
@@ -427,7 +490,12 @@ const VehicleInfoFeature = () => {
               <p className="vehicle-brand">{vehicle.brand} • {vehicle.type}</p>
               
               <div className="price-and-details">
-                <div className="vehicle-price">{vehicle.priceRange}</div>
+                <div className="vehicle-price">
+                  {new Intl.NumberFormat('vi-VN', { 
+                    style: 'currency', 
+                    currency: 'VND' 
+                  }).format(getCurrentPrice(vehicle))}
+                </div>
                 <button 
                   className="action-btn view-details-btn"
                   onClick={() => setSelectedVehicle(vehicle)}
@@ -440,7 +508,14 @@ const VehicleInfoFeature = () => {
                 <span className="colors-label">Màu sắc:</span>
                 <div className="colors-list">
                   {vehicle.colors.map((color, index) => (
-                    <span key={index} className="color-tag">{color}</span>
+                    <span 
+                      key={index} 
+                      className={`color-tag ${selectedColor[vehicle.id] === color ? 'active' : ''}`}
+                      onClick={() => handleColorChange(vehicle.id, color)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {color}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -459,21 +534,6 @@ const VehicleInfoFeature = () => {
                   <span className="spec-value">{vehicle.stock} xe</span>
                 </div>
               </div>
-
-              <div className="bottom-actions">
-                <button 
-                  className="action-btn test-drive-btn"
-                  onClick={() => handleTestDrive(vehicle)}
-                >
-                  Lái thử
-                </button>
-                <button 
-                  className="action-btn quote-btn"
-                  onClick={() => handleQuote(vehicle)}
-                >
-                  Báo giá
-                </button>
-              </div>
             </div>
           </div>
         ))}
@@ -491,33 +551,21 @@ const VehicleInfoFeature = () => {
           onClose={() => setSelectedVehicle(null)} 
         />
       )}
-
-      {showTestDriveModal && (
-        <TestDriveModal 
-          vehicle={testDriveVehicle}
-          addTestDriveBooking={addTestDriveBooking}
-          onClose={() => {
-            setShowTestDriveModal(false);
-            setTestDriveVehicle(null);
-          }} 
-        />
-      )}
-
-      {showQuoteModal && (
-        <QuoteModal 
-          vehicle={quoteVehicle}
-          addQuoteRequest={addQuoteRequest}
-          onClose={() => {
-            setShowQuoteModal(false);
-            setQuoteVehicle(null);
-          }} 
-        />
-      )}
     </div>
   );
 };
 
 const VehicleDetailModal = ({ vehicle, onClose }) => {
+  const [selectedModalColor, setSelectedModalColor] = useState(vehicle.colors[0]);
+
+  const getCurrentModalImage = () => {
+    return vehicle.images[selectedModalColor] || vehicle.defaultImage;
+  };
+
+  const getCurrentModalPrice = () => {
+    return vehicle.colorPrices[selectedModalColor];
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -528,7 +576,13 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
         
         <div className="modal-body">
           <div className="vehicle-detail-image">
-            <img src={vehicle.image} alt={vehicle.name} />
+            <img 
+              src={getCurrentModalImage()} 
+              alt={`${vehicle.name} - ${selectedModalColor}`}
+              onError={(e) => {
+                e.target.src = 'https://via.placeholder.com/400x300?text=VinFast+' + vehicle.name.split(' ')[1];
+              }}
+            />
           </div>
           
           <div className="vehicle-detail-info">
@@ -555,14 +609,29 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
             </div>
 
             <div className="detail-section">
-              <h3>Màu sắc & Giá chi tiết</h3>
-              <div className="color-price-grid">
+              <h3>Chọn màu sắc</h3>
+              <div className="color-selector">
                 {vehicle.colors.map((color, index) => (
-                  <div key={index} className="color-price-item">
-                    <span className="color-name">{color}:</span>
-                    <span className="color-price">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(vehicle.colorPrices[color])}</span>
+                  <div 
+                    key={index} 
+                    className={`color-option ${selectedModalColor === color ? 'selected' : ''}`}
+                    onClick={() => setSelectedModalColor(color)}
+                  >
+                    <span className="color-name">{color}</span>
+                    <span className="color-price">
+                      {new Intl.NumberFormat('vi-VN', { 
+                        style: 'currency', 
+                        currency: 'VND' 
+                      }).format(vehicle.colorPrices[color])}
+                    </span>
                   </div>
                 ))}
+              </div>
+              <div className="selected-price">
+                <strong>Giá đã chọn: {new Intl.NumberFormat('vi-VN', { 
+                  style: 'currency', 
+                  currency: 'VND' 
+                }).format(getCurrentModalPrice())}</strong>
               </div>
             </div>
 
@@ -620,240 +689,6 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const TestDriveModal = ({ vehicle, addTestDriveBooking, onClose }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    const bookingData = {
-      maLichHen: Date.now(), // Tạo ID tạm thời
-      maKhachHang: null, // Chưa có trong hệ thống
-      customerName: formData.get('customerName'),
-      customerPhone: formData.get('customerPhone'),
-      customerEmail: formData.get('customerEmail') || '',
-      maXe: vehicle.id,
-      vehicle: vehicle.name,
-      maDaiLy: 1, // Default dealer
-      dealerName: formData.get('location'),
-      ngayHen: formData.get('date'),
-      gioHen: formData.get('time'),
-      trangThai: 'Đang chờ',
-      ghiChu: formData.get('notes') || '',
-      ngayTao: new Date().toISOString()
-    };
-    
-    // Save to localStorage for FeedbackTestDriveFeature
-    try {
-      const existingBookings = JSON.parse(localStorage.getItem('testDriveBookings') || '[]');
-      existingBookings.push(bookingData);
-      localStorage.setItem('testDriveBookings', JSON.stringify(existingBookings));
-      
-      // Verify save was successful
-      const savedData = localStorage.getItem('testDriveBookings');
-      console.log('✅ Booking saved successfully:', JSON.parse(savedData));
-      
-      // Trigger custom event to notify other components
-      window.dispatchEvent(new CustomEvent('testDriveBookingAdded', { detail: bookingData }));
-    } catch (error) {
-      console.error('❌ Error saving booking:', error);
-      alert('Có lỗi khi lưu thông tin. Vui lòng thử lại!');
-      return;
-    }
-    
-    // Add to test drive bookings list (cho DealerStaff context)
-    if (addTestDriveBooking) {
-      addTestDriveBooking(bookingData);
-    }
-    
-    alert(`Đặt lịch lái thử ${vehicle.name} thành công! 
-    
-✅ Thông tin đã được lưu vào hệ thống.
-🔍 Bạn có thể xem chi tiết tại mục "Phản hồi và lái thử".
-📱 ID booking: ${bookingData.maLichHen}`);
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Đặt lịch lái thử - {vehicle.name}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-body">
-          <form className="test-drive-form" onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Họ và tên khách hàng *</label>
-                <input type="text" name="customerName" placeholder="Nhập họ và tên" required />
-              </div>
-              <div className="form-group">
-                <label>Số điện thoại *</label>
-                <input type="tel" name="customerPhone" placeholder="Nhập số điện thoại" required />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input type="email" name="customerEmail" placeholder="Nhập email" />
-              </div>
-              <div className="form-group">
-                <label>Xe muốn lái thử *</label>
-                <input type="text" value={vehicle.name} readOnly className="readonly-input" />
-              </div>
-              <div className="form-group">
-                <label>Ngày *</label>
-                <input type="date" name="date" required min={new Date().toISOString().split('T')[0]} />
-              </div>
-              <div className="form-group">
-                <label>Giờ *</label>
-                <select name="time" required>
-                  <option value="">Chọn giờ</option>
-                  <option value="09:00">09:00</option>
-                  <option value="10:00">10:00</option>
-                  <option value="11:00">11:00</option>
-                  <option value="14:00">14:00</option>
-                  <option value="15:00">15:00</option>
-                  <option value="16:00">16:00</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Showroom *</label>
-                <select name="location" required>
-                  <option value="">Chọn showroom</option>
-                  <option value="Showroom Quận 1">Showroom Quận 1</option>
-                  <option value="Showroom Quận 3">Showroom Quận 3</option>
-                  <option value="Showroom Quận 5">Showroom Quận 5</option>
-                  <option value="Showroom Quận 7">Showroom Quận 7</option>
-                </select>
-              </div>
-              <div className="form-group full-width">
-                <label>Ghi chú</label>
-                <textarea name="notes" placeholder="Ghi chú đặc biệt (nếu có)" rows="3"></textarea>
-              </div>
-            </div>
-            
-            <div className="form-actions">
-              <button type="button" className="btn-secondary" onClick={onClose}>
-                Hủy
-              </button>
-              <button type="submit" className="btn-primary">
-                Đặt lịch lái thử
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuoteModal = ({ vehicle, addQuoteRequest, onClose }) => {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    const quoteData = {
-      id: `YC${Date.now()}`, // Generate unique ID
-      customerName: formData.get('customerName'),
-      customerPhone: formData.get('customerPhone'),
-      customerEmail: formData.get('customerEmail') || '',
-      vehicle: vehicle.name,
-      selectedColor: formData.get('selectedColor'),
-      notes: formData.get('notes') || '',
-      status: 'Chờ xử lý',
-      createdDate: new Date().toLocaleDateString('vi-VN'),
-      maXe: vehicle.id // For database reference
-    };
-    
-    // Save to localStorage for FeedbackTestDriveFeature
-    try {
-      const existingQuotes = JSON.parse(localStorage.getItem('quoteRequests') || '[]');
-      existingQuotes.push(quoteData);
-      localStorage.setItem('quoteRequests', JSON.stringify(existingQuotes));
-      
-      console.log('✅ Quote saved successfully:', quoteData);
-    } catch (error) {
-      console.error('❌ Error saving quote:', error);
-      alert('Có lỗi khi lưu thông tin. Vui lòng thử lại!');
-      return;
-    }
-    
-    // Add to quote requests list (for context)
-    if (addQuoteRequest) {
-      addQuoteRequest(quoteData);
-    }
-    
-    alert(`Yêu cầu báo giá ${vehicle.name} thành công! Thông tin đã được lưu vào hệ thống.`);
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Yêu cầu báo giá - {vehicle.name}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
-        </div>
-        
-        <div className="modal-body">
-          <form className="quote-form" onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Họ và tên khách hàng *</label>
-                <input type="text" name="customerName" placeholder="Nhập họ và tên" required />
-              </div>
-              <div className="form-group">
-                <label>Số điện thoại *</label>
-                <input type="tel" name="customerPhone" placeholder="Nhập số điện thoại" required />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input type="email" name="customerEmail" placeholder="Nhập email" />
-              </div>
-              <div className="form-group">
-                <label>Xe quan tâm *</label>
-                <input type="text" value={vehicle.name} readOnly className="readonly-input" />
-              </div>
-              <div className="form-group">
-                <label>Màu sắc quan tâm</label>
-                <select name="selectedColor">
-                  <option value="">Tất cả màu sắc</option>
-                  {vehicle.colors.map((color, index) => (
-                    <option key={index} value={color}>
-                      {color} - {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(vehicle.colorPrices[color])}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Khoảng giá hiện tại</label>
-                <input type="text" value={vehicle.priceRange} readOnly className="readonly-input" />
-              </div>
-              <div className="form-group full-width">
-                <label>Ghi chú yêu cầu</label>
-                <textarea 
-                  name="notes" 
-                  placeholder="VD: Muốn biết giá lăn bánh, ưu đãi hiện tại, điều kiện trả góp..."
-                  rows="3"
-                ></textarea>
-              </div>
-            </div>
-            
-            <div className="form-actions">
-              <button type="button" className="btn-secondary" onClick={onClose}>
-                Hủy
-              </button>
-              <button type="submit" className="btn-primary quote-btn">
-                Gửi yêu cầu báo giá
-              </button>
-            </div>
-          </form>
         </div>
       </div>
     </div>
