@@ -1,19 +1,21 @@
 package org.example.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.security.Principal;
 
-@Controller
+@RestController
+@RequestMapping("/api")
 public class MainPageControllerAPI {
 
-    @GetMapping("/main")
-    public String mainPage(Model model, Principal principal) {
-        // Add the logged-in user’s name
-        if (principal != null) {
-            model.addAttribute("username", principal.getName());
-        }
-        return "forward:/index.html"; // loads main.html from templates/
+    @GetMapping("/home")
+    public ResponseEntity<String> home() {
+        return ResponseEntity.ok("Welcome to Electric Vehicle Dealer Management System backend!");
     }
 }
+

@@ -13,16 +13,16 @@ public class CarVariant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "variant_id")
+    @Column(name = "VariantId")
     private Integer variant_id;
 
-    @Column(name = "variant_name", nullable = false, length = 100)
+    @Column(name = "VariantName", nullable = false, length = 100)
     private String variant_name;
 
-    @Column(name = "model_id")
+    @Column(name = "ModelId")
     private Integer model_id;   // FK to CarModel
 
-    @Column(name = "price")
-    private Double price;
+    @Column(name = "Description")
+    private Double description;
 
 }

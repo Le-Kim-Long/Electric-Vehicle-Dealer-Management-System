@@ -2,6 +2,8 @@ package org.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.sql.Time;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,20 +16,28 @@ public class TestdriveAppointment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "appointment_id")
+    @Column(name = "AppointmentId")
     private Integer appointment_id;
 
-    @Column(name = "customer_id")
+    @Column(name = "CustomerId")
     private Integer customer_id;   // FK to Customer
 
-    @Column(name = "car_id")
+    @Column(name = "CartId")
     private Integer car_id;        // FK to Car
 
-    @Column(name = "appointment_date")
+    @Column(name = "DealerId")
+    private Integer dealer_id;     // FK to Dealer
+
+    @Column(name = "AppointmentDate")
     private LocalDateTime appointment_date;
 
-    @Column(name = "status", length = 50)
-    private String status;
+    @Column(name = "AppointmentTime")
+    private Time appointment_time;
 
+    @Column(name = "Notes", length = 50)
+    private String notes;
+
+    @Column(name = "CreatedDate")
+    private LocalDateTime created_date;
 
 }

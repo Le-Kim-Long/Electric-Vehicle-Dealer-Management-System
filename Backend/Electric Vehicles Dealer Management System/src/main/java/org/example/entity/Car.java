@@ -13,20 +13,20 @@ public class Car {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "car_id")
+    @Column(name = "CarId")
     private Integer car_id;
 
-    @Column(name = "variant_id")
+    @Column(name = "VariantId")
     private Integer variant_id;   // FK to CarVariant
 
-    @Column(name = "color_id")
+    @Column(name = "ColorId")
     private Integer color_id;     // FK to Color
 
-    @Column(name = "dealer_id")
-    private Integer dealer_id;    // FK to Dealer
+    @Column(name = "ProductionYear")
+    private Integer production_year;
 
-    @Column(name = "vin", unique = true, length = 100)
-    private String vin;
+    @Column(name = "Price")
+    private Long price;
 
 
 }

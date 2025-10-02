@@ -14,20 +14,22 @@ public class Installment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "installment_id")
+    @Column(name = "InstallmentID")
     private Integer installment_id;
 
-    @Column(name = "order_id")
+    @Column(name = "OrderID")
     private Integer order_id;   // FK to Orders
 
-    @Column(name = "amount")
-    private Double amount;
+    @Column(name = "TermCount")
+    private double term_count;
 
-    @Column(name = "due_date")
-    private LocalDate due_date;
+    @Column(name = "AmountPerTerm")
+    private double amount_per_term;
 
-    @Column(name = "status", length = 50)
-    private String status;
+    @Column(name = "InterestRate", length = 50)
+    private double interest_rate;
 
+    @Column(name = "Note", length = 200)
+    private String note;
 
 }

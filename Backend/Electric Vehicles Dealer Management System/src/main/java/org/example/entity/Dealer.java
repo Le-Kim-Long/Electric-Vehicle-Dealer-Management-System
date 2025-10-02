@@ -13,19 +13,19 @@ public class Dealer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dealer_id")
+    @Column(name = "DealerID")
     private Integer dealer_id;
 
-    @Column(name = "dealer_name", nullable = false, length = 100)
+    @Column(name = "DealerName", nullable = false, length = 100)
     private String dealer_name;
 
-    @Column(name = "address", length = 255)
+    @Column(name = "Address", length = 255)
     private String address;
 
-    @Column(name = "phone_number", length = 50)
+    @Column(name = "PhoneNumber", length = 50)
     private String phone_number;
 
-    @Column(name = "email", length = 100)
+    @Column(name = "Email", length = 100)
     private String email;
 
 

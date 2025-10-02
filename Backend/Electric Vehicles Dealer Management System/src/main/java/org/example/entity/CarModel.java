@@ -13,14 +13,14 @@ public class CarModel {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "model_id")
+    @Column(name = "ModelId")
     private Integer model_id;
 
-    @Column(name = "model_name", nullable = false, length = 100)
+    @Column(name = "ModelName", nullable = false, length = 100)
     private String model_name;
 
-    @Column(name = "manufacturer", length = 100)
-    private String manufacturer;
+    @Column(name = "Segment", length = 100)
+    private String segment;
 
 
 }

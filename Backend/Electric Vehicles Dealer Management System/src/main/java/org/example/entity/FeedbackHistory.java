@@ -14,17 +14,22 @@ public class FeedbackHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "history_id")
+    @Column(name = "HistoryId")
     private Integer history_id;
 
-    @Column(name = "feedback_id")
+    @Column(name = "FeedbackId")
     private Integer feedback_id;   // FK to Feedback
 
-    @Column(name = "status", length = 50)
+    @Column(name = "EmployeeId", length = 50)
     private String status;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updated_at;
+    @Column(name = "ProcessedDate")
+    private LocalDateTime processed_date;
 
+    @Column(name = "HandlingNotes", length = 1000)
+    private String handling_notes;
+
+    @Column(name = "StatusAfterHandling", length = 50)
+    private String status_after_handling;
 
 }

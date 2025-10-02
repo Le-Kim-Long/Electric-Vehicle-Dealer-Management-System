@@ -14,19 +14,31 @@ public class Promotion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "promotion_id")
+    @Column(name = "PromotionID")
     private Integer promotion_id;
 
-    @Column(name = "title", length = 100)
-    private String title;
+    @Column(name = "PromotionName", length = 100)
+    private String promotion_name;
 
-    @Column(name = "description", length = 500)
+    @Column(name = "Description", length = 255)
     private String description;
 
-    @Column(name = "start_date")
+    @Column(name = "Value")
+    private String value;
+
+    @Column(name = "Type", length = 50)
+    private String type;
+
+    @Column(name = "Scope", length = 20)
+    private String scope;
+
+    @Column(name = "Status", length = 50)
+    private String status;
+
+    @Column(name = "StartDate")
     private LocalDate start_date;
 
-    @Column(name = "end_date")
+    @Column(name = "EndDate")
     private LocalDate end_date;
 
 
