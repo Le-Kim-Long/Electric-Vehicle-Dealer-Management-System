@@ -3,6 +3,8 @@ package org.example.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Setter
@@ -29,5 +31,16 @@ public class UserAccount {
     @Column(name = "Email", length = 100)
     private String email;
 
+    @Column(name = "PhoneNumber", length = 15)
+    private int phone_number;
+
+    @Column(name = "DealerID")
+    private String dealer_id; // FK to Dealer
+
+    @Column(name = "Status")
+    private String status;
+
+    @Column(name = "CreatedDate")
+    private LocalDateTime created_date;
 
 }
