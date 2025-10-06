@@ -14,15 +14,15 @@ public class CarVariant {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "VariantId")
-    private Integer variant_id;
+    private Integer variantId;
 
     @Column(name = "VariantName", nullable = false, length = 100)
-    private String variant_name;
+    private String variantName;
 
     @Column(name = "ModelId")
-    private Integer model_id;   // FK to CarModel
+    private Integer modelId;   // FK to CarModel
 
     @Column(name = "Description")
-    private Double description;
+    private String description;
 
 }

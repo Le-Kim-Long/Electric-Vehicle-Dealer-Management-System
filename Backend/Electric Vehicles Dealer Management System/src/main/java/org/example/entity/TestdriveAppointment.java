@@ -17,27 +17,27 @@ public class TestdriveAppointment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "AppointmentId")
-    private Integer appointment_id;
+    private Integer appointmentId;
 
     @Column(name = "CustomerId")
-    private Integer customer_id;   // FK to Customer
+    private Integer customerId;   // FK to Customer
 
     @Column(name = "CartId")
-    private Integer car_id;        // FK to Car
+    private Integer cartId;        // FK to Car
 
     @Column(name = "DealerId")
-    private Integer dealer_id;     // FK to Dealer
+    private Integer dealerId;     // FK to Dealer
 
     @Column(name = "AppointmentDate")
-    private LocalDateTime appointment_date;
+    private LocalDateTime appointmentDate;
 
     @Column(name = "AppointmentTime")
-    private Time appointment_time;
+    private Time appointmentTime;
 
     @Column(name = "Notes", length = 50)
     private String notes;
 
     @Column(name = "CreatedDate")
-    private LocalDateTime created_date;
+    private LocalDateTime createdDate;
 
 }

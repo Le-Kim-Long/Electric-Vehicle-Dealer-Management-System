@@ -15,10 +15,10 @@ public class Promotion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "PromotionID")
-    private Integer promotion_id;
+    private Integer promotionID;
 
     @Column(name = "PromotionName", length = 100)
-    private String promotion_name;
+    private String promotionName;
 
     @Column(name = "Description", length = 255)
     private String description;
@@ -36,10 +36,10 @@ public class Promotion {
     private String status;
 
     @Column(name = "StartDate")
-    private LocalDate start_date;
+    private LocalDate startDate;
 
     @Column(name = "EndDate")
-    private LocalDate end_date;
+    private LocalDate endDate;
 
 
 }

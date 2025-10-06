@@ -14,16 +14,16 @@ public class Dealer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "DealerID")
-    private Integer dealer_id;
+    private Integer dealerID;
 
     @Column(name = "DealerName", nullable = false, length = 100)
-    private String dealer_name;
+    private String dealerName;
 
     @Column(name = "Address", length = 255)
     private String address;
 
     @Column(name = "PhoneNumber", length = 50)
-    private String phone_number;
+    private String phoneNumber;
 
     @Column(name = "Email", length = 100)
     private String email;

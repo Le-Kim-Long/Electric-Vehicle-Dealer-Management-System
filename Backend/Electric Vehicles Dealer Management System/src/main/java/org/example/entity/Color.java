@@ -14,10 +14,10 @@ public class Color {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ColorID")
-    private Integer color_id;
+    private Integer colorID;
 
     @Column(name = "ColorName", nullable = false, length = 50)
-    private String color_name;
+    private String colorName;
 
 //    @Column(name = "hex_code", length = 7)
 //    private String hex_code;

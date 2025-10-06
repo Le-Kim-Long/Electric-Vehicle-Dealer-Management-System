@@ -25,16 +25,16 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
         // Plain text check (since DB has "123456" in sample data)
-        if (!Objects.equals(user.getPassword().trim(), request.getPassword().trim())) {
+        if (!Objects.equals(user.getPasswordHash().trim(), request.getPassword().trim())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole_id().getRole_name());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRoleID().getRoleName());
 
         return new LoginResponse(
                 token,
-                user.getRole_id().getRole_name(),
-                user.getUsername(),
+                user.getRoleID().getRoleName(),
+                user.getFullName(),
                 user.getStatus()
         );
     }

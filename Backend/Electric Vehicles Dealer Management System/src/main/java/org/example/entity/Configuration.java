@@ -14,22 +14,22 @@ public class Configuration {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ConfigId")
-    private Integer config_id;
+    private Integer configId;
 
     @Column(name = "VariantId")
-    private Integer variant_id; // FK to CarVariant
+    private Integer variantId; // FK to CarVariant
 
     @Column(name = "BatteryCapacity")
-    private String battery_capacity;
+    private String batteryCapacity;
 
     @Column(name = "BatteryType")
-    private Integer battery_type;
+    private Integer batteryType;
 
     @Column(name = "FullChargeTime")
-    private int full_charge_time;
+    private int fullChargeTime;
 
     @Column(name = "RangeKm")
-    private int range_km;
+    private int rangeKm;
 
     @Column(name = "Power")
     private String power;
@@ -38,22 +38,22 @@ public class Configuration {
     private String torque;
 
     @Column(name = "LengthMm")
-    private int length_mm;
+    private int lengthMm;
 
     @Column(name = "WidthMm")
-    private int width_mm;
+    private int widthMm;
 
     @Column(name = "HeightMm")
-    private int height_mm;
+    private int heightMm;
 
     @Column(name = "WheelbaseMm")
-    private int wheelbase_mm;
+    private int wheelbaseMm;
 
     @Column(name = "WeightKg")
-    private int weight_kg;
+    private int weightKg;
 
-    @Column(name = "TrunkVolumL")
-    private int trunk_volume_l;
+    @Column(name = "TrunkVolumeL")
+    private int trunkVolumeL;
 
     @Column(name = "Seats")
     private int seats;

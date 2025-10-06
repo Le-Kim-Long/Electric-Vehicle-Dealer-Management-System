@@ -15,34 +15,34 @@ public class Orders {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "OrderId")
-    private Integer order_id;
+    private Integer orderId;
 
     @Column(name = "CustomerId")
-    private Integer customer_id;   // FK to Customer
+    private Integer customerId;   // FK to Customer
 
     @Column(name = "DealerId")
-    private Integer dealer_id;   // FK to Dealer
+    private Integer dealerId;   // FK to Dealer
 
     @Column(name = "OrderDate")
-    private LocalDateTime order_date;
+    private LocalDateTime orderDate;
 
     @Column(name = "SubTotal")
-    private int sub_total;
+    private int subTotal;
 
     @Column(name = "DiscountAmount")
-    private int discount_amount;
+    private int discountAmount;
 
     @Column(name = "TotalAmont")
-    private int total_amount;
+    private int totalAmont;
 
     @Column(name = "PaymentMethod", length = 50)
-    private String payment_method;
+    private String paymentMethod;
 
     @Column(name = "status", length = 50)
     private String status;
 
     @Column(name = "PromotionId")
-    private int promotion_id;
+    private int promotionId;
 
 
 }

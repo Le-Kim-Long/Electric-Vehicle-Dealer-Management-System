@@ -14,10 +14,10 @@ public class CarModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ModelId")
-    private Integer model_id;
+    private Integer modelId;
 
     @Column(name = "ModelName", nullable = false, length = 100)
-    private String model_name;
+    private String modelName;
 
     @Column(name = "Segment", length = 100)
     private String segment;

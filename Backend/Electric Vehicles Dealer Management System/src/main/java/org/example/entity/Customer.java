@@ -16,19 +16,19 @@ public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "CustomerId")
-    private Integer customer_id;
+    private Integer customerId;
 
     @Column(name = "FullName", length = 100)
-    private String full_name;
+    private String fullName;
 
     @Column(name = "PhoneNumber", length = 50)
-    private String phone_number;
+    private String phoneNumber;
 
     @Column(name = "Email", length = 100)
     private String email;
 
     @Column(name = "CreatedDate", length = 255)
-    private LocalDateTime created_date;
+    private LocalDateTime createdDate;
 
 
 }

@@ -14,16 +14,16 @@ public class Car {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "CarId")
-    private Integer car_id;
+    private Integer carId;
 
     @Column(name = "VariantId")
-    private Integer variant_id;   // FK to CarVariant
+    private Integer variantId;   // FK to CarVariant
 
     @Column(name = "ColorId")
-    private Integer color_id;     // FK to Color
+    private Integer colorId;     // FK to Color
 
     @Column(name = "ProductionYear")
-    private Integer production_year;
+    private Integer productionYear;
 
     @Column(name = "Price")
     private Long price;
