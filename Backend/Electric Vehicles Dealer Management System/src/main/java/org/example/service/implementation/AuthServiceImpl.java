@@ -25,17 +25,37 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
 
         // Plain text check (since DB has "123456" in sample data)
-        if (!Objects.equals(user.getPasswordHash().trim(), request.getPassword().trim())) {
+        if (!Objects.equals(user.getPassword().trim(), request.getPassword().trim())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRoleID().getRoleName());
+        // Kiểm tra role và xử lý dealer name phù hợp
+        String roleName = user.getRole_id().getRole_name();
+        String dealerName = null;
+
+        // Admin và EVMStaff không thuộc dealer nào (dealerId = null)
+        if ("Admin".equals(roleName) || "EVMStaff".equals(roleName)) {
+            dealerName = null; // Hoặc có thể set thành "System" tùy theo business logic
+        } else if ("DealerStaff".equals(roleName)) {
+            // DealerStaff phải thuộc một dealer
+            if (user.getDealer() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Dealer staff account is not associated with any dealer");
+            }
+            dealerName = user.getDealer().getDealerName();
+        } else {
+            // Các role khác (nếu có)
+            dealerName = user.getDealer() != null ? user.getDealer().getDealerName() : null;
+        }
+
+        String token = jwtUtil.generateToken(user.getEmail(), roleName, dealerName);
 
         return new LoginResponse(
                 token,
-                user.getRoleID().getRoleName(),
-                user.getFullName(),
-                user.getStatus()
+                roleName,
+                user.getUsername(),
+                user.getStatus(),
+                dealerName
         );
     }
 }

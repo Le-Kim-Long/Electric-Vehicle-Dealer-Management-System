@@ -1,32 +1,37 @@
 package org.example.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+    import jakarta.persistence.*;
+    import lombok.*;
+    import java.util.List;
 
-@Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "DEALER")
-public class Dealer {
+    @Entity
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Table(name = "DEALER")
+    public class Dealer {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "DealerID")
-    private Integer dealerID;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "DealerID")
+        private Integer dealerId;
 
-    @Column(name = "DealerName", nullable = false, length = 100)
-    private String dealerName;
+        @Column(name = "DealerName")
+        private String dealerName;
 
-    @Column(name = "Address", length = 255)
-    private String address;
+        @Column(name = "Address")
+        private String address;
 
-    @Column(name = "PhoneNumber", length = 50)
-    private String phoneNumber;
+        @Column(name = "PhoneNumber")
+        private String phone;
 
-    @Column(name = "Email", length = 100)
-    private String email;
+        @Column(name = "Email")
+        private String email;
 
+        @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        private List<DealerCar> dealerCars;
 
-}
+        @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        private List<UserAccount> userAccounts;
+    }

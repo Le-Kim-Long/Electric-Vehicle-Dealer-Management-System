@@ -3,6 +3,8 @@ package org.example.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -20,9 +22,18 @@ public class CarVariant {
     private String variantName;
 
     @Column(name = "ModelId")
-    private Integer modelId;   // FK to CarModel
+    private Integer modelId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ModelId", insertable = false, updatable = false)
+    private CarModel carModel;
+
+    @OneToOne(mappedBy = "carVariant", cascade = CascadeType.ALL)
+    private Configuration configuration;
 
     @Column(name = "Description")
     private String description;
 
+    @OneToMany(mappedBy = "carVariant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Car> cars;
 }

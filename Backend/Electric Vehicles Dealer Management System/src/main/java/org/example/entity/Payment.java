@@ -15,16 +15,16 @@ public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "PaymentID")
-    private Integer paymentID;
+    private Integer payment_id;
 
     @Column(name = "OrderID")
-    private Integer orderID;   // FK to Orders
+    private Integer order_id;   // FK to Orders
 
     @Column(name = "Amount")
     private Double amount;
 
     @Column(name = "PaymentDate")
-    private LocalDateTime paymentDate;
+    private LocalDateTime payment_date;
 
     @Column(name = "Method", length = 50)
     private String method;

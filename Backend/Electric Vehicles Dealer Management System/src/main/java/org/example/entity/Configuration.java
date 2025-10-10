@@ -17,13 +17,17 @@ public class Configuration {
     private Integer configId;
 
     @Column(name = "VariantId")
-    private Integer variantId; // FK to CarVariant
+    private Integer variantId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VariantId", insertable = false, updatable = false)
+    private CarVariant carVariant;
 
     @Column(name = "BatteryCapacity")
     private String batteryCapacity;
 
     @Column(name = "BatteryType")
-    private Integer batteryType;
+    private String batteryType;
 
     @Column(name = "FullChargeTime")
     private int fullChargeTime;
@@ -32,7 +36,7 @@ public class Configuration {
     private int rangeKm;
 
     @Column(name = "Power")
-    private String power;
+    private Double power;
 
     @Column(name = "Torque")
     private String torque;
@@ -52,10 +56,6 @@ public class Configuration {
     @Column(name = "WeightKg")
     private int weightKg;
 
-    @Column(name = "TrunkVolumeL")
-    private int trunkVolumeL;
-
     @Column(name = "Seats")
     private int seats;
-
 }

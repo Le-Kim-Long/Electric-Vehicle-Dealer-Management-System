@@ -14,13 +14,13 @@ public class OrderDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "detail_id")
-    private Integer detailId;
+    private Integer detail_id;
 
     @Column(name = "order_id")
-    private Integer orderId;   // FK to Orders
+    private Integer order_id;   // FK to Orders
 
     @Column(name = "car_id")
-    private Integer carId;     // FK to Car
+    private Integer car_id;     // FK to Car
 
     @Column(name = "quantity")
     private Integer quantity;

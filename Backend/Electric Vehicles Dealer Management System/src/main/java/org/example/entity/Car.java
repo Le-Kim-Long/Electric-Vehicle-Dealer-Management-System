@@ -2,6 +2,7 @@ package org.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -13,14 +14,25 @@ public class Car {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "CarId")
+    @Column(name = "CarID")
     private Integer carId;
 
     @Column(name = "VariantId")
-    private Integer variantId;   // FK to CarVariant
+    private Integer variantId;
 
-    @Column(name = "ColorId")
-    private Integer colorId;     // FK to Color
+    @Column(name = "ColorID")
+    private Integer colorId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VariantId", insertable = false, updatable = false)
+    private CarVariant carVariant;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ColorID", insertable = false, updatable = false)
+    private Color color;
+
+    @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<DealerCar> dealerCars;
 
     @Column(name = "ProductionYear")
     private Integer productionYear;
@@ -28,5 +40,9 @@ public class Car {
     @Column(name = "Price")
     private Long price;
 
+    @Column(name = "Status")
+    private String status;
 
+    @Column(name = "ImagePath")
+    private String imagePath;
 }

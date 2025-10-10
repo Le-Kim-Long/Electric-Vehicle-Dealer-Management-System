@@ -3,6 +3,8 @@ package org.example.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -22,5 +24,6 @@ public class CarModel {
     @Column(name = "Segment", length = 100)
     private String segment;
 
-
+    @OneToMany(mappedBy = "carModel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CarVariant> carVariants;
 }

@@ -6,9 +6,10 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CarVariantResponse {
     private Integer variantId;
     private String variantName;
-    private String description;
-    private Integer modelId;
+    private String modelName;
+    private String fullName; // VF3 Eco, VF5 Plus, etc.
 }

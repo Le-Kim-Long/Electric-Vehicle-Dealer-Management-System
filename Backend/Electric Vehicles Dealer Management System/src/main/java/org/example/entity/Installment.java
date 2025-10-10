@@ -2,6 +2,7 @@ package org.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -14,19 +15,19 @@ public class Installment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "InstallmentID")
-    private Integer installmentID;
+    private Integer installment_id;
 
     @Column(name = "OrderID")
-    private Integer orderID;   // FK to Orders
+    private Integer order_id;   // FK to Orders
 
     @Column(name = "TermCount")
-    private double termCount;
+    private double term_count;
 
     @Column(name = "AmountPerTerm")
-    private double amountPerTerm;
+    private double amount_per_term;
 
     @Column(name = "InterestRate", length = 50)
-    private double interestRate;
+    private double interest_rate;
 
     @Column(name = "Note", length = 200)
     private String note;

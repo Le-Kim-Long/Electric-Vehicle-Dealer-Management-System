@@ -1,46 +1,46 @@
 package org.example.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+    import jakarta.persistence.*;
+    import lombok.*;
 
-import java.time.LocalDateTime;
+    import java.time.LocalDateTime;
 
-@Entity
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "USER_ACCOUNT")
-public class UserAccount {
+    @Entity
+    @Getter
+    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Table(name = "USER_ACCOUNT")
+    public class UserAccount {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "UserID")
-    private Integer userID;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @Column(name = "UserID")
+        private Integer user_id;
 
-    @Column(name = "FullName", nullable = false, length = 100, unique = true)
-    private String fullName;
+        @Column(name = "FullName", nullable = false, length = 100, unique = true)
+        private String username;
 
-    @Column(name = "PasswordHash", nullable = false, length = 255)
-    private String passwordHash;
+        @Column(name = "PasswordHash", nullable = false, length = 255)
+        private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "RoleID")
-    private Role roleID;   // FK to Role
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name = "RoleID")
+        private Role role_id;
 
-    @Column(name = "Email", length = 100)
-    private String email;
+        @Column(name = "Email", length = 100)
+        private String email;
 
-    @Column(name = "PhoneNumber", length = 15)
-    private int phoneNumber;
+        @Column(name = "PhoneNumber", length = 15)
+        private int phone_number;
 
-    @Column(name = "DealerID")
-    private String dealerID; // FK to Dealer
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "DealerID")
+        private Dealer dealer;
 
-    @Column(name = "Status")
-    private String status;
+        @Column(name = "Status")
+        private String status;
 
-    @Column(name = "CreatedDate")
-    private LocalDateTime createdDate;
-
-}
+        @Column(name = "CreatedDate")
+        private LocalDateTime created_date;
+    }

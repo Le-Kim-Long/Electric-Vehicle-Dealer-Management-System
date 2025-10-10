@@ -17,10 +17,10 @@ public class PromotionDealer {
     private Integer id;
 
     @Column(name = "PromotionID")
-    private Integer promotionID;   // FK to Promotion
+    private Integer promotion_id;   // FK to Promotion
 
     @Column(name = "DealerID")
-    private Integer dealerID;      // FK to Dealer
+    private Integer dealer_id;      // FK to Dealer
 
 
 }

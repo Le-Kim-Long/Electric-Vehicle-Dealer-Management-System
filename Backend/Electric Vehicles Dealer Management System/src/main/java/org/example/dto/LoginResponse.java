@@ -12,9 +12,7 @@ public class LoginResponse {
     private String role;
     private String username;
     private String status;
-
-
-
+    private String dealerName;
 
     // getters and setters
 }

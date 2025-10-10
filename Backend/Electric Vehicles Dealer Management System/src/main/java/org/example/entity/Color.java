@@ -2,6 +2,7 @@ package org.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -14,13 +15,11 @@ public class Color {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ColorID")
-    private Integer colorID;
+    private Integer color_id;
 
     @Column(name = "ColorName", nullable = false, length = 50)
-    private String colorName;
+    private String color_name;
 
-//    @Column(name = "hex_code", length = 7)
-//    private String hex_code;
-
-
+    @OneToMany(mappedBy = "color", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Car> cars;
 }
