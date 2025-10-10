@@ -198,6 +198,7 @@ CREATE TABLE CAR (
     ProductionYear INT NOT NULL,
     Price DECIMAL(18,2) NOT NULL,
     Status NVARCHAR(50) DEFAULT N'On Sale',
+    ImagePath NVARCHAR(255),  -- cột lưu đường dẫn hoặc tên file ảnh
 
     CONSTRAINT FK_CAR_VERSION FOREIGN KEY (VariantId) REFERENCES CAR_VARIANT(VariantId),
     CONSTRAINT FK_CAR_COLOR FOREIGN KEY (ColorID) REFERENCES COLOR(ColorID)
@@ -207,94 +208,112 @@ CREATE TABLE CAR (
 -- VF3
 -------------------------------------------------
 -- VF3 Eco (VersionID = 1)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES 
-(1, 1, 2025, 240000000),  -- White
-(1, 2, 2025, 250000000);  -- Black
+(1, 1, 2025, 240000000, N'vf3_trang.png'),  -- White
+(1, 2, 2025, 250000000, N'vf3_den.png');  -- Black
 
 -- VF3 Plus (VersionID = 2)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES 
-(2, 1, 2025, 310000000),  -- White
-(2, 2, 2025, 300000000),  -- Black
-(2, 3, 2025, 300000000),  -- Red
-(2, 4, 2025, 310000000);  -- Blue
+(2, 1, 2025, 310000000, N'vf3_trang.png'),  -- White
+(2, 2, 2025, 300000000, N'vf3_den.png'),  -- Black
+(2, 3, 2025, 300000000, N'vf3_do.png'),  -- Red
+(2, 4, 2025, 310000000, N'vf3_xanhduong.png');  -- Blue
 
 
 -------------------------------------------------
 -- VF5
 -------------------------------------------------
 -- VF5 Eco (VersionID = 3)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(3, 1, 2025, 370000000),  -- White
-(3, 2, 2025, 375000000);  -- Black
+(3, 1, 2025, 370000000, N'vf5_trang.png'),  -- White
+(3, 2, 2025, 375000000, N'vf5_den.png');  -- Black
 
 -- VF5 Plus (VersionID = 4)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(4, 1, 2025, 420000000),  -- White
-(4, 2, 2025, 425000000),  -- Black
-(4, 3, 2025, 430000000),  -- Red
-(4, 4, 2025, 435000000);  -- Blue
+(4, 1, 2025, 420000000, N'vf5_trang.png'),  -- White
+(4, 2, 2025, 425000000, N'vf5_den.png'),  -- Black
+(4, 3, 2025, 430000000, N'vf5_do.png'),  -- Red
+(4, 4, 2025, 435000000, N'vf5_xanhduong.png');  -- Blue
 
 
 -------------------------------------------------
 -- VF7
 -------------------------------------------------
 -- VF7 Eco (VersionID = 5)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(5, 1, 2025, 650000000),  -- White
-(5, 2, 2025, 655000000);  -- Black
+(5, 1, 2025, 650000000, N'vf7_trang.jpg'),  -- White
+(5, 2, 2025, 655000000, N'vf7_den.jpg');  -- Black
 
 -- VF7 Plus (VersionID = 6)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(6, 1, 2025, 720000000),  -- White
-(6, 2, 2025, 725000000),  -- Black
-(6, 3, 2025, 730000000),  -- Red
-(6, 4, 2025, 735000000),  -- Blue
-(6, 5, 2025, 740000000);  -- Moss Green
+(6, 1, 2025, 720000000, N'vf7_trang.jpg'),  -- White
+(6, 2, 2025, 725000000, N'vf7_den.jpg'),  -- Black
+(6, 3, 2025, 730000000, N'vf7_do.jpg'),  -- Red
+(6, 4, 2025, 735000000, N'vf7_xanhduong.jpg'),  -- Blue
+(6, 5, 2025, 740000000, N'vf7_xanhreu.jpg');  -- Moss Green
 
 
 -------------------------------------------------
 -- VF8
 -------------------------------------------------
 -- VF8 Eco (VersionID = 7)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(7, 1, 2025, 950000000),  -- White
-(7, 2, 2025, 960000000),  -- Black
-(7, 3, 2025, 970000000);  -- Red
+(7, 1, 2025, 950000000, N'vf8_trang.webp'),  -- White
+(7, 2, 2025, 960000000, N'vf8_den.png'),  -- Black
+(7, 3, 2025, 970000000, N'vf8_do.jpg');  -- Red
 
 -- VF8 Plus (VersionID = 8)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(8, 1, 2025, 1050000000),  -- White
-(8, 2, 2025, 1060000000),  -- Black
-(8, 3, 2025, 1070000000),  -- Red
-(8, 4, 2025, 1080000000),  -- Blue
-(8, 5, 2025, 1090000000);  -- Moss Green
+(8, 1, 2025, 1050000000, N'vf8_trang.webp'),  -- White
+(8, 2, 2025, 1060000000, N'vf8_den.png'),  -- Black
+(8, 3, 2025, 1070000000, N'vf8_do.jpg'),  -- Red
+(8, 4, 2025, 1080000000, N'vf8_xanhduong.png'),  -- Blue
+(8, 5, 2025, 1090000000, N'vf8_xanhreu.webp');  -- Moss Green
 
 
 -------------------------------------------------
 -- VF9
 -------------------------------------------------
 -- VF9 Eco (VersionID = 9)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(9, 1, 2025, 1250000000),  -- White
-(9, 2, 2025, 1260000000);  -- Black
-
+(9, 1, 2025, 1250000000, N'vf9_trang.jpg'),  -- White
+(9, 2, 2025, 1260000000, N'vf9_den.png');  -- Black
 -- VF9 Plus (VersionID = 10)
-INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price)
+INSERT INTO CAR (VariantId, ColorID, ProductionYear, Price, ImagePath)
 VALUES
-(10, 1, 2025, 1350000000),  -- White
-(10, 2, 2025, 1360000000),  -- Black
-(10, 3, 2025, 1370000000),  -- Red
-(10, 4, 2025, 1380000000),  -- Blue
-(10, 5, 2025, 1390000000);  -- Moss Green
+(10, 1, 2025, 1350000000, N'vf9_trang.jpg'),  -- White
+(10, 2, 2025, 1360000000, N'vf9_den.png'),  -- Black
+(10, 3, 2025, 1370000000, N'vf9_do.png'),  -- Red
+(10, 4, 2025, 1380000000, N'vf9_xanhduong.png'),  -- Blue
+(10, 5, 2025, 1390000000, N'vf9_xanhreu.png');  -- Moss Green
+
+CREATE TABLE DEALER_CAR (
+    DealerID INT NOT NULL,
+    CarID INT NOT NULL,
+    Quantity INT NOT NULL DEFAULT 0,   -- Số lượng xe tại đại lý này
+    
+    CONSTRAINT PK_DEALER_CAR PRIMARY KEY (DealerID, CarID),
+    CONSTRAINT FK_DEALER_CAR_DEALER FOREIGN KEY (DealerID) REFERENCES DEALER(DealerID),
+    CONSTRAINT FK_DEALER_CAR_CAR FOREIGN KEY (CarID) REFERENCES CAR(CarID)
+);
+
+-- Chèn dữ liệu với số lượng random 5-20
+INSERT INTO DEALER_CAR (DealerID, CarID, Quantity)
+SELECT 
+    d.DealerID, 
+    c.CarID, 
+    CAST((RAND(CHECKSUM(NEWID())) * (20 - 5 + 1) + 5) AS INT) AS Quantity
+FROM DEALER d
+CROSS JOIN CAR c;
 
 --8. Tạo bảng vai trò người dùng
 CREATE TABLE ROLE (
