@@ -29,6 +29,11 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
+        // Kiểm tra status của account - chỉ cho phép login khi status là "Active"
+        if (!"Active".equals(user.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not active or has been suspended");
+        }
+
         // Kiểm tra role và xử lý dealer name phù hợp
         String roleName = user.getRole_id().getRole_name();
         String dealerName = null;

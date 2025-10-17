@@ -32,7 +32,7 @@ package org.example.entity;
         private String email;
 
         @Column(name = "PhoneNumber", length = 15)
-        private int phone_number;
+        private String phone_number;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "DealerID")

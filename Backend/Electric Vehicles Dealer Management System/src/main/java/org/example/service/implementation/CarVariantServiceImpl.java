@@ -253,11 +253,71 @@ public class CarVariantServiceImpl implements CarVariantService {
         String processedSearchTerm = processFlexibleSearchTerm(searchTerm);
 
         // Lấy tất cả car variants theo search term với configuration (toàn hệ thống)
-        List<CarVariant> carVariants = carVariantRepository.searchAllVariantsByTerm(processedSearchTerm);
+        List<CarVariant> carVariants = carVariantRepository.searchAllVariantsWithConfiguration(processedSearchTerm);
 
         return carVariants.stream()
                 .map(this::convertToVariantDetailResponseForSystem)
                 .toList();
+    }
+
+    @Override
+    public List<VariantDetailResponse> getVariantDetailsByDealerName(String dealerName) {
+        // Lấy car variants theo dealer name với configuration
+        List<CarVariant> carVariants = carVariantRepository.findVariantsByDealerNameWithConfiguration(dealerName);
+
+        return carVariants.stream()
+                .map(cv -> convertToVariantDetailResponseByDealerName(cv, dealerName))
+                .toList();
+    }
+
+    private VariantDetailResponse convertToVariantDetailResponseByDealerName(CarVariant carVariant, String dealerName) {
+        // Lấy thông tin colorId, price, imagePath và quantity từ xe thuộc dealer có tên này
+        List<Object[]> colorIdsAndPrices = carVariantRepository.findColorIdsAndPricesByVariantIdAndDealerName(
+            carVariant.getVariantId(), dealerName);
+
+        // Tạo Map từ colorId -> (price, imagePath, quantity)
+        Map<Integer, Object[]> colorDataMap = colorIdsAndPrices.stream()
+                .collect(Collectors.toMap(
+                    row -> (Integer) row[0],  // colorId
+                    row -> new Object[]{row[1], row[2], row[3]}, // [price, imagePath, quantity]
+                    (existing, replacement) -> existing // Nếu có duplicate, giữ giá trị đầu tiên
+                ));
+
+        // Lấy thông tin màu sắc từ ColorRepository
+        List<Integer> colorIds = colorIdsAndPrices.stream()
+                .map(row -> (Integer) row[0])
+                .distinct()
+                .toList();
+
+        List<Color> colors = colorRepository.findByColorIds(colorIds);
+
+        // Tạo danh sách ColorPrice
+        List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
+                .filter(color -> colorDataMap.containsKey(color.getColor_id()))
+                .map(color -> {
+                    Object[] data = colorDataMap.get(color.getColor_id());
+                    String imageName = (String) data[1];
+                    // Xây dựng URL để truy cập ảnh qua HTTP
+                    String imageUrl = null;
+                    if (imageName != null && !imageName.isEmpty()) {
+                        imageUrl = "/api/images/" + imageName;
+                    }
+                    return VariantDetailResponse.ColorPrice.builder()
+                            .colorName(color.getColor_name())
+                            .price((Long) data[0])
+                            .imagePath(imageUrl)
+                            .quantity((Integer) data[2])
+                            .build();
+                })
+                .sorted(Comparator.comparing(VariantDetailResponse.ColorPrice::getColorName))
+                .toList();
+
+        return VariantDetailResponse.builder()
+                .variantId(carVariant.getVariantId())
+                .modelName(carVariant.getCarModel().getModelName())
+                .variantName(carVariant.getVariantName())
+                .colorPrices(colorPrices)
+                .build();
     }
 
     private VariantDetailResponse convertToVariantDetailResponseForSystem(CarVariant carVariant) {
@@ -312,5 +372,68 @@ public class CarVariantServiceImpl implements CarVariantService {
                 .colorPrices(colorPrices)
                 .build();
     }
-}
 
+    // New methods for searching by variant name specifically
+    @Override
+    public List<VariantDetailResponse> searchVariantsByVariantNameInSystem(String variantName) {
+        // Lấy tất cả car variants theo variant name với configuration (toàn hệ thống)
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByVariantNameInSystem(variantName);
+
+        return carVariants.stream()
+                .map(this::convertToVariantDetailResponseForSystem)
+                .toList();
+    }
+
+    @Override
+    public List<VariantDetailResponse> searchVariantsByVariantNameAndCurrentDealer(String userEmail, String variantName) {
+        // Tìm user theo email
+        UserAccount user = userAccountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        // Kiểm tra user có thuộc dealer nào không
+        if (user.getDealer() == null) {
+            throw new RuntimeException("User not associated with any dealer");
+        }
+
+        Integer dealerId = user.getDealer().getDealerId();
+
+        // Lấy car variants theo dealer ID và variant name với configuration
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByVariantNameAndDealerId(dealerId, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToVariantDetailResponse(cv, dealerId))
+                .toList();
+    }
+
+    // New methods for searching by model name specifically
+    @Override
+    public List<VariantDetailResponse> searchVariantsByModelNameInSystem(String modelName) {
+        // Lấy tất cả car variants theo model name với configuration (toàn hệ thống)
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByModelNameInSystem(modelName);
+
+        return carVariants.stream()
+                .map(this::convertToVariantDetailResponseForSystem)
+                .toList();
+    }
+
+    @Override
+    public List<VariantDetailResponse> searchVariantsByModelNameAndCurrentDealer(String userEmail, String modelName) {
+        // Tìm user theo email
+        UserAccount user = userAccountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        // Kiểm tra user có thuộc dealer nào không
+        if (user.getDealer() == null) {
+            throw new RuntimeException("User not associated with any dealer");
+        }
+
+        Integer dealerId = user.getDealer().getDealerId();
+
+        // Lấy car variants theo dealer ID và model name với configuration
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByModelNameAndDealerId(dealerId, modelName);
+
+        return carVariants.stream()
+                .map(cv -> convertToVariantDetailResponse(cv, dealerId))
+                .toList();
+    }
+}

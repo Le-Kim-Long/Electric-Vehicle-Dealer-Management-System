@@ -48,25 +48,83 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
     List<Object[]> findColorIdsAndPricesByVariantIdAndDealerId(@Param("variantId") Integer variantId,
                                                                @Param("dealerId") Integer dealerId);
 
+    // Method cho API getVariantDetailsByDealerName - lấy variants theo dealer name
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerName = :dealerName " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> findVariantsByDealerNameWithConfiguration(@Param("dealerName") String dealerName);
+
+    // Method cho API getVariantDetailsByDealerName - lấy color info theo dealer name
+    @Query("SELECT c.colorId, c.price, c.imagePath, dc.quantity FROM Car c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE c.variantId = :variantId " +
+           "AND dc.dealer.dealerName = :dealerName " +
+           "GROUP BY c.colorId, c.price, c.imagePath, dc.quantity " +
+           "ORDER BY c.colorId")
+    List<Object[]> findColorIdsAndPricesByVariantIdAndDealerName(@Param("variantId") Integer variantId,
+                                                                 @Param("dealerName") String dealerName);
+
+    // Search methods cho admin/evmstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "WHERE LOWER(CONCAT(cm.modelName, ' ', cv.variantName)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchAllVariantsWithConfiguration(@Param("searchTerm") String searchTerm);
+
+    // Search methods cho dealerstaff
     @Query("SELECT DISTINCT cv FROM CarVariant cv " +
            "JOIN FETCH cv.carModel cm " +
            "LEFT JOIN FETCH cv.configuration " +
            "JOIN cv.cars c " +
            "JOIN c.dealerCars dc " +
            "WHERE dc.dealer.dealerId = :dealerId " +
-           "AND (LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-           "     OR LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-           "     OR LOWER(CONCAT(cm.modelName, ' ', cv.variantName)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "AND LOWER(CONCAT(cm.modelName, ' ', cv.variantName)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
            "ORDER BY cm.modelName, cv.variantName")
     List<CarVariant> searchVariantsByDealerIdAndTerm(@Param("dealerId") Integer dealerId,
                                                      @Param("searchTerm") String searchTerm);
 
+    // Search methods by variant name specifically - cho admin/evmstaff
     @Query("SELECT DISTINCT cv FROM CarVariant cv " +
            "JOIN FETCH cv.carModel cm " +
            "LEFT JOIN FETCH cv.configuration " +
-           "WHERE LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-           "     OR LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
-           "     OR LOWER(CONCAT(cm.modelName, ' ', cv.variantName)) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+           "WHERE LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
            "ORDER BY cm.modelName, cv.variantName")
-    List<CarVariant> searchAllVariantsByTerm(@Param("searchTerm") String searchTerm);
+    List<CarVariant> searchVariantsByVariantNameInSystem(@Param("variantName") String variantName);
+
+    // Search methods by variant name specifically - cho dealerstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByVariantNameAndDealerId(@Param("dealerId") Integer dealerId,
+                                                            @Param("variantName") String variantName);
+
+    // Search methods by model name specifically - cho admin/evmstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "WHERE LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByModelNameInSystem(@Param("modelName") String modelName);
+
+    // Search methods by model name specifically - cho dealerstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByModelNameAndDealerId(@Param("dealerId") Integer dealerId,
+                                                          @Param("modelName") String modelName);
 }
