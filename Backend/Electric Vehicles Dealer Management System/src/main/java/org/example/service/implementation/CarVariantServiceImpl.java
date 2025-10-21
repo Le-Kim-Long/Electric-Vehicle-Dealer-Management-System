@@ -55,9 +55,9 @@ public class CarVariantServiceImpl implements CarVariantService {
 
         // Tạo danh sách ColorPrice
         List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
-                .filter(color -> colorDataMap.containsKey(color.getColor_id()))
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
                 .map(color -> {
-                    Object[] data = colorDataMap.get(color.getColor_id());
+                    Object[] data = colorDataMap.get(color.getColorId());
                     String imageName = (String) data[1];
                     // Xây dựng URL để truy cập ảnh qua HTTP
                     String imageUrl = null;
@@ -65,7 +65,7 @@ public class CarVariantServiceImpl implements CarVariantService {
                         imageUrl = "/api/images/" + imageName;
                     }
                     return VariantDetailResponse.ColorPrice.builder()
-                            .colorName(color.getColor_name())
+                            .colorName(color.getColorName())
                             .price((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity((Integer) data[2])
@@ -243,7 +243,7 @@ public class CarVariantServiceImpl implements CarVariantService {
         List<CarVariant> carVariants = carVariantRepository.findAllVariantsWithConfiguration();
 
         return carVariants.stream()
-                .map(this::convertToVariantDetailResponseForSystem)
+                .map(this::convertToVariantDetailResponseForSystemWithoutQuantity)
                 .toList();
     }
 
@@ -256,7 +256,7 @@ public class CarVariantServiceImpl implements CarVariantService {
         List<CarVariant> carVariants = carVariantRepository.searchAllVariantsWithConfiguration(processedSearchTerm);
 
         return carVariants.stream()
-                .map(this::convertToVariantDetailResponseForSystem)
+                .map(this::convertToVariantDetailResponseForSystemWithoutQuantity)
                 .toList();
     }
 
@@ -293,9 +293,9 @@ public class CarVariantServiceImpl implements CarVariantService {
 
         // Tạo danh sách ColorPrice
         List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
-                .filter(color -> colorDataMap.containsKey(color.getColor_id()))
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
                 .map(color -> {
-                    Object[] data = colorDataMap.get(color.getColor_id());
+                    Object[] data = colorDataMap.get(color.getColorId());
                     String imageName = (String) data[1];
                     // Xây dựng URL để truy cập ảnh qua HTTP
                     String imageUrl = null;
@@ -303,7 +303,7 @@ public class CarVariantServiceImpl implements CarVariantService {
                         imageUrl = "/api/images/" + imageName;
                     }
                     return VariantDetailResponse.ColorPrice.builder()
-                            .colorName(color.getColor_name())
+                            .colorName(color.getColorName())
                             .price((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity((Integer) data[2])
@@ -342,9 +342,9 @@ public class CarVariantServiceImpl implements CarVariantService {
 
         // Tạo danh sách ColorPrice
         List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
-                .filter(color -> colorDataMap.containsKey(color.getColor_id()))
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
                 .map(color -> {
-                    Object[] data = colorDataMap.get(color.getColor_id());
+                    Object[] data = colorDataMap.get(color.getColorId());
                     String imageName = (String) data[1];
                     // Xây dựng URL để truy cập ảnh qua HTTP
                     String imageUrl = null;
@@ -356,10 +356,61 @@ public class CarVariantServiceImpl implements CarVariantService {
                     Integer totalQuantity = data[2] != null ? ((Number) data[2]).intValue() : 0;
 
                     return VariantDetailResponse.ColorPrice.builder()
-                            .colorName(color.getColor_name())
+                            .colorName(color.getColorName())
                             .price((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity(totalQuantity)
+                            .build();
+                })
+                .sorted(Comparator.comparing(VariantDetailResponse.ColorPrice::getColorName))
+                .toList();
+
+        return VariantDetailResponse.builder()
+                .variantId(carVariant.getVariantId())
+                .modelName(carVariant.getCarModel().getModelName())
+                .variantName(carVariant.getVariantName())
+                .colorPrices(colorPrices)
+                .build();
+    }
+
+    // Method for EVMStaff and Admin - no quantity information needed
+    private VariantDetailResponse convertToVariantDetailResponseForSystemWithoutQuantity(CarVariant carVariant) {
+        // Lấy thông tin colorId, price, imagePath từ tất cả xe trong hệ thống (không cần quantity)
+        List<Object[]> colorIdsAndPrices = carVariantRepository.findColorIdsAndPricesWithoutQuantityByVariantId(carVariant.getVariantId());
+
+        // Tạo Map từ colorId -> (price, imagePath)
+        Map<Integer, Object[]> colorDataMap = colorIdsAndPrices.stream()
+                .collect(Collectors.toMap(
+                    row -> (Integer) row[0],  // colorId
+                    row -> new Object[]{row[1], row[2]}, // [price, imagePath]
+                    (existing, replacement) -> existing
+                ));
+
+        // Lấy thông tin màu sắc từ ColorRepository
+        List<Integer> colorIds = colorIdsAndPrices.stream()
+                .map(row -> (Integer) row[0])
+                .distinct()
+                .toList();
+
+        List<Color> colors = colorRepository.findByColorIds(colorIds);
+
+        // Tạo danh sách ColorPrice không có quantity
+        List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
+                .map(color -> {
+                    Object[] data = colorDataMap.get(color.getColorId());
+                    String imageName = (String) data[1];
+                    // Xây dựng URL để truy cập ảnh qua HTTP
+                    String imageUrl = null;
+                    if (imageName != null && !imageName.isEmpty()) {
+                        imageUrl = "/api/images/" + imageName;
+                    }
+
+                    return VariantDetailResponse.ColorPrice.builder()
+                            .colorName(color.getColorName())
+                            .price((Long) data[0])
+                            .imagePath(imageUrl)
+                            .quantity(null) // Không trả về quantity cho EVMStaff và Admin
                             .build();
                 })
                 .sorted(Comparator.comparing(VariantDetailResponse.ColorPrice::getColorName))
@@ -380,7 +431,7 @@ public class CarVariantServiceImpl implements CarVariantService {
         List<CarVariant> carVariants = carVariantRepository.searchVariantsByVariantNameInSystem(variantName);
 
         return carVariants.stream()
-                .map(this::convertToVariantDetailResponseForSystem)
+                .map(this::convertToVariantDetailResponseForSystemWithoutQuantity)
                 .toList();
     }
 
@@ -412,7 +463,7 @@ public class CarVariantServiceImpl implements CarVariantService {
         List<CarVariant> carVariants = carVariantRepository.searchVariantsByModelNameInSystem(modelName);
 
         return carVariants.stream()
-                .map(this::convertToVariantDetailResponseForSystem)
+                .map(this::convertToVariantDetailResponseForSystemWithoutQuantity)
                 .toList();
     }
 
@@ -435,5 +486,48 @@ public class CarVariantServiceImpl implements CarVariantService {
         return carVariants.stream()
                 .map(cv -> convertToVariantDetailResponse(cv, dealerId))
                 .toList();
+    }
+
+    // New methods for searching by both model name and variant name
+    @Override
+    public List<VariantDetailResponse> searchVariantsByModelAndVariantNameInSystem(String modelName, String variantName) {
+        // Lấy car variants theo cả model name và variant name trong toàn hệ thống
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByModelAndVariantNameInSystem(modelName, variantName);
+
+        return carVariants.stream()
+                .map(this::convertToVariantDetailResponseForSystemWithoutQuantity)
+                .toList();
+    }
+
+    @Override
+    public List<VariantDetailResponse> searchVariantsByModelAndVariantNameAndCurrentDealer(String userEmail, String modelName, String variantName) {
+        // Tìm user theo email
+        UserAccount user = userAccountRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        // Kiểm tra user có thuộc dealer nào không
+        if (user.getDealer() == null) {
+            throw new RuntimeException("User not associated with any dealer");
+        }
+
+        Integer dealerId = user.getDealer().getDealerId();
+
+        // Lấy car variants theo dealer ID, model name và variant name với configuration
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByModelAndVariantNameAndDealerId(dealerId, modelName, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToVariantDetailResponse(cv, dealerId))
+                .toList();
+    }
+
+    @Override
+    public List<String> getAllVariantNames() {
+        return carVariantRepository.findAllVariantNames();
+    }
+
+    @Override
+    public String getDescriptionByVariantName(String variantName) {
+        return carVariantRepository.findDescriptionByVariantName(variantName)
+                .orElse(null);
     }
 }

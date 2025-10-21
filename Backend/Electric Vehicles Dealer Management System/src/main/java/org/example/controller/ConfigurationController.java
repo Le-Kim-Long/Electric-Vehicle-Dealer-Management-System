@@ -45,5 +45,31 @@ public class ConfigurationController {
                 .body("An error occurred while fetching configuration: " + e.getMessage());
         }
     }
-}
 
+    @GetMapping("/variant-name/{variantName}")
+    @Operation(
+        summary = "Get configuration by variant name",
+        description = "Returns detailed configuration specifications for a specific car variant by variant name including battery, performance, and dimensions. " +
+                     "If multiple variants have the same name across different models, returns the first match found. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved configuration"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "404", description = "Variant or configuration not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getConfigurationByVariantName(@PathVariable String variantName) {
+        try {
+            ConfigurationResponse configuration = configurationService.getConfigurationByVariantName(variantName);
+            return ResponseEntity.ok(configuration);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while fetching configuration: " + e.getMessage());
+        }
+    }
+}

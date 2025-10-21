@@ -56,6 +56,9 @@ public class Configuration {
     @Column(name = "WeightKg")
     private int weightKg;
 
+    @Column(name="TrunkVolumeL")
+    private int trunkVolumeL;
+
     @Column(name = "Seats")
     private int seats;
 }

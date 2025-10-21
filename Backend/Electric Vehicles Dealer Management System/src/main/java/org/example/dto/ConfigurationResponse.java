@@ -22,6 +22,6 @@ public class ConfigurationResponse {
     private Integer heightMm;
     private Integer wheelbaseMm;
     private Integer weightKg;
+    private Integer trunkVolumeL;
     private Integer seats;
 }
-

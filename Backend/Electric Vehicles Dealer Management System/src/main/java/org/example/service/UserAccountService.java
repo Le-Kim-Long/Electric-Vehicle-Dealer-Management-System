@@ -85,6 +85,17 @@ public class UserAccountService {
     }
 
     /**
+     * Tìm kiếm user accounts theo cả role name và dealer name
+     */
+    public List<UserAccountResponse> searchUsersByRoleAndDealer(String roleName, String dealerName) {
+        List<UserAccount> users = userAccountRepository.findUsersByRoleAndDealer(roleName, dealerName);
+
+        return users.stream()
+                .map(this::convertToUserAccountResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Tạo user account mới
      */
     public UserAccountResponse createUserAccount(CreateUserAccountRequest request) {

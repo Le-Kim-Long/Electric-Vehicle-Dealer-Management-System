@@ -1,6 +1,7 @@
 package org.example.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -310,6 +311,198 @@ public class CarVariantController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while searching variants by model name: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/search/model-and-variant")
+    @Operation(
+        summary = "Search car variants by both model name and variant name based on user role",
+        description = "Search car variants by both model name and variant name simultaneously based on user's role: " +
+                     "Admin/EVMStaff can search all variants in the system by both criteria, " +
+                     "DealerStaff can only search variants available at their dealer by both criteria. " +
+                     "This API is designed for UI with two select boxes where users can filter by both model and variant. " +
+                     "Example: Search for modelName='VF3' and variantName='eco' to get VF3 Eco variants. " +
+                     "Returns detailed information including model name, variant name, available colors with prices, and complete configuration specifications. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved search results by both model and variant name"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid model name or variant name"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> searchVariantsByModelAndVariantName(
+            @Parameter(description = "Model name to filter variants. Example: VF3, VF5, VF8",
+                      example = "VF3", required = true)
+            @RequestParam("modelName") String modelName,
+            @Parameter(description = "Variant name to filter variants. Example: eco, plus, pro",
+                      example = "eco", required = true)
+            @RequestParam("variantName") String variantName) {
+        try {
+            // Validate model name
+            if (modelName == null || modelName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Model name is required and cannot be empty");
+            }
+
+            // Validate variant name
+            if (variantName == null || variantName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Variant name is required and cannot be empty");
+            }
+
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            List<VariantDetailResponse> searchResults;
+
+            // Phân quyền dựa trên role
+            if ("Admin".equals(roleName) || "EVMStaff".equals(roleName)) {
+                // Admin và EVMStaff tìm kiếm trong tất cả variant của hệ thống theo cả model name và variant name
+                searchResults = carVariantService.searchVariantsByModelAndVariantNameInSystem(modelName.trim(), variantName.trim());
+            } else if ("DealerStaff".equals(roleName)) {
+                // DealerStaff chỉ tìm kiếm trong variant của dealer mình theo cả model name và variant name
+                searchResults = carVariantService.searchVariantsByModelAndVariantNameAndCurrentDealer(email, modelName.trim(), variantName.trim());
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Your role does not have permission to search variants by model and variant name.");
+            }
+
+            if (searchResults.isEmpty()) {
+                return ResponseEntity.ok().body("No variants found matching model '" + modelName + "' and variant '" + variantName + "'");
+            }
+
+            return ResponseEntity.ok(searchResults);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while searching variants by model and variant name: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/variant-names")
+    @Operation(summary = "Get all variant names", description = "Retrieve all available variant names")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved variant names"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<?> getAllVariantNames() {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            List<String> variantNames = carVariantService.getAllVariantNames();
+            return ResponseEntity.ok(variantNames);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while retrieving variant names: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/description")
+    @Operation(summary = "Get description by variant name", description = "Retrieve description information for a specific variant")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved description"),
+            @ApiResponse(responseCode = "404", description = "Variant not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<?> getDescriptionByVariantName(
+            @Parameter(description = "Variant name to get description for", required = true)
+            @RequestParam String variantName) {
+        try {
+            if (variantName == null || variantName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Variant name is required and cannot be empty");
+            }
+
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            String description = carVariantService.getDescriptionByVariantName(variantName.trim());
+            if (description != null) {
+                return ResponseEntity.ok(description);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while retrieving variant description: " + e.getMessage());
         }
     }
 }

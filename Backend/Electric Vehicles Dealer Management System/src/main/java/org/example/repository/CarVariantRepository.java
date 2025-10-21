@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CarVariantRepository extends JpaRepository<CarVariant, Integer> {
@@ -37,6 +38,12 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
            "GROUP BY c.colorId, c.price, c.imagePath " +
            "ORDER BY c.colorId")
     List<Object[]> findColorIdsAndPricesByVariantId(@Param("variantId") Integer variantId);
+
+    // Method cho admin/evmstaff - lấy tất cả màu trong hệ thống không cần quantity
+    @Query("SELECT DISTINCT c.colorId, c.price, c.imagePath FROM Car c " +
+           "WHERE c.variantId = :variantId " +
+           "ORDER BY c.colorId")
+    List<Object[]> findColorIdsAndPricesWithoutQuantityByVariantId(@Param("variantId") Integer variantId);
 
     // Method cho dealerstaff - chỉ lấy màu của dealer hiện tại
     @Query("SELECT c.colorId, c.price, c.imagePath, dc.quantity FROM Car c " +
@@ -127,4 +134,38 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
            "ORDER BY cm.modelName, cv.variantName")
     List<CarVariant> searchVariantsByModelNameAndDealerId(@Param("dealerId") Integer dealerId,
                                                           @Param("modelName") String modelName);
+
+    // Search methods by both model name and variant name - cho admin/evmstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "WHERE LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "AND LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByModelAndVariantNameInSystem(@Param("modelName") String modelName,
+                                                                 @Param("variantName") String variantName);
+
+    // Search methods by both model name and variant name - cho dealerstaff
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "AND LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByModelAndVariantNameAndDealerId(@Param("dealerId") Integer dealerId,
+                                                                    @Param("modelName") String modelName,
+                                                                    @Param("variantName") String variantName);
+
+    Optional<CarVariant> findByVariantNameIgnoreCaseAndModelId(String variantName, Integer modelId);
+
+    boolean existsByVariantNameIgnoreCaseAndModelId(String variantName, Integer modelId);
+
+    @Query("SELECT DISTINCT cv.variantName FROM CarVariant cv ORDER BY cv.variantName")
+    List<String> findAllVariantNames();
+
+    @Query("SELECT cv.description FROM CarVariant cv WHERE cv.variantName = :variantName")
+    Optional<String> findDescriptionByVariantName(@Param("variantName") String variantName);
 }

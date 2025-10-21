@@ -36,7 +36,7 @@ public interface CarRepository extends JpaRepository<Car, Integer> {
            "WHERE dc.dealer.dealerId = :dealerId " +
            "AND (LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
            "OR LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
-    List<Car> searchCarsByVariantOrModelName(@Param("dealerId") Integer dealerId, @Param("searchTerm") String searchTerm);
+    List<Car> searchCarsByVariantOrModelName(@Param("dealerId") Integer dealerId, @Param("searchTerm" ) String searchTerm);
 
     @Query("SELECT DISTINCT c FROM Car c " +
            "JOIN FETCH c.carVariant cv " +
@@ -55,4 +55,16 @@ public interface CarRepository extends JpaRepository<Car, Integer> {
            "WHERE c.variantId = :variantId " +
            "AND dc.dealer.dealerId = :dealerId")
     List<Car> findCarsByVariantIdAndDealerId(@Param("variantId") Integer variantId, @Param("dealerId") Integer dealerId);
+
+    @Query("SELECT c FROM Car c " +
+           "WHERE c.variantId = :variantId " +
+           "AND c.colorId = :colorId")
+    List<Car> findDuplicateCars(@Param("variantId") Integer variantId,
+                               @Param("colorId") Integer colorId);
+
+    @Query("SELECT COUNT(c) > 0 FROM Car c " +
+           "WHERE c.variantId = :variantId " +
+           "AND c.colorId = :colorId")
+    boolean existsDuplicateCar(@Param("variantId") Integer variantId,
+                              @Param("colorId") Integer colorId);
 }

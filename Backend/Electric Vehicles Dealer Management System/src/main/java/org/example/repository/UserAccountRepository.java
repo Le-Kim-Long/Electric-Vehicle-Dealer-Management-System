@@ -52,4 +52,13 @@ public interface UserAccountRepository extends JpaRepository<UserAccount, Intege
            "WHERE u.dealer IS NOT NULL AND LOWER(u.dealer.dealerName) = LOWER(:dealerName) " +
            "ORDER BY u.created_date DESC")
     List<UserAccount> findUsersByDealerName(@Param("dealerName") String dealerName);
+
+    // Method để search user account theo cả role name và dealer name
+    @Query("SELECT u FROM UserAccount u " +
+           "LEFT JOIN FETCH u.role_id " +
+           "LEFT JOIN FETCH u.dealer " +
+           "WHERE LOWER(u.role_id.role_name) = LOWER(:roleName) " +
+           "  AND u.dealer IS NOT NULL AND LOWER(u.dealer.dealerName) = LOWER(:dealerName) " +
+           "ORDER BY u.created_date DESC")
+    List<UserAccount> findUsersByRoleAndDealer(@Param("roleName") String roleName, @Param("dealerName") String dealerName);
 }

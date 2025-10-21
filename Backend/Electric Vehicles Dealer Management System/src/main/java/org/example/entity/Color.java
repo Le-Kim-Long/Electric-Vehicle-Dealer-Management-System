@@ -15,10 +15,10 @@ public class Color {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ColorID")
-    private Integer color_id;
+    private Integer colorId;
 
     @Column(name = "ColorName", nullable = false, length = 50)
-    private String color_name;
+    private String colorName;
 
     @OneToMany(mappedBy = "color", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Car> cars;

@@ -584,4 +584,95 @@ public class UserAccountController {
                 .body("An error occurred while searching user accounts by dealer: " + e.getMessage());
         }
     }
+
+    @GetMapping("/search/role-and-dealer")
+    @Operation(
+        summary = "Search user accounts by both role name and dealer name",
+        description = "Search user accounts by both role name and dealer name simultaneously. " +
+                     "Only accessible by Admin role. " +
+                     "This API is designed for UI with two select boxes where users can filter by both role and dealer. " +
+                     "Example: Select 'DealerStaff' role and 'VinFast Đại lý Quận 1' dealer to get all DealerStaff accounts at that dealer. " +
+                     "Valid role names: DealerStaff, DealerManager (EVMStaff doesn't have dealer assignment). " +
+                     "Use /api/dealers/names to get list of available dealer names. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved user accounts matching both role and dealer"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only Admin can access this endpoint"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid role name or dealer name"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> searchUsersByRoleAndDealer(
+            @Parameter(description = "Role name to filter users. Valid values: DealerStaff, DealerManager",
+                      example = "DealerStaff", required = true)
+            @RequestParam String roleName,
+            @Parameter(description = "Dealer name to filter users. Must be exact dealer name as registered in system",
+                      example = "VinFast Đại lý Quận 1", required = true)
+            @RequestParam String dealerName) {
+        try {
+            // Kiểm tra roleName có hợp lệ không
+            if (roleName == null || roleName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Role name is required and cannot be empty.");
+            }
+
+            // Kiểm tra dealerName có hợp lệ không
+            if (dealerName == null || dealerName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Dealer name is required and cannot be empty.");
+            }
+
+            // Validate role name (chỉ cho phép các role có dealer assignment)
+            String trimmedRoleName = roleName.trim();
+            if (!"DealerStaff".equals(trimmedRoleName) && !"DealerManager".equals(trimmedRoleName)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid role name for dealer search. Valid role names are: DealerStaff, DealerManager");
+            }
+
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String currentUserRole = user.getRole_id().getRole_name();
+
+            // Chỉ cho phép Admin truy cập
+            if (!"Admin".equals(currentUserRole)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only Admin can search user accounts by role and dealer.");
+            }
+
+            List<UserAccountResponse> users = userAccountService.searchUsersByRoleAndDealer(trimmedRoleName, dealerName.trim());
+
+            if (users.isEmpty()) {
+                return ResponseEntity.ok().body("No users found with role '" + trimmedRoleName + "' at dealer: " + dealerName);
+            }
+
+            return ResponseEntity.ok(users);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while searching user accounts by role and dealer: " + e.getMessage());
+        }
+    }
 }

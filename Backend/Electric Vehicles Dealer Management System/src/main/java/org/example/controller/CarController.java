@@ -5,7 +5,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.example.dto.CarResponse;
+import org.example.dto.CreateCarRequest;
+import org.example.dto.CreateCompleteCarRequest;
 import org.example.entity.UserAccount;
 import org.example.repository.UserAccountRepository;
 import org.example.service.CarService;
@@ -17,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/cars")
@@ -165,43 +169,23 @@ public class CarController {
         }
     }
 
-    @GetMapping("/search-by-price")
+    @PostMapping("/add-car")
     @Operation(
-        summary = "Search cars by price range (role-based)",
-        description = "Search cars by price range based on user's role: " +
-                     "Admin/EVMStaff can search all cars in the system, " +
-                     "DealerStaff can only search cars of their dealer. " +
-                     "Price values should be in actual VND amount (e.g., 500000000 for 500 triệu VND). " +
+        summary = "Add new car to system (Admin/EVMStaff only)",
+        description = "Add a new car to the system. This car will not be assigned to any dealer initially. " +
+                     "Only Admin and EVMStaff roles can access this endpoint. " +
                      "Requires JWT token in Authorization header."
     )
     @SecurityRequirement(name = "Bearer Authentication")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved cars within price range"),
+        @ApiResponse(responseCode = "201", description = "Car successfully created"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Invalid input data"),
         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-        @ApiResponse(responseCode = "400", description = "Bad request - Invalid price range"),
-        @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only Admin/EVMStaff can add cars"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<?> searchCarsByPriceRange(
-            @RequestParam(value = "minPrice", required = true) Double minPrice,
-            @RequestParam(value = "maxPrice", required = true) Double maxPrice) {
+    public ResponseEntity<?> addCarToSystem(@Valid @RequestBody CreateCarRequest request) {
         try {
-            // Kiểm tra giá trị hợp lệ
-            if (minPrice == null || maxPrice == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Both minPrice and maxPrice are required");
-            }
-
-            if (minPrice < 0 || maxPrice < 0) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Price values cannot be negative");
-            }
-
-            if (minPrice > maxPrice) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Minimum price cannot be greater than maximum price");
-            }
-
             // Lấy authentication từ SecurityContext
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -224,28 +208,79 @@ public class CarController {
 
             String roleName = user.getRole_id().getRole_name();
 
-            List<CarResponse> cars;
-
-            // Phân quyền dựa trên role
-            if ("Admin".equals(roleName) || "EVMStaff".equals(roleName)) {
-                // Admin và EVMStaff tìm kiếm trong tất cả xe của hệ thống
-                cars = carService.searchCarsByPriceRangeInSystem(minPrice, maxPrice);
-            } else if ("DealerStaff".equals(roleName)) {
-                // DealerStaff chỉ tìm kiếm trong xe của dealer mình
-                cars = carService.searchCarsByPriceRange(email, minPrice, maxPrice);
-            } else {
+            // Chỉ Admin và EVMStaff mới có quyền thêm xe vào hệ thống
+            if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("Access denied. Your role does not have permission to search cars.");
+                    .body("Access denied. Only Admin and EVMStaff can add cars to the system.");
             }
 
-            return ResponseEntity.ok(cars);
+            // Thêm xe mới vào hệ thống
+            CarResponse carResponse = carService.addCarToSystem(request);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(carResponse);
 
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("An error occurred while searching cars by price range: " + e.getMessage());
+                .body("An error occurred while adding car: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/add-complete-car")
+    @Operation(
+        summary = "Add complete car with all details to system (Admin/EVMStaff only)",
+        description = "Add a complete car with Model, Variant, Configuration, Color, and Car details. " +
+                     "If Model/Variant/Configuration/Color already exists, it will be reused. " +
+                     "If not, new records will be created. " +
+                     "Only Admin and EVMStaff roles can access this endpoint. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Car successfully created with all details"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Invalid input data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only Admin/EVMStaff can add cars"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> addCompleteCarToSystem(@Valid @RequestBody CreateCompleteCarRequest request) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only Admin and EVMStaff can add cars to the system.");
+            }
+
+            CarResponse carResponse = carService.addCompleteCarToSystem(request);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(carResponse);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while adding complete car: " + e.getMessage());
         }
     }
 }
