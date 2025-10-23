@@ -30,4 +30,6 @@ public interface CarVariantService {
     // New methods for getting variant names and descriptions
     List<String> getAllVariantNames();
     String getDescriptionByVariantName(String variantName);
+    String getDescriptionByModelNameAndVariantName(String modelName, String variantName);
+    List<String> getVariantNamesByModelName(String modelName);
 }

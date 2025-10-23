@@ -168,4 +168,15 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
 
     @Query("SELECT cv.description FROM CarVariant cv WHERE cv.variantName = :variantName")
     Optional<String> findDescriptionByVariantName(@Param("variantName") String variantName);
+
+    @Query("SELECT cv.description FROM CarVariant cv " +
+           "JOIN cv.carModel cm " +
+           "WHERE cm.modelName = :modelName AND cv.variantName = :variantName")
+    Optional<String> findDescriptionByModelNameAndVariantName(@Param("modelName") String modelName,
+                                                              @Param("variantName") String variantName);
+
+    @Query("SELECT DISTINCT cv.variantName FROM CarVariant cv " +
+           "WHERE cv.carModel.modelName = :modelName " +
+           "ORDER BY cv.variantName")
+    List<String> findVariantNamesByModelName(@Param("modelName") String modelName);
 }

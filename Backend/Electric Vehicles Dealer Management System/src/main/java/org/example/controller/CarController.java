@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.example.dto.CarResponse;
 import org.example.dto.CreateCarRequest;
 import org.example.dto.CreateCompleteCarRequest;
+import org.example.dto.AddCarToDealerRequest;
 import org.example.entity.UserAccount;
 import org.example.repository.UserAccountRepository;
 import org.example.service.CarService;
@@ -281,6 +282,67 @@ public class CarController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while adding complete car: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/add-to-dealer")
+    @Operation(
+        summary = "Add car to dealer (Admin/EVMStaff only)",
+        description = "Add a car to a specific dealer's inventory. " +
+                     "If the dealer already has this car, the quantity will be added to existing stock. " +
+                     "Only Admin and EVMStaff roles can access this endpoint. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Car successfully added to dealer"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Invalid input data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only Admin/EVMStaff can add cars to dealers"),
+        @ApiResponse(responseCode = "404", description = "Car or dealer not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> addCarToDealer(@Valid @RequestBody AddCarToDealerRequest request) {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login lại.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            // Chỉ Admin và EVMStaff mới có quyền thêm xe vào đại lý
+            if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only Admin and EVMStaff can add cars to dealers.");
+            }
+
+            // Thêm xe vào đại lý
+            String result = carService.addCarToDealer(request);
+
+            return ResponseEntity.ok(result);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while adding car to dealer: " + e.getMessage());
         }
     }
 }

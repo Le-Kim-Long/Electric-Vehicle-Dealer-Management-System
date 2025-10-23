@@ -9,7 +9,6 @@ import org.example.repository.ColorRepository;
 import org.example.repository.UserAccountRepository;
 import org.example.service.CarVariantService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -28,9 +27,6 @@ public class CarVariantServiceImpl implements CarVariantService {
 
     @Autowired
     private UserAccountRepository userAccountRepository;
-
-    @Value("${car.image.base-path}")
-    private String imageBasePath;
 
     private VariantDetailResponse convertToVariantDetailResponse(CarVariant carVariant, Integer dealerId) {
         // Lấy thông tin colorId, price, imagePath và quantity từ xe thuộc dealer hiện tại
@@ -320,59 +316,6 @@ public class CarVariantServiceImpl implements CarVariantService {
                 .build();
     }
 
-    private VariantDetailResponse convertToVariantDetailResponseForSystem(CarVariant carVariant) {
-        // Lấy thông tin colorId, price, imagePath và quantity từ tất cả xe trong hệ thống (không giới hạn dealer)
-        List<Object[]> colorIdsAndPrices = carVariantRepository.findColorIdsAndPricesByVariantId(carVariant.getVariantId());
-
-        // Tạo Map từ colorId -> (price, imagePath, totalQuantity)
-        Map<Integer, Object[]> colorDataMap = colorIdsAndPrices.stream()
-                .collect(Collectors.toMap(
-                    row -> (Integer) row[0],  // colorId
-                    row -> new Object[]{row[1], row[2], row[3]}, // [price, imagePath, totalQuantity]
-                    (existing, replacement) -> existing
-                ));
-
-        // Lấy thông tin màu sắc từ ColorRepository
-        List<Integer> colorIds = colorIdsAndPrices.stream()
-                .map(row -> (Integer) row[0])
-                .distinct()
-                .toList();
-
-        List<Color> colors = colorRepository.findByColorIds(colorIds);
-
-        // Tạo danh sách ColorPrice
-        List<VariantDetailResponse.ColorPrice> colorPrices = colors.stream()
-                .filter(color -> colorDataMap.containsKey(color.getColorId()))
-                .map(color -> {
-                    Object[] data = colorDataMap.get(color.getColorId());
-                    String imageName = (String) data[1];
-                    // Xây dựng URL để truy cập ảnh qua HTTP
-                    String imageUrl = null;
-                    if (imageName != null && !imageName.isEmpty()) {
-                        imageUrl = "/api/images/" + imageName;
-                    }
-
-                    // Chuyển đổi quantity từ Long sang Integer (do SUM trả về Long)
-                    Integer totalQuantity = data[2] != null ? ((Number) data[2]).intValue() : 0;
-
-                    return VariantDetailResponse.ColorPrice.builder()
-                            .colorName(color.getColorName())
-                            .price((Long) data[0])
-                            .imagePath(imageUrl)
-                            .quantity(totalQuantity)
-                            .build();
-                })
-                .sorted(Comparator.comparing(VariantDetailResponse.ColorPrice::getColorName))
-                .toList();
-
-        return VariantDetailResponse.builder()
-                .variantId(carVariant.getVariantId())
-                .modelName(carVariant.getCarModel().getModelName())
-                .variantName(carVariant.getVariantName())
-                .colorPrices(colorPrices)
-                .build();
-    }
-
     // Method for EVMStaff and Admin - no quantity information needed
     private VariantDetailResponse convertToVariantDetailResponseForSystemWithoutQuantity(CarVariant carVariant) {
         // Lấy thông tin colorId, price, imagePath từ tất cả xe trong hệ thống (không cần quantity)
@@ -529,5 +472,16 @@ public class CarVariantServiceImpl implements CarVariantService {
     public String getDescriptionByVariantName(String variantName) {
         return carVariantRepository.findDescriptionByVariantName(variantName)
                 .orElse(null);
+    }
+
+    @Override
+    public String getDescriptionByModelNameAndVariantName(String modelName, String variantName) {
+        return carVariantRepository.findDescriptionByModelNameAndVariantName(modelName, variantName)
+                .orElse(null);
+    }
+
+    @Override
+    public List<String> getVariantNamesByModelName(String modelName) {
+        return carVariantRepository.findVariantNamesByModelName(modelName);
     }
 }

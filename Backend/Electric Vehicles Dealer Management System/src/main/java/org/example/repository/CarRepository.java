@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CarRepository extends JpaRepository<Car, Integer> {
@@ -67,4 +68,11 @@ public interface CarRepository extends JpaRepository<Car, Integer> {
            "AND c.colorId = :colorId")
     boolean existsDuplicateCar(@Param("variantId") Integer variantId,
                               @Param("colorId") Integer colorId);
+
+    @Query("SELECT c FROM Car c " +
+           "JOIN FETCH c.color col " +
+           "WHERE c.variantId = :variantId " +
+           "AND col.colorName = :colorName")
+    Optional<Car> findByVariantIdAndColorName(@Param("variantId") Integer variantId,
+                                            @Param("colorName") String colorName);
 }

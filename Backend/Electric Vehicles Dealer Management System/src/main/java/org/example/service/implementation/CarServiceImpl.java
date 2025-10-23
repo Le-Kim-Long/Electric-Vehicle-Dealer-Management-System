@@ -1,5 +1,6 @@
 package org.example.service.implementation;
 
+import org.example.dto.AddCarToDealerRequest;
 import org.example.dto.CarResponse;
 import org.example.dto.CreateCarRequest;
 import org.example.dto.CreateCompleteCarRequest;
@@ -8,6 +9,7 @@ import org.example.entity.CarModel;
 import org.example.entity.CarVariant;
 import org.example.entity.Color;
 import org.example.entity.Configuration;
+import org.example.entity.Dealer;
 import org.example.entity.DealerCar;
 import org.example.entity.UserAccount;
 import org.example.repository.CarModelRepository;
@@ -16,6 +18,7 @@ import org.example.repository.CarVariantRepository;
 import org.example.repository.ColorRepository;
 import org.example.repository.ConfigurationRepository;
 import org.example.repository.DealerCarRepository;
+import org.example.repository.DealerRepository;
 import org.example.repository.UserAccountRepository;
 import org.example.service.CarService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +54,9 @@ public class CarServiceImpl implements CarService {
     @Autowired
     private ConfigurationRepository configurationRepository;
 
+    @Autowired
+    private DealerRepository dealerRepository;
+
     @Override
     public List<CarResponse> getAllCarsByCurrentDealer(String email) {
         UserAccount userAccount = userAccountRepository.findByEmailWithDealer(email)
@@ -83,7 +89,7 @@ public class CarServiceImpl implements CarService {
                 .map(this::convertToCarResponse)
                 .toList();
     }
-    
+
     @Override
     public List<CarResponse> getAllCarsInSystem() {
         List<DealerCar> allDealerCars = dealerCarRepository.findAll();
@@ -253,6 +259,54 @@ public class CarServiceImpl implements CarService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public String addCarToDealer(AddCarToDealerRequest request) {
+        // Validate input
+        if (request.getVariantId() == null || request.getColorName() == null ||
+                request.getDealerName() == null || request.getQuantity() == null) {
+            throw new RuntimeException("All fields are required");
+        }
+
+        if (request.getQuantity() <= 0) {
+            throw new RuntimeException("Quantity must be greater than 0");
+        }
+
+        // Find dealer by name
+        Dealer dealer = dealerRepository.findByDealerName(request.getDealerName())
+                .orElseThrow(() -> new RuntimeException("Dealer not found: " + request.getDealerName()));
+
+        // Find car by variantId and colorName
+        Car car = carRepository.findByVariantIdAndColorName(request.getVariantId(), request.getColorName())
+                .orElseThrow(() -> new RuntimeException(
+                        "Car not found with variantId: " + request.getVariantId() +
+                                " and color: " + request.getColorName()));
+
+        // Check if dealer already has this car
+        DealerCar existingDealerCar = dealerCarRepository.findByCarIdAndDealerId(
+                car.getCarId(), dealer.getDealerId()).orElse(null);
+
+        if (existingDealerCar != null) {
+            // Update quantity (add to existing)
+            int newQuantity = existingDealerCar.getQuantity() + request.getQuantity();
+            existingDealerCar.setQuantity(newQuantity);
+            dealerCarRepository.save(existingDealerCar);
+
+            return String.format("Successfully added %d cars to dealer %s. Total quantity now: %d",
+                    request.getQuantity(), request.getDealerName(), newQuantity);
+        } else {
+            // Create new dealer car entry
+            DealerCar newDealerCar = new DealerCar();
+            newDealerCar.setCarId(car.getCarId());
+            newDealerCar.setDealerId(dealer.getDealerId());
+            newDealerCar.setQuantity(request.getQuantity());
+            dealerCarRepository.save(newDealerCar);
+
+            return String.format("Successfully added %d cars to dealer %s",
+                    request.getQuantity(), request.getDealerName());
+        }
+    }
+
     private List<DealerCar> performFlexibleSearchOnDealerCars(List<DealerCar> dealerCars, String searchTerm) {
         String normalizedSearchTerm = normalizeSearchTerm(searchTerm);
         String[] keywords = normalizedSearchTerm.toLowerCase().trim().split("\\s+");
@@ -417,4 +471,3 @@ public class CarServiceImpl implements CarService {
         return normalized;
     }
 }
-

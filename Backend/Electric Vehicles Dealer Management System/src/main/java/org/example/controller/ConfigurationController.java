@@ -46,23 +46,37 @@ public class ConfigurationController {
         }
     }
 
-    @GetMapping("/variant-name/{variantName}")
+    @GetMapping("/variant-name")
     @Operation(
-        summary = "Get configuration by variant name",
-        description = "Returns detailed configuration specifications for a specific car variant by variant name including battery, performance, and dimensions. " +
-                     "If multiple variants have the same name across different models, returns the first match found. " +
+        summary = "Get configuration by model name and variant name",
+        description = "Returns detailed configuration specifications for a specific car variant by both model name and variant name including battery, performance, and dimensions. " +
+                     "This ensures accurate results when variants have the same name across different models. " +
                      "Requires JWT token in Authorization header."
     )
     @SecurityRequirement(name = "Bearer Authentication")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved configuration"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid model name or variant name"),
         @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
-        @ApiResponse(responseCode = "404", description = "Variant or configuration not found"),
+        @ApiResponse(responseCode = "404", description = "Model-Variant combination or configuration not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<?> getConfigurationByVariantName(@PathVariable String variantName) {
+    public ResponseEntity<?> getConfigurationByModelNameAndVariantName(
+            @RequestParam String modelName,
+            @RequestParam String variantName) {
         try {
-            ConfigurationResponse configuration = configurationService.getConfigurationByVariantName(variantName);
+            if (modelName == null || modelName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Model name is required and cannot be empty");
+            }
+
+            if (variantName == null || variantName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Variant name is required and cannot be empty");
+            }
+
+            ConfigurationResponse configuration = configurationService.getConfigurationByModelNameAndVariantName(
+                modelName.trim(), variantName.trim());
             return ResponseEntity.ok(configuration);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

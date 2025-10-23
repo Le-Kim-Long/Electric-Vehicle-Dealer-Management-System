@@ -449,23 +449,24 @@ public class CarVariantController {
         }
     }
 
-    @GetMapping("/description")
-    @Operation(summary = "Get description by variant name", description = "Retrieve description information for a specific variant")
+    @GetMapping("/variant-names/by-model")
+    @Operation(summary = "Get variant names by model name", description = "Retrieve all variant names for a specific car model")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Successfully retrieved description"),
-            @ApiResponse(responseCode = "404", description = "Variant not found"),
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved variant names for the model"),
+            @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid model name"),
             @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
             @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+            @ApiResponse(responseCode = "404", description = "Model not found or no variants available"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<?> getDescriptionByVariantName(
-            @Parameter(description = "Variant name to get description for", required = true)
-            @RequestParam String variantName) {
+    public ResponseEntity<?> getVariantNamesByModelName(
+            @Parameter(description = "Model name to get variant names for", required = true, example = "VF3")
+            @RequestParam String modelName) {
         try {
-            if (variantName == null || variantName.trim().isEmpty()) {
+            if (modelName == null || modelName.trim().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Variant name is required and cannot be empty");
+                    .body("Model name is required and cannot be empty");
             }
 
             // Lấy authentication từ SecurityContext
@@ -490,11 +491,79 @@ public class CarVariantController {
 
             String roleName = user.getRole_id().getRole_name();
 
-            String description = carVariantService.getDescriptionByVariantName(variantName.trim());
-            if (description != null) {
+            List<String> variantNames = carVariantService.getVariantNamesByModelName(modelName.trim());
+
+            if (variantNames.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No variants found for model: " + modelName);
+            }
+
+            return ResponseEntity.ok(variantNames);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while retrieving variant names for model " + modelName + ": " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/description")
+    @Operation(summary = "Get description by model name and variant name", description = "Retrieve description information for a specific model and variant combination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved description"),
+            @ApiResponse(responseCode = "404", description = "Model-Variant combination not found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid model name or variant name"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<?> getDescriptionByModelNameAndVariantName(
+            @Parameter(description = "Model name to get description for", required = true, example = "VF3")
+            @RequestParam String modelName,
+            @Parameter(description = "Variant name to get description for", required = true, example = "eco")
+            @RequestParam String variantName) {
+        try {
+            if (modelName == null || modelName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Model name is required and cannot be empty");
+            }
+
+            if (variantName == null || variantName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Variant name is required and cannot be empty");
+            }
+
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login lại.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRole_id().getRole_name();
+
+            String description = carVariantService.getDescriptionByModelNameAndVariantName(modelName.trim(), variantName.trim());
+            if (description != null && !description.trim().isEmpty()) {
                 return ResponseEntity.ok(description);
             } else {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No description found for model '" + modelName + "' and variant '" + variantName + "'");
             }
 
         } catch (RuntimeException e) {

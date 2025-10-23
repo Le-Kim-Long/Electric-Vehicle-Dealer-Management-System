@@ -13,4 +13,9 @@ public interface ConfigurationService {
      * Lấy configuration theo variant name
      */
     ConfigurationResponse getConfigurationByVariantName(String variantName);
+
+    /**
+     * Lấy configuration theo model name và variant name
+     */
+    ConfigurationResponse getConfigurationByModelNameAndVariantName(String modelName, String variantName);
 }

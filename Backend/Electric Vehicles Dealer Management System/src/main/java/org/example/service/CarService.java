@@ -1,5 +1,6 @@
 package org.example.service;
 
+import org.example.dto.AddCarToDealerRequest;
 import org.example.dto.CarResponse;
 import org.example.dto.CreateCarRequest;
 import org.example.dto.CreateCompleteCarRequest;
@@ -18,4 +19,7 @@ public interface CarService {
 
     // Method to add complete car with all info (Admin/EVMStaff only)
     CarResponse addCompleteCarToSystem(CreateCompleteCarRequest request);
+
+    // Method to add car to dealer
+    String addCarToDealer(AddCarToDealerRequest request);
 }

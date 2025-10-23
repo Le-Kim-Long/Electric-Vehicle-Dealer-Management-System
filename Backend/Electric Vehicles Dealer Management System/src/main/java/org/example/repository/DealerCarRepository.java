@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DealerCarRepository extends JpaRepository<DealerCar, DealerCarId> {
@@ -28,4 +29,6 @@ public interface DealerCarRepository extends JpaRepository<DealerCar, DealerCarI
            "JOIN dc.dealer d " +
            "WHERE d.dealerName = :dealerName")
     List<DealerCar> findDealerCarsByDealerName(@Param("dealerName") String dealerName);
+
+    Optional<DealerCar> findByCarIdAndDealerId(Integer carId, Integer dealerId);
 }

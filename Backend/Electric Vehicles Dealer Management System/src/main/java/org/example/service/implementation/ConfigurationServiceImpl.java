@@ -96,4 +96,40 @@ public class ConfigurationServiceImpl implements ConfigurationService {
                 .seats(config.getSeats())
                 .build();
     }
+
+    @Override
+    public ConfigurationResponse getConfigurationByModelNameAndVariantName(String modelName, String variantName) {
+        // Tìm variant theo cả model name và variant name
+        CarVariant carVariant = carVariantRepository.findAll().stream()
+                .filter(v -> v.getCarModel().getModelName().equalsIgnoreCase(modelName)
+                        && v.getVariantName().equalsIgnoreCase(variantName))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Variant not found with model: " + modelName + " and variant: " + variantName));
+
+        Configuration config = carVariant.getConfiguration();
+
+        if (config == null) {
+            throw new RuntimeException("Configuration not found for model: " + modelName + " and variant: " + variantName);
+        }
+
+        return ConfigurationResponse.builder()
+                .configId(config.getConfigId())
+                .variantId(carVariant.getVariantId())
+                .modelName(carVariant.getCarModel().getModelName())
+                .variantName(carVariant.getVariantName())
+                .batteryCapacity(config.getBatteryCapacity())
+                .batteryType(config.getBatteryType())
+                .fullChargeTime(config.getFullChargeTime())
+                .rangeKm(config.getRangeKm())
+                .power(config.getPower())
+                .torque(config.getTorque())
+                .lengthMm(config.getLengthMm())
+                .widthMm(config.getWidthMm())
+                .heightMm(config.getHeightMm())
+                .wheelbaseMm(config.getWheelbaseMm())
+                .weightKg(config.getWeightKg())
+                .trunkVolumeL(config.getTrunkVolumeL())
+                .seats(config.getSeats())
+                .build();
+    }
 }

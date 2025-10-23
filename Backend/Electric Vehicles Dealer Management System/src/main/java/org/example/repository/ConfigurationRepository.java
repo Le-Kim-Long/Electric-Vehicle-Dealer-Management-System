@@ -17,4 +17,11 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, In
 
     @Query("SELECT c FROM Configuration c JOIN c.carVariant cv WHERE cv.variantName = :variantName")
     Optional<Configuration> findByVariantName(@Param("variantName") String variantName);
+
+    @Query("SELECT c FROM Configuration c " +
+           "JOIN c.carVariant cv " +
+           "JOIN cv.carModel cm " +
+           "WHERE cm.modelName = :modelName AND cv.variantName = :variantName")
+    Optional<Configuration> findByModelNameAndVariantName(@Param("modelName") String modelName,
+                                                          @Param("variantName") String variantName);
 }
