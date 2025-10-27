@@ -1,3 +1,17 @@
+.vehicle-detail-img {
+	width: 100%;
+	max-width: 320px;
+	height: 300px;
+	object-fit: contain;
+	border-radius: 15px;
+	background: #f7f9fc;
+	box-shadow: 0 2px 12px rgba(102,126,234,0.10);
+}
+
+.vehicle-price {
+	color: #2c3e50;
+	font-weight: 600;
+}
 /* Action button wrappers for car card */
 .card-action-btns {
 	display: flex;
@@ -244,7 +258,10 @@
 	justify-content: center;
 	margin: 28px 0 18px 0;
 }
-.create-car-btn {
+
+.create-car-btn,
+.update-car-btn,
+.update-price-btn {
 	min-width: 180px;
 	max-width: 220px;
 	height: 48px;
@@ -260,7 +277,13 @@
 	display: inline-block;
 	vertical-align: middle;
 }
-.create-car-btn:hover {
+.update-car-btn,
+.update-price-btn {
+	margin-left: 12px;
+}
+.create-car-btn:hover,
+.update-car-btn:hover,
+.update-price-btn:hover {
 	background: #4b5fc1;
 	transform: translateY(-2px);
 }

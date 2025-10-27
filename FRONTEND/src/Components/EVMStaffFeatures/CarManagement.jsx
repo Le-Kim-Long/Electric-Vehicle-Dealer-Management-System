@@ -1,134 +1,120 @@
 import React, { useEffect, useState } from 'react';
-import { addCarToDealer,getVariantConfiguration, transformConfigurationData,getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel } from '../../services/carVariantApi';
+import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor,fetchManufacturerPriceByModelVariantColor } from '../../services/carVariantApi';
 import './CarManagement.css';
 // Modal hiển thị chi tiết xe
 const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, onClose }) => {
-	if (!vehicle) return null;
-	// Close modal when clicking outside modal-content
-	const handleOverlayClick = (e) => {
-		if (e.target.classList.contains('modal-overlay')) {
-			onClose();
-		}
-	};
-	return (
-		<div className="modal-overlay" onClick={handleOverlayClick}>
-			<div className="modal-content" onClick={e => e.stopPropagation()}>
-				<div className="modal-header">
-					<h2>{vehicle.name || vehicle.modelName}</h2>
-					<button className="close-btn" onClick={onClose}>×</button>
-				</div>
-				<div className="modal-body">
-					<div className="vehicle-detail-image">
-						<img
-							src={vehicle.images && vehicle.images[selectedColor] ? vehicle.images[selectedColor] : vehicle.defaultImage}
-							alt={`${vehicle.name || vehicle.modelName} - ${selectedColor}`}
-							onError={e => { e.target.src = vehicle.defaultImage; }}
-						/>
-					</div>
-					{loading ? (
-						<div className="vehicle-detail-loading">⏳ Đang tải thông tin chi tiết...</div>
-					) : (
-						<>
-							<div className="detail-section">
-								<h3>Thông tin cơ bản</h3>
-								<div className="detail-grid">
-									<div className="detail-item">
-										<span>Phiên bản:</span>
-										<span>{vehicle.variantName || (vehicle.variant && vehicle.variant.variantName)}</span>
-									</div>
-									<div className="detail-item">
-										<span>Giá:</span>
-										<span>{vehicle.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(vehicle.price) : ''}</span>
-									</div>
-								</div>
-							</div>
-							{vehicle.colors && (
-								<div className="detail-section">
-									<h3>Chọn màu</h3>
-									<div className="colors-list">
-										{vehicle.colors.map((color, idx) => (
-											<span
-												key={color}
-												className={`color-tag${selectedColor === color ? ' active' : ''}`}
-												onClick={() => onColorChange(color)}
-												title={`Tồn kho: ${vehicle.colorQuantities ? vehicle.colorQuantities[color] : ''} xe`}
-											>{color}</span>
-										))}
-									</div>
-								</div>
-							)}
-							{vehicle.specs && (
-								<div className="detail-section">
-									<h3>Thông số kỹ thuật</h3>
-									<div className="detail-grid">
-										{[
-											{ key: 'battery', label: 'Pin', alt: ['batteryCapacity'] },
-											{ key: 'range', label: 'Phạm vi hoạt động', alt: ['rangeKm'] },
-											{ key: 'charging', label: 'Thời gian sạc', alt: ['fullChargeTime'] },
-											{ key: 'power', label: 'Công suất' },
-											{ key: 'torque', label: 'Mô-men xoắn' },
-											{ key: 'seats', label: 'Số ghế' },
-											{ key: 'dimensions', label: 'Kích thước' },
-											{ key: 'weight', label: 'Trọng lượng', alt: ['weightKg'] },
-											{ key: 'wheelbase', label: 'Chiều dài cơ sở', alt: ['wheelbaseMm'] },
-											{ key: 'batteryType', label: 'Loại pin' }
-										].map(field => {
-											// Tìm giá trị theo key hoặc alt
-											let value = vehicle.specs[field.key];
-											if (!value && field.alt) {
-												for (const altKey of field.alt) {
-													if (vehicle.specs[altKey]) {
-														value = vehicle.specs[altKey];
-														break;
-													}
-												}
-											}
-											return (
-												<div key={field.key} className="detail-item">
-													<span>{field.label}:</span>
-													<span>{value || ''}</span>
-												</div>
-											);
-										})}
-									</div>
-								</div>
-							)}
-							{vehicle.range && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span>Quãng đường:</span>
-										<span>{vehicle.range} km</span>
-									</div>
-								</div>
-							)}
-							{vehicle.charging && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span>Thời gian sạc:</span>
-										<span>{vehicle.charging}</span>
-									</div>
-								</div>
-							)}
-							{vehicle.power && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span>Công suất:</span>
-										<span>{vehicle.power}</span>
-									</div>
-								</div>
-							)}
-						</>
-					)}
-				</div>
-			</div>
-		</div>
-	);
+	   if (!vehicle) return null;
+	   // Close modal when clicking outside modal-content
+	   const handleOverlayClick = (e) => {
+		   if (e.target.classList.contains('modal-overlay')) {
+			   onClose();
+		   }
+	   };
+	   return (
+		   <div className="modal-overlay" onClick={handleOverlayClick}>
+			   <div className="modal-content" onClick={e => e.stopPropagation()}>
+				   <div className="modal-header">
+					   <h2>{vehicle.name || vehicle.modelName}</h2>
+					   <button className="close-btn" onClick={onClose}>×</button>
+				   </div>
+				   <div className="modal-body">
+					   <div className="vehicle-detail-image">
+						   <img
+							   src={vehicle.images && vehicle.images[selectedColor] ? vehicle.images[selectedColor] : vehicle.defaultImage}
+							   alt={`${vehicle.name || vehicle.modelName} - ${selectedColor}`}
+							   onError={e => {/* ...existing code... */}}
+							   className="vehicle-detail-img"
+						   />
+					   </div>
+					   {loading ? (
+						   <div className="vehicle-detail-loading">⏳ Đang tải thông tin chi tiết...</div>
+					   ) : (
+						   <>
+							   <div className="detail-section">
+								   <h3>Thông tin cơ bản</h3>
+								   <div className="detail-grid">
+									   <div className="detail-item">
+										   <span>Phiên bản:</span>
+										   <span>{vehicle.variantName || (vehicle.variant && vehicle.variant.variantName)}</span>
+									   </div>
+									   <div className="detail-item">
+										   <span>Giá:</span>
+										   <span className="vehicle-price">{vehicle.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(vehicle.price) : ''}</span>
+									   </div>
+								   </div>
+							   </div>
+							   {vehicle.colors && (
+								   <div className="detail-section">
+									   <h3>Chọn màu</h3>
+									   <div className="colors-list">
+										   {vehicle.colors.map((color, idx) => (
+											   <span
+												   key={color}
+												   className={`color-tag${selectedColor === color ? ' active' : ''}`}
+												   onClick={() => onColorChange(color)}
+												   title={`Tồn kho: ${vehicle.colorQuantities ? vehicle.colorQuantities[color] : ''} xe`}
+											   >{color}</span>
+										   ))}
+									   </div>
+								   </div>
+							   )}
+							   {vehicle.specs && (
+								   <div className="detail-section">
+									   <h3>Thông số kỹ thuật</h3>
+									   <div className="detail-grid">
+										   {[
+											   { key: 'battery', label: 'Pin', alt: ['batteryCapacity'] },
+											   { key: 'range', label: 'Phạm vi hoạt động', alt: ['rangeKm'] },
+											   { key: 'charging', label: 'Thời gian sạc', alt: ['fullChargeTime'] },
+											   { key: 'power', label: 'Công suất' },
+											   { key: 'torque', label: 'Mô-men xoắn' },
+											   { key: 'seats', label: 'Số ghế' },
+											   { key: 'dimensions', label: 'Kích thước' },
+											   { key: 'weight', label: 'Trọng lượng', alt: ['weightKg'] },
+											   { key: 'wheelbase', label: 'Chiều dài cơ sở', alt: ['wheelbaseMm'] },
+											   { key: 'batteryType', label: 'Loại pin' }
+										   ].map(field => {/* ...existing code... */})}
+									   </div>
+								   </div>
+							   )}
+							   {vehicle.range && (
+								   <div className="detail-section">
+									   <div className="detail-item">
+										   <span>Quãng đường:</span>
+										   <span>{vehicle.range} km</span>
+									   </div>
+								   </div>
+							   )}
+							   {vehicle.charging && (
+								   <div className="detail-section">
+									   <div className="detail-item">
+										   <span>Thời gian sạc:</span>
+										   <span>{vehicle.charging}</span>
+									   </div>
+								   </div>
+							   )}
+							   {vehicle.power && (
+								   <div className="detail-section">
+									   <div className="detail-item">
+										   <span>Công suất:</span>
+										   <span>{vehicle.power}</span>
+									   </div>
+								   </div>
+							   )}
+						   </>
+					   )}
+				   </div>
+			   </div>
+		   </div>
+	   );
+	// Remove all duplicate closing tags after VehicleDetailModal
+	// Remove duplicate closing tags left from previous patch
 };
 
 const CarManagement = () => {
 	// 1. State khai báo
 	const [showAddCarModal, setShowAddCarModal] = useState(false);
-	const [addCarFormData, setAddCarFormData] = useState({ variantId: '', colorName: '', dealerName: '', quantity: 1 });
+	const [addCarFormData, setAddCarFormData] = useState({ modelName: '', variantName: '', colorName: '', dealerName: '', quantity: 1 });
 	const [addCarVehicle, setAddCarVehicle] = useState(null);
 	const [addCarLoading, setAddCarLoading] = useState(false);
 	const [addCarMessage, setAddCarMessage] = useState('');
@@ -148,6 +134,21 @@ const CarManagement = () => {
 	const [allVariants, setAllVariants] = useState([]);
 	const [searching, setSearching] = useState(false);
 	const [showCreateForm, setShowCreateForm] = useState(false);
+	const [showUpdateConfigModal, setShowUpdateConfigModal] = useState(false);
+	const [updateConfigData, setUpdateConfigData] = useState({ modelName: '', variantName: '', configuration: {} });
+	const [updateConfigMessage, setUpdateConfigMessage] = useState('');
+	const [updateConfigLoading, setUpdateConfigLoading] = useState(false);
+	const [updateVariantOptions, setUpdateVariantOptions] = useState([]);
+
+	// Update price modal state
+	const [showUpdatePriceModal, setShowUpdatePriceModal] = useState(false);
+	const [updatePriceData, setUpdatePriceData] = useState({ modelName: '', variantName: '', colorName: '' });
+	const [newPrice, setNewPrice] = useState('');
+	const [manufacturerPrice, setManufacturerPrice] = useState(null);
+	const [updatePriceMessage, setUpdatePriceMessage] = useState('');
+	const [updatePriceLoading, setUpdatePriceLoading] = useState(false);
+	const [priceVariantOptions, setPriceVariantOptions] = useState([]);
+	const [priceColorOptions, setPriceColorOptions] = useState([]);
 	const [createCarData, setCreateCarData] = useState({
 		model: { modelName: "", segment: "" },
 		variant: { variantName: "", description: "" },
@@ -168,6 +169,150 @@ const CarManagement = () => {
 	const [customVariantName, setCustomVariantName] = useState("");
 
 	// 2. Các hàm xử lý logic
+
+	// Handler for modelName select in update config modal
+	const handleUpdateModelChange = async (modelName) => {
+		setUpdateConfigData(d => ({ ...d, modelName, variantName: '' }));
+		setUpdateVariantOptions([]);
+		if (modelName) {
+			try {
+				const variantRes = await fetchVariantNamesByModel(modelName);
+				setUpdateVariantOptions(Array.isArray(variantRes) ? variantRes : (variantRes.variantNames || []));
+			} catch {
+				setUpdateVariantOptions([]);
+			}
+		}
+	};
+
+	// Handler for variantName select in update config modal
+	const handleUpdateVariantChange = async (variantName) => {
+		setUpdateConfigData(d => ({ ...d, variantName }));
+		const modelName = updateConfigData.modelName;
+		if (modelName && variantName) {
+			try {
+				const configRes = await fetchConfigurationByModelAndVariant(modelName, variantName);
+				setUpdateConfigData(d => ({
+					...d,
+					configuration: {
+						batteryCapacity: configRes.batteryCapacity || '',
+						batteryType: configRes.batteryType || '',
+						fullChargeTime: configRes.fullChargeTime || '',
+						rangeKm: configRes.rangeKm || '',
+						power: configRes.power || '',
+						torque: configRes.torque || '',
+						lengthMm: configRes.lengthMm || '',
+						widthMm: configRes.widthMm || '',
+						heightMm: configRes.heightMm || '',
+						wheelbaseMm: configRes.wheelbaseMm || '',
+						weightKg: configRes.weightKg || '',
+						trunkVolumeL: configRes.trunkVolumeL || '',
+						seats: configRes.seats || ''
+					}
+				}));
+			} catch {
+				setUpdateConfigData(d => ({
+					...d,
+					configuration: {
+						batteryCapacity: '', batteryType: '', fullChargeTime: '', rangeKm: '', power: '', torque: '', lengthMm: '', widthMm: '', heightMm: '', wheelbaseMm: '', weightKg: '', trunkVolumeL: '', seats: ''
+					}
+				}));
+			}
+		}
+	};
+
+	// Handlers for update price modal
+	const handlePriceModelChange = async (modelName) => {
+	   setUpdatePriceData(d => ({ ...d, modelName, variantName: '', colorName: '' }));
+	   setPriceVariantOptions([]);
+	   setPriceColorOptions([]);
+	   setManufacturerPrice(null);
+	   setNewPrice('');
+	   if (modelName) {
+		   try {
+			   const variantRes = await fetchVariantNamesByModel(modelName);
+			   setPriceVariantOptions(Array.isArray(variantRes) ? variantRes : (variantRes.variantNames || []));
+		   } catch {
+			   setPriceVariantOptions([]);
+		   }
+	   }
+	};
+
+	const handlePriceVariantChange = async (variantName) => {
+	   setUpdatePriceData(d => ({ ...d, variantName, colorName: '' }));
+	   setPriceColorOptions([]);
+	   setManufacturerPrice(null);
+	   setNewPrice('');
+	   const modelName = updatePriceData.modelName;
+	   if (modelName && variantName) {
+		   try {
+			   const colors = await fetchColorsByModelAndVariant(modelName, variantName);
+			   let opts = [];
+			   if (Array.isArray(colors)) {
+				   if (colors.length && typeof colors[0] === 'string') opts = colors;
+				   else if (colors.length && colors[0].colorName) opts = colors.map(c => c.colorName);
+				   else opts = colors;
+			   }
+			   setPriceColorOptions(opts);
+		   } catch {
+			   setPriceColorOptions([]);
+		   }
+	   }
+	};
+// Khi chọn colorName, tự động lấy giá nhà máy
+useEffect(() => {
+	const { modelName, variantName, colorName } = updatePriceData;
+	if (modelName && variantName && colorName) {
+		setManufacturerPrice('Đang tải...');
+		fetchManufacturerPriceByModelVariantColor(modelName, variantName, colorName)
+			.then(res => {
+				// Đúng trường trả về từ backend là manufacturerPrice
+				let price = null;
+				if (res && typeof res === 'object' && 'manufacturerPrice' in res) {
+					price = res.manufacturerPrice;
+				} else if (typeof res === 'number') {
+					price = res;
+				}
+				if (price !== null && price !== undefined && price !== '') {
+					setManufacturerPrice(price);
+				} else {
+					setManufacturerPrice('Không có dữ liệu');
+				}
+				setNewPrice('');
+			})
+			.catch(() => {
+				setManufacturerPrice('Không có dữ liệu');
+				setNewPrice('');
+			});
+	} else {
+		setManufacturerPrice(null);
+		setNewPrice('');
+	}
+}, [updatePriceData.modelName, updatePriceData.variantName, updatePriceData.colorName]);
+
+	const handleUpdatePriceSubmit = async (e) => {
+	   e.preventDefault();
+	   setUpdatePriceLoading(true);
+	   setUpdatePriceMessage('');
+	   try {
+		   if (!updatePriceData.modelName || !updatePriceData.variantName || !updatePriceData.colorName) {
+			   setUpdatePriceMessage('Vui lòng chọn model, variant và màu.');
+			   setUpdatePriceLoading(false);
+			   return;
+		   }
+		   if (!newPrice || isNaN(Number(newPrice))) {
+			   setUpdatePriceMessage('Vui lòng nhập giá mới hợp lệ.');
+			   setUpdatePriceLoading(false);
+			   return;
+		   }
+		   await updateManufacturerPriceByModelVariantColor(updatePriceData.modelName, updatePriceData.variantName, updatePriceData.colorName, Number(newPrice));
+		   setUpdatePriceMessage('Cập nhật giá thành công!');
+		   loadVehicles();
+	   } catch (err) {
+		   setUpdatePriceMessage(err.message || 'Cập nhật thất bại!');
+	   } finally {
+		   setUpdatePriceLoading(false);
+	   }
+	};
 	const handleViewDetail = async (vehicle) => {
 		setSelectedVehicle(vehicle);
 		setVehicleDetailLoading(true);
@@ -245,25 +390,29 @@ const CarManagement = () => {
 			}
 			try {
 				const configRes = await fetchConfigurationByModelAndVariant(modelName, variantName);
-				setCreateCarData(d => ({ ...d, configuration: {
-					batteryCapacity: configRes.batteryCapacity || "",
-					batteryType: configRes.batteryType || "",
-					fullChargeTime: configRes.fullChargeTime || "",
-					rangeKm: configRes.rangeKm || "",
-					power: configRes.power || "",
-					torque: configRes.torque || "",
-					lengthMm: configRes.lengthMm || "",
-					widthMm: configRes.widthMm || "",
-					heightMm: configRes.heightMm || "",
-					wheelbaseMm: configRes.wheelbaseMm || "",
-					weightKg: configRes.weightKg || "",
-					trunkVolumeL: configRes.trunkVolumeL || "",
-					seats: configRes.seats || ""
-				}}));
+				setCreateCarData(d => ({
+					...d, configuration: {
+						batteryCapacity: configRes.batteryCapacity || "",
+						batteryType: configRes.batteryType || "",
+						fullChargeTime: configRes.fullChargeTime || "",
+						rangeKm: configRes.rangeKm || "",
+						power: configRes.power || "",
+						torque: configRes.torque || "",
+						lengthMm: configRes.lengthMm || "",
+						widthMm: configRes.widthMm || "",
+						heightMm: configRes.heightMm || "",
+						wheelbaseMm: configRes.wheelbaseMm || "",
+						weightKg: configRes.weightKg || "",
+						trunkVolumeL: configRes.trunkVolumeL || "",
+						seats: configRes.seats || ""
+					}
+				}));
 			} catch {
-				setCreateCarData(d => ({ ...d, configuration: {
-					batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
-				}}));
+				setCreateCarData(d => ({
+					...d, configuration: {
+						batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
+					}
+				}));
 			}
 		}
 	};
@@ -361,49 +510,49 @@ const CarManagement = () => {
 	});
 
 	return (
-			<div className="car-management">
-				<div className="car-management-container">
-					<h2 className="car-management-title">Quản lý xe</h2>
-					<div className="search-create-row">
-						<div className="search-form-container">
-							<form className="search-form" onSubmit={e => e.preventDefault()}>
-								<input
-									type="text"
-									placeholder="🔍 Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
-									value={searchTerm}
-									onChange={e => setSearchTerm(e.target.value)}
-									className="car-search-input search-main-input"
-								/>
-								<select
-									className="car-search-input car-search-dealer"
-									value={selectedDealer}
-									onChange={async e => {
-										setSelectedDealer(e.target.value);
-										setSearchTerm("");
-										setSearchModel("all");
-										setSearchVariant("all");
-										setIsLoading(true);
-										try {
-											let apiData = e.target.value ? await getCarVariantsByDealerName(e.target.value) : await getCarVariantDetails();
-											const transformed = transformCarVariantData(apiData);
-											setVehicles(transformed);
-											const initialColors = {};
-											transformed.forEach(v => {
-												initialColors[v.id] = v.colors[0];
-											});
-											setSelectedColor(initialColors);
-										} catch {
-											setVehicles([]);
-										} finally {
-											setIsLoading(false);
-										}
-									}}
-								>
-									<option value="">Chọn đại lý để xem xe</option>
-									{dealerNames.map(name => (
-										<option key={name} value={name}>{name}</option>
-									))}
-								</select>
+		<div className="car-management">
+			<div className="car-management-container">
+				<h2 className="car-management-title">Quản lý xe</h2>
+				<div className="search-create-row">
+					<div className="search-form-container">
+						<form className="search-form" onSubmit={e => e.preventDefault()}>
+							<input
+								type="text"
+								placeholder="🔍 Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
+								value={searchTerm}
+								onChange={e => setSearchTerm(e.target.value)}
+								className="car-search-input search-main-input"
+							/>
+							<select
+								className="car-search-input car-search-dealer"
+								value={selectedDealer}
+								onChange={async e => {
+									setSelectedDealer(e.target.value);
+									setSearchTerm("");
+									setSearchModel("all");
+									setSearchVariant("all");
+									setIsLoading(true);
+									try {
+										let apiData = e.target.value ? await getCarVariantsByDealerName(e.target.value) : await getCarVariantDetails();
+										const transformed = transformCarVariantData(apiData);
+										setVehicles(transformed);
+										const initialColors = {};
+										transformed.forEach(v => {
+											initialColors[v.id] = v.colors[0];
+										});
+										setSelectedColor(initialColors);
+									} catch {
+										setVehicles([]);
+									} finally {
+										setIsLoading(false);
+									}
+								}}
+							>
+								<option value="">Chọn đại lý để xem xe</option>
+								{dealerNames.map(name => (
+									<option key={name} value={name}>{name}</option>
+								))}
+							</select>
 							<div className="search-model-variant-row">
 								<select
 									className="car-search-input car-search-model"
@@ -426,394 +575,542 @@ const CarManagement = () => {
 									))}
 								</select>
 							</div>
-								<div className="search-action-group">
-									<button type="button" className="reset-search-btn" onClick={() => {
-										setSearchTerm("");
-										setSearchModel("all");
-										setSearchVariant("all");
-										setSelectedDealer("");
-										setIsLoading(true);
-										loadVehicles();
-									}}>Làm mới</button>
-								</div>
-							</form>
-						</div>
+							<div className="search-action-group">
+								<button type="button" className="reset-search-btn" onClick={() => {
+									setSearchTerm("");
+									setSearchModel("all");
+									setSearchVariant("all");
+									setSelectedDealer("");
+									setIsLoading(true);
+									loadVehicles();
+								}}>Làm mới</button>
+							</div>
+						</form>
 					</div>
 				</div>
-				<div className="create-car-btn-row">
-					<button className="create-car-btn" onClick={() => {
-						setShowCreateForm(true);
-						setCreateCarError("");
-						setCreateCarSuccess("");
-					}}>
-						Tạo xe mới
-					</button>
+			</div>
+			<div className="create-car-btn-row">
+				   <button className="create-car-btn" onClick={() => {
+					   setShowCreateForm(true);
+					   setCreateCarError("");
+					   setCreateCarSuccess("");
+				   }}>
+					   Tạo xe mới
+				   </button>
+				   <button className="update-car-btn" onClick={() => {
+					   setShowUpdateConfigModal(true);
+					   setUpdateConfigMessage('');
+					   setUpdateConfigData({ modelName: '', variantName: '', configuration: {} });
+					   setUpdateVariantOptions([]);
+				   }}>
+					   Cập nhật cấu hình 
+				   </button>
+				   <button className="update-price-btn" onClick={() => {
+					   setShowUpdatePriceModal(true);
+					   setUpdatePriceMessage('');
+					   setUpdatePriceData({ modelName: '', variantName: '', colorName: '', price: '' });
+					   setPriceVariantOptions([]);
+					   setPriceColorOptions([]);
+				   }}>
+					   Cập nhật giá tiền
+				   </button>
+			</div>
+{showUpdateConfigModal && (
+	<div className="user-modal-overlay">
+		<div className="create-user-modal">
+			<div className="create-user-modal-header">
+				<h3>Cập nhật cấu hình </h3>
+				<button className="create-user-modal-close" onClick={() => setShowUpdateConfigModal(false)}>&times;</button>
+			</div>
+			<form className="create-user-form" onSubmit={async e => {
+				e.preventDefault();
+				setUpdateConfigLoading(true);
+				setUpdateConfigMessage('');
+				try {
+					if (!updateConfigData.modelName || !updateConfigData.variantName) {
+						setUpdateConfigMessage('Vui lòng nhập modelName và variantName!');
+						setUpdateConfigLoading(false);
+						return;
+					}
+					await updateConfigurationByModelAndVariant(updateConfigData.modelName, updateConfigData.variantName, updateConfigData.configuration);
+					setUpdateConfigMessage('Cập nhật thành công!');
+				} catch (err) {
+					setUpdateConfigMessage(err.message || 'Cập nhật thất bại!');
+				} finally {
+					setUpdateConfigLoading(false);
+				}
+			}}>
+				<div className="form-section">
+					<h4 className="form-section-title">Model</h4>
+					<div className="form-row">
+						<select
+							required
+							value={updateConfigData.modelName}
+							onChange={e => handleUpdateModelChange(e.target.value)}
+						>
+							<option value="">Chọn dòng xe</option>
+							{modelOptions.map(model => (
+								<option key={model} value={model}>{model}</option>
+							))}
+						</select>
+					</div>
 				</div>
-				{/* Hiển thị danh sách xe */}
-				<div className="vehicle-grid">
-					{filteredVehicles.map(vehicle => (
-						<div key={vehicle.id} className="vehicle-card">
-							<div className="vehicle-image">
-								<img 
-									src={getCurrentImage(vehicle)} 
-									alt={`${vehicle.name} - ${selectedColor[vehicle.id] || vehicle.colors[0]}`}
-									onError={e => { e.target.src = vehicle.defaultImage; }}
-								/>
-								{selectedDealer && getStatusBadge(vehicle.status, getCurrentQuantity(vehicle))}
-							</div>
-							<div className="vehicle-info">
-								<h3>{vehicle.name}</h3>
-								<div className="price-and-details">
-									<div className="vehicle-price">
-										{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(getCurrentPrice(vehicle))}
-									</div>
-									<div className="card-action-btns">
-										{!selectedDealer && (
-											<div className="add-car-btn-wrapper">
-												<button
-													className="action-btn add-car-btn"
-													onClick={() => {
-														setAddCarFormData({
-															variantId: vehicle.id,
-															colorName: '', // Để mặc định là 'Chọn màu xe'
-															dealerName: '',
-															quantity: 1
-														});
-														setAddCarMessage('');
-														setAddCarVehicle(vehicle); // Chỉ dùng cho modal Thêm xe
-														setShowAddCarModal(true);
-													}}
-												>
-													Thêm xe
-												</button>
-											</div>
-										)}
-										<div className="view-details-btn-wrapper">
+				<div className="form-section">
+					<h4 className="form-section-title">Variant</h4>
+					<div className="form-row">
+						<select
+							required
+							value={updateConfigData.variantName}
+							onChange={e => handleUpdateVariantChange(e.target.value)}
+							disabled={!updateConfigData.modelName}
+						>
+							<option value="">Chọn phiên bản</option>
+							{updateVariantOptions.map(variant => (
+								<option key={variant} value={variant}>{variant}</option>
+							))}
+						</select>
+					</div>
+				</div>
+				<div className="form-section">
+					<h4 className="form-section-title">Configuration</h4>
+					<div className="form-row">
+						<input type="number" placeholder="Dung lượng pin" value={updateConfigData.configuration.batteryCapacity || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, batteryCapacity: e.target.value } }))} />
+						<input type="text" placeholder="Loại pin" value={updateConfigData.configuration.batteryType || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, batteryType: e.target.value } }))} />
+						<input type="number" placeholder="Thời gian sạc" value={updateConfigData.configuration.fullChargeTime || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, fullChargeTime: e.target.value } }))} />
+						<input type="number" placeholder="Quãng đường" value={updateConfigData.configuration.rangeKm || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, rangeKm: e.target.value } }))} />
+						<input type="number" placeholder="Công suất" value={updateConfigData.configuration.power || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, power: e.target.value } }))} />
+						<input type="number" placeholder="Mô men xoắn" value={updateConfigData.configuration.torque || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, torque: e.target.value } }))} />
+						<input type="number" placeholder="Chiều dài" value={updateConfigData.configuration.lengthMm || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, lengthMm: e.target.value } }))} />
+						<input type="number" placeholder="Chiều rộng" value={updateConfigData.configuration.widthMm || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, widthMm: e.target.value } }))} />
+						<input type="number" placeholder="Chiều cao" value={updateConfigData.configuration.heightMm || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, heightMm: e.target.value } }))} />
+						<input type="number" placeholder="Chiều dài cơ sở" value={updateConfigData.configuration.wheelbaseMm || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, wheelbaseMm: e.target.value } }))} />
+						<input type="number" placeholder="Khối lượng" value={updateConfigData.configuration.weightKg || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, weightKg: e.target.value } }))} />
+						<input type="number" placeholder="Dung tích cốp" value={updateConfigData.configuration.trunkVolumeL || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, trunkVolumeL: e.target.value } }))} />
+						<input type="number" placeholder="Số ghế" value={updateConfigData.configuration.seats || ''} onChange={e => setUpdateConfigData(d => ({ ...d, configuration: { ...d.configuration, seats: e.target.value } }))} />
+					</div>
+				</div>
+				{updateConfigMessage && <div className="error-message">{updateConfigMessage}</div>}
+				<button className="create-user-submit-btn" type="submit" disabled={updateConfigLoading}>
+					{updateConfigLoading ? 'Đang cập nhật...' : 'Cập nhật'}
+				</button>
+			</form>
+		</div>
+	</div>
+)}
+			{/* Hiển thị danh sách xe */}
+			<div className="vehicle-grid">
+				{filteredVehicles.map(vehicle => (
+					<div key={vehicle.id} className="vehicle-card">
+						<div className="vehicle-image">
+							<img
+								src={getCurrentImage(vehicle)}
+								alt={`${vehicle.name} - ${selectedColor[vehicle.id] || vehicle.colors[0]}`}
+								onError={e => { e.target.src = vehicle.defaultImage; }}
+							/>
+							{selectedDealer && getStatusBadge(vehicle.status, getCurrentQuantity(vehicle))}
+						</div>
+						<div className="vehicle-info">
+							<h3>{vehicle.name}</h3>
+							<div className="price-and-details">
+								<div className="vehicle-price">
+									{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(getCurrentPrice(vehicle))}
+								</div>
+								<div className="card-action-btns">
+									{!selectedDealer && (
+										<div className="add-car-btn-wrapper">
 											<button
-												className="action-btn view-details-btn"
-												onClick={() => handleViewDetail(vehicle)}
+												className="action-btn add-car-btn"
+												onClick={() => {
+													setAddCarFormData({
+														modelName: vehicle.modelName || '',
+														variantName: vehicle.variantName || '',
+														colorName: '', // Để mặc định là 'Chọn màu xe'
+														dealerName: '',
+														quantity: 1
+													});
+													setAddCarMessage('');
+													setAddCarVehicle(vehicle); // Chỉ dùng cho modal Thêm xe
+													setShowAddCarModal(true);
+												}}
 											>
-												Chi tiết
+												Thêm xe
 											</button>
 										</div>
+									)}
+									<div className="view-details-btn-wrapper">
+										<button
+											className="action-btn view-details-btn"
+											onClick={() => handleViewDetail(vehicle)}
+										>
+											Chi tiết
+										</button>
 									</div>
 								</div>
-								<div className="vehicle-colors">
-									<span className="colors-label">Màu sắc:</span>
-									<div className="colors-list">
-										{vehicle.colors.map((color, idx) => (
-											<span
-												key={idx}
-												className={`color-tag ${selectedColor[vehicle.id] === color ? 'active' : ''}`}
-												onClick={() => handleColorChange(vehicle.id, color)}
-												style={{ cursor: 'pointer' }}
-												title={selectedDealer ? `Tồn kho: ${vehicle.colorQuantities[color]} xe` : undefined}
-											>
-												{color}
-											</span>
-										))}
-									</div>
-								</div>
-								{selectedDealer && (
-									<div className="vehicle-stock-info">
-										<div className="spec-item">
-											<span className="spec-label">Tồn kho màu này:</span>
-											<span className="spec-value">{getCurrentQuantity(vehicle)} xe</span>
-										</div>
-									</div>
-								)}
 							</div>
-						</div>
-					))}
-					{/* Modal chi tiết xe - render outside the map, only when selectedVehicle is set */}
-					{selectedVehicle && (
-						<VehicleDetailModal
-							vehicle={vehicleDetail || selectedVehicle}
-							selectedColor={selectedColor[selectedVehicle.id] || selectedVehicle.colors[0]}
-							onColorChange={color => handleColorChange(selectedVehicle.id, color)}
-							loading={vehicleDetailLoading}
-							onClose={() => { setSelectedVehicle(null); setVehicleDetail(null); }}
-						/>
-					)}
-					{/* Modal thêm xe vào đại lý */}
-					{showAddCarModal && (
-						<div className="user-modal-overlay">
-							<div className="create-user-modal">
-								<div className="create-user-modal-header">
-									<h3>Thêm xe vào đại lý</h3>
-									<button className="create-user-modal-close" onClick={() => setShowAddCarModal(false)}>&times;</button>
+							<div className="vehicle-colors">
+								<span className="colors-label">Màu sắc:</span>
+								<div className="colors-list">
+									{vehicle.colors.map((color, idx) => (
+										<span
+											key={idx}
+											className={`color-tag ${selectedColor[vehicle.id] === color ? 'active' : ''}`}
+											onClick={() => handleColorChange(vehicle.id, color)}
+											style={{ cursor: 'pointer' }}
+											title={selectedDealer ? `Tồn kho: ${vehicle.colorQuantities[color]} xe` : undefined}
+										>
+											{color}
+										</span>
+									))}
 								</div>
-								<form className="create-user-form" onSubmit={async e => {
-									e.preventDefault();
-									setAddCarLoading(true);
-									setAddCarMessage('');
-									try {
-										// Gọi API thêm xe vào đại lý
-										await addCarToDealer({
-											variantId: addCarFormData.variantId,
-											colorName: addCarFormData.colorName,
-											dealerName: addCarFormData.dealerName,
-											quantity: addCarFormData.quantity
-										});
-										setAddCarMessage('Thêm xe thành công!');
-										// Không đóng modal, chỉ cập nhật lại danh sách xe
-										loadVehicles();
-									} catch (err) {
-										setAddCarMessage('Thêm xe thất bại. Vui lòng thử lại.');
-									} finally {
-										setAddCarLoading(false);
-									}
-								}}>
-									<div className="form-section">
-										<h4 className="form-section-title">Thông tin xe cần thêm</h4>
-										<div className="form-row">
-														<div className="form-group">
-															<label htmlFor="variantId-input">Mã phiên bản (variantId)</label>
-															<input id="variantId-input" type="number" placeholder="Nhập mã phiên bản" required value={addCarFormData.variantId} onChange={e => setAddCarFormData(f => ({ ...f, variantId: Number(e.target.value) }))} />
-														</div>
-														<div className="form-group">
-															<label htmlFor="colorName-select">Màu xe</label>
-															<select id="colorName-select" required value={addCarFormData.colorName} onChange={e => setAddCarFormData(f => ({ ...f, colorName: e.target.value }))}>
-																<option value="">Chọn màu xe</option>
-																{addCarVehicle && addCarVehicle.colors && addCarVehicle.colors.map(color => (
-																	<option key={color} value={color}>{color}</option>
-																))}
-															</select>
-														</div>
-														<div className="form-group">
-															<label htmlFor="dealerName-select">Đại lý</label>
-															<select id="dealerName-select" required value={addCarFormData.dealerName} onChange={e => setAddCarFormData(f => ({ ...f, dealerName: e.target.value }))}>
-																<option value="">Chọn đại lý</option>
-																{dealerNames.map(name => (
-																	<option key={name} value={name}>{name}</option>
-																))}
-															</select>
-														</div>
-														<div className="form-group">
-															<label htmlFor="quantity-input">Số lượng (Quantity)</label>
-															<input id="quantity-input" type="number" placeholder="Nhập số lượng" required min={1} value={addCarFormData.quantity} onChange={e => setAddCarFormData(f => ({ ...f, quantity: Number(e.target.value) }))} />
-														</div>
-										</div>
-									</div>
-									{addCarMessage && <div className="error-message">{addCarMessage}</div>}
-									<button className="create-user-submit-btn" type="submit" disabled={addCarLoading}>
-										{addCarLoading ? "Đang thêm..." : "Thêm xe"}
-									</button>
-								</form>
 							</div>
+							{selectedDealer && (
+								<div className="vehicle-stock-info">
+									<div className="spec-item">
+										<span className="spec-label">Tồn kho màu này:</span>
+										<span className="spec-value">{getCurrentQuantity(vehicle)} xe</span>
+									</div>
+								</div>
+							)}
 						</div>
-					)}
-				</div>
-				{/* Modal tạo xe mới */}
-				{showCreateForm && (
+					</div>
+				))}
+				{/* Modal chi tiết xe - render outside the map, only when selectedVehicle is set */}
+				{selectedVehicle && (
+					<VehicleDetailModal
+						vehicle={vehicleDetail || selectedVehicle}
+						selectedColor={selectedColor[selectedVehicle.id] || selectedVehicle.colors[0]}
+						onColorChange={color => handleColorChange(selectedVehicle.id, color)}
+						loading={vehicleDetailLoading}
+						onClose={() => { setSelectedVehicle(null); setVehicleDetail(null); }}
+					/>
+				)}
+				{/* Modal thêm xe vào đại lý */}
+				{showAddCarModal && (
 					<div className="user-modal-overlay">
 						<div className="create-user-modal">
-											<div className="create-user-modal-header">
-												<h3>Tạo xe mới</h3>
-												<button className="create-user-modal-close" onClick={() => setShowCreateForm(false)}>&times;</button>
-											</div>
-											<form className="create-user-form" onSubmit={async e => {
-												e.preventDefault();
-												setCreateCarLoading(true);
-												setCreateCarError("");
-												setCreateCarSuccess("");
-												try {
-													// Chuyển đổi kiểu dữ liệu cho các trường số
-													const carData = {
-														model: {
-															modelName: createCarData.model.modelName,
-															segment: createCarData.model.segment
-														},
-														variant: {
-															variantName: createCarData.variant.variantName,
-															description: createCarData.variant.description
-														},
-														configuration: {
-															batteryCapacity: Number(createCarData.configuration.batteryCapacity),
-															batteryType: createCarData.configuration.batteryType,
-															fullChargeTime: Number(createCarData.configuration.fullChargeTime),
-															rangeKm: Number(createCarData.configuration.rangeKm),
-															power: Number(createCarData.configuration.power),
-															torque: Number(createCarData.configuration.torque),
-															lengthMm: Number(createCarData.configuration.lengthMm),
-															widthMm: Number(createCarData.configuration.widthMm),
-															heightMm: Number(createCarData.configuration.heightMm),
-															wheelbaseMm: Number(createCarData.configuration.wheelbaseMm),
-															weightKg: Number(createCarData.configuration.weightKg),
-															trunkVolumeL: Number(createCarData.configuration.trunkVolumeL),
-															seats: Number(createCarData.configuration.seats)
-														},
-														color: createCarData.color,
-														car: {
-															productionYear: Number(createCarData.car.productionYear),
-															price: Number(createCarData.car.price),
-															status: createCarData.car.status,
-															imagePath: createCarData.car.imagePath
-														}
-													};
-													await addCompleteCar(carData);
-													setCreateCarSuccess("Tạo xe mới thành công!");
-													setCreateCarData({
-														model: { modelName: "", segment: "" },
-														variant: { variantName: "", description: "" },
-														configuration: {
-															batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
-														},
-														color: "",
-														car: { productionYear: "", price: "", status: "", imagePath: "" }
-													});
-													loadVehicles();
-													// Cập nhật lại danh sách modelOptions sau khi tạo xe mới
-													fetchAllModelNames().then(models => setModelOptions(models)).catch(() => {});
-												} catch (err) {
-													setCreateCarError(err.message || "Lỗi khi tạo xe mới");
-												} finally {
-													setCreateCarLoading(false);
-												}
-											}}>
-												<div className="reset-create-car-btn-row">
-													<button
-														type="button"
-														className="reset-create-car-btn margin-right-8"
-														onClick={() => {
-															setCreateCarData({
-																model: { modelName: "", segment: "" },
-																variant: { variantName: "", description: "" },
-																configuration: {
-																	batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
-																},
-																color: "",
-																car: { productionYear: "", price: "", status: "", imagePath: "" }
-															});
-															setCreateCarError("");
-															setCreateCarSuccess("");
-														}}
-													>
-														Làm mới
-													</button>
-												</div>
-												<div className="form-section">
-													<h4 className="form-section-title">Model</h4>
-													<div className="form-row">
-														<select
-															required={!isCustomModel}
-															value={isCustomModel ? "__custom__" : createCarData.model.modelName}
-															onChange={e => handleModelChange(e.target.value)}
-														>
-															<option value="">Chọn dòng xe</option>
-															{modelOptions.map(model => (
-																<option key={model} value={model}>{model}</option>
-															))}
-															<option value="__custom__">Tạo mới...</option>
-														</select>
-														{isCustomModel ? (
-															<>
-																<input
-																	type="text"
-																	placeholder="Nhập dòng xe mới"
-																	required
-																	value={customModelName}
-																	onChange={e => {
-																		setCustomModelName(e.target.value);
-																		setCreateCarData(d => ({ ...d, model: { ...d.model, modelName: e.target.value } }));
-																	}}
-																/>
-																<input
-																	type="text"
-																	placeholder="Nhập phân khúc"
-																	required
-																	value={createCarData.model.segment}
-																	onChange={e => setCreateCarData(d => ({ ...d, model: { ...d.model, segment: e.target.value } }))}
-																/>
-															</>
-														) : (
-															<input type="text" placeholder="Phân khúc" required value={createCarData.model.segment} readOnly />
-														)}
-													</div>
-												</div>
-												<div className="form-section">
-													<h4 className="form-section-title">Variant</h4>
-													<div className="form-row">
-														<select
-															required={!isCustomVariant}
-															value={isCustomVariant ? "__custom__" : createCarData.variant.variantName}
-															onChange={e => handleVariantChange(e.target.value)}
-															disabled={isCustomModel ? !customModelName : !createCarData.model.modelName}
-														>
-															<option value="">Chọn phiên bản</option>
-															{variantOptions.map(variant => (
-																<option key={variant} value={variant}>{variant}</option>
-															))}
-															<option value="__custom__">Tạo mới...</option>
-														</select>
-														{isCustomVariant ? (
-															<>
-																<input
-																	type="text"
-																	placeholder="Nhập phiên bản mới"
-																	required
-																	value={customVariantName}
-																	onChange={e => {
-																		setCustomVariantName(e.target.value);
-																		setCreateCarData(d => ({ ...d, variant: { ...d.variant, variantName: e.target.value } }));
-																	}}
-																/>
-																<input
-																	type="text"
-																	placeholder="Nhập mô tả phiên bản"
-																	required
-																	value={createCarData.variant.description}
-																	onChange={e => setCreateCarData(d => ({ ...d, variant: { ...d.variant, description: e.target.value } }))}
-																/>
-															</>
-														) : (
-															<input type="text" placeholder="Mô tả phiên bản" required value={createCarData.variant.description} readOnly />
-														)}
-													</div>
-												</div>
-												<div className="form-section">
-													<h4 className="form-section-title">Configuration</h4>
-													<div className="form-row">
-														<input type="number" placeholder="Dung lượng pin" required value={createCarData.configuration.batteryCapacity} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, batteryCapacity: e.target.value } }))} />
-														<input type="text" placeholder="Loại pin" required value={createCarData.configuration.batteryType} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, batteryType: e.target.value } }))} />
-														<input type="number" placeholder="Thời gian sạc" required value={createCarData.configuration.fullChargeTime} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, fullChargeTime: e.target.value } }))} />
-														<input type="number" placeholder="Quãng đường" required value={createCarData.configuration.rangeKm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, rangeKm: e.target.value } }))} />
-														<input type="number" step="0.01" placeholder="Công suất" required value={createCarData.configuration.power} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, power: e.target.value } }))} />
-														<input type="number" step="0.01" placeholder="Mô men xoắn" required value={createCarData.configuration.torque} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, torque: e.target.value } }))} />
-														<input type="number" placeholder="Chiều dài" required value={createCarData.configuration.lengthMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, lengthMm: e.target.value } }))} />
-														<input type="number" placeholder="Chiều rộng" required value={createCarData.configuration.widthMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, widthMm: e.target.value } }))} />
-														<input type="number" placeholder="Chiều cao" required value={createCarData.configuration.heightMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, heightMm: e.target.value } }))} />
-														<input type="number" placeholder="Chiều dài cơ sở" required value={createCarData.configuration.wheelbaseMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, wheelbaseMm: e.target.value } }))} />
-														<input type="number" placeholder="Khối lượng" required value={createCarData.configuration.weightKg} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, weightKg: e.target.value } }))} />
-														<input type="number" placeholder="Dung tích cốp" required value={createCarData.configuration.trunkVolumeL} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, trunkVolumeL: e.target.value } }))} />
-														<input type="number" placeholder="Số ghế" required value={createCarData.configuration.seats} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, seats: e.target.value } }))} />
-													</div>
-												</div>
-												<div className="form-section">
-													<h4 className="form-section-title">Color</h4>
-													<div className="form-row">
-														<input type="text" placeholder="Màu xe" required value={createCarData.color} onChange={e => setCreateCarData(d => ({ ...d, color: e.target.value }))} />
-													</div>
-												</div>
-												<div className="form-section">
-													<h4 className="form-section-title">Car</h4>
-													<div className="form-row">
-														<input type="number" placeholder="Năm sản xuất" required value={createCarData.car.productionYear} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, productionYear: e.target.value } }))} />
-														<input type="number" placeholder="Giá xe" required value={createCarData.car.price} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, price: e.target.value } }))} />
-														<input type="text" placeholder="Trạng thái xe" required value={createCarData.car.status} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, status: e.target.value } }))} />
-														<input type="text" placeholder="Đường dẫn ảnh" required value={createCarData.car.imagePath} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, imagePath: e.target.value } }))} />
-													</div>
-												</div>
-								{createCarError && <div className="error-message">{createCarError}</div>}
-								{createCarSuccess && <div style={{ color: '#667eea', marginTop: 8, textAlign: 'center' }}>{createCarSuccess}</div>}
-								<button className="create-user-submit-btn" type="submit" disabled={createCarLoading}>
-									{createCarLoading ? "Đang tạo..." : "Tạo xe mới"}
+							<div className="create-user-modal-header">
+								<h3>Thêm xe vào đại lý</h3>
+								<button className="create-user-modal-close" onClick={() => setShowAddCarModal(false)}>&times;</button>
+							</div>
+							<form className="create-user-form" onSubmit={async e => {
+								e.preventDefault();
+								setAddCarLoading(true);
+								setAddCarMessage('');
+								try {
+									// Gọi API thêm xe vào đại lý
+									await addCarToDealer({
+										modelName: addCarFormData.modelName,
+										variantName: addCarFormData.variantName,
+										colorName: addCarFormData.colorName,
+										dealerName: addCarFormData.dealerName,
+										quantity: addCarFormData.quantity
+									});
+									setAddCarMessage('Thêm xe thành công!');
+									// Không đóng modal, chỉ cập nhật lại danh sách xe
+									loadVehicles();
+								} catch (err) {
+									setAddCarMessage('Thêm xe thất bại. Vui lòng thử lại.');
+								} finally {
+									setAddCarLoading(false);
+								}
+							}}>
+								<div className="form-section">
+									<h4 className="form-section-title">Thông tin xe cần thêm</h4>
+									<div className="form-row">
+										<div className="form-group">
+											<label>Dòng xe </label>
+											<input type="text" value={addCarFormData.modelName} readOnly />
+										</div>
+										<div className="form-group">
+											<label>Phiên bản </label>
+											<input type="text" value={addCarFormData.variantName} readOnly />
+										</div>
+										<div className="form-group">
+											<label htmlFor="colorName-select">Màu xe</label>
+											<select id="colorName-select" required value={addCarFormData.colorName} onChange={e => setAddCarFormData(f => ({ ...f, colorName: e.target.value }))}>
+												<option value="">Chọn màu xe</option>
+												{addCarVehicle && addCarVehicle.colors && addCarVehicle.colors.map(color => (
+													<option key={color} value={color}>{color}</option>
+												))}
+											</select>
+										</div>
+										<div className="form-group">
+											<label htmlFor="dealerName-select">Đại lý</label>
+											<select id="dealerName-select" required value={addCarFormData.dealerName} onChange={e => setAddCarFormData(f => ({ ...f, dealerName: e.target.value }))}>
+												<option value="">Chọn đại lý</option>
+												{dealerNames.map(name => (
+													<option key={name} value={name}>{name}</option>
+												))}
+											</select>
+										</div>
+										<div className="form-group">
+											<label htmlFor="quantity-input">Số lượng </label>
+											<input id="quantity-input" type="number" placeholder="Nhập số lượng" required min={1} value={addCarFormData.quantity} onChange={e => setAddCarFormData(f => ({ ...f, quantity: Number(e.target.value) }))} />
+										</div>
+									</div>
+								</div>
+								{addCarMessage && <div className="error-message">{addCarMessage}</div>}
+								<button className="create-user-submit-btn" type="submit" disabled={addCarLoading}>
+									{addCarLoading ? "Đang thêm..." : "Thêm xe"}
 								</button>
 							</form>
 						</div>
 					</div>
 				)}
 			</div>
+			{/* Modal tạo xe mới */}
+			{showCreateForm && (
+				<div className="user-modal-overlay">
+					<div className="create-user-modal">
+						<div className="create-user-modal-header">
+							<h3>Tạo xe mới</h3>
+							<button className="create-user-modal-close" onClick={() => setShowCreateForm(false)}>&times;</button>
+						</div>
+						<form className="create-user-form" onSubmit={async e => {
+							e.preventDefault();
+							setCreateCarLoading(true);
+							setCreateCarError("");
+							setCreateCarSuccess("");
+							try {
+								// Chuyển đổi kiểu dữ liệu cho các trường số
+								const carData = {
+									model: {
+										modelName: createCarData.model.modelName,
+										segment: createCarData.model.segment
+									},
+									variant: {
+										variantName: createCarData.variant.variantName,
+										description: createCarData.variant.description
+									},
+									configuration: {
+										batteryCapacity: Number(createCarData.configuration.batteryCapacity),
+										batteryType: createCarData.configuration.batteryType,
+										fullChargeTime: Number(createCarData.configuration.fullChargeTime),
+										rangeKm: Number(createCarData.configuration.rangeKm),
+										power: Number(createCarData.configuration.power),
+										torque: Number(createCarData.configuration.torque),
+										lengthMm: Number(createCarData.configuration.lengthMm),
+										widthMm: Number(createCarData.configuration.widthMm),
+										heightMm: Number(createCarData.configuration.heightMm),
+										wheelbaseMm: Number(createCarData.configuration.wheelbaseMm),
+										weightKg: Number(createCarData.configuration.weightKg),
+										trunkVolumeL: Number(createCarData.configuration.trunkVolumeL),
+										seats: Number(createCarData.configuration.seats)
+									},
+									color: createCarData.color,
+									car: {
+										productionYear: Number(createCarData.car.productionYear),
+										price: Number(createCarData.car.price),
+										status: createCarData.car.status,
+										imagePath: createCarData.car.imagePath
+									}
+								};
+								await addCompleteCar(carData);
+								setCreateCarSuccess("Tạo xe mới thành công!");
+								setCreateCarData({
+									model: { modelName: "", segment: "" },
+									variant: { variantName: "", description: "" },
+									configuration: {
+										batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
+									},
+									color: "",
+									car: { productionYear: "", price: "", status: "", imagePath: "" }
+								});
+								loadVehicles();
+								// Cập nhật lại danh sách modelOptions sau khi tạo xe mới
+								fetchAllModelNames().then(models => setModelOptions(models)).catch(() => { });
+							} catch (err) {
+								setCreateCarError(err.message || "Lỗi khi tạo xe mới");
+							} finally {
+								setCreateCarLoading(false);
+							}
+						}}>
+							<div className="reset-create-car-btn-row">
+								<button
+									type="button"
+									className="reset-create-car-btn margin-right-8"
+									onClick={() => {
+										setCreateCarData({
+											model: { modelName: "", segment: "" },
+											variant: { variantName: "", description: "" },
+											configuration: {
+												batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
+											},
+											color: "",
+											car: { productionYear: "", price: "", status: "", imagePath: "" }
+										});
+										setCreateCarError("");
+										setCreateCarSuccess("");
+									}}
+								>
+									Làm mới
+								</button>
+							</div>
+							<div className="form-section">
+								<h4 className="form-section-title">Model</h4>
+								<div className="form-row">
+									<select
+										required={!isCustomModel}
+										value={isCustomModel ? "__custom__" : createCarData.model.modelName}
+										onChange={e => handleModelChange(e.target.value)}
+									>
+										<option value="">Chọn dòng xe</option>
+										{modelOptions.map(model => (
+											<option key={model} value={model}>{model}</option>
+										))}
+										<option value="__custom__">Tạo mới...</option>
+									</select>
+									{isCustomModel ? (
+										<>
+											<input
+												type="text"
+												placeholder="Nhập dòng xe mới"
+												required
+												value={customModelName}
+												onChange={e => {
+													setCustomModelName(e.target.value);
+													setCreateCarData(d => ({ ...d, model: { ...d.model, modelName: e.target.value } }));
+												}}
+											/>
+											<input
+												type="text"
+												placeholder="Nhập phân khúc"
+												required
+												value={createCarData.model.segment}
+												onChange={e => setCreateCarData(d => ({ ...d, model: { ...d.model, segment: e.target.value } }))}
+											/>
+										</>
+									) : (
+										<input type="text" placeholder="Phân khúc" required value={createCarData.model.segment} readOnly />
+									)}
+								</div>
+							</div>
+							<div className="form-section">
+								<h4 className="form-section-title">Variant</h4>
+								<div className="form-row">
+									<select
+										required={!isCustomVariant}
+										value={isCustomVariant ? "__custom__" : createCarData.variant.variantName}
+										onChange={e => handleVariantChange(e.target.value)}
+										disabled={isCustomModel ? !customModelName : !createCarData.model.modelName}
+									>
+										<option value="">Chọn phiên bản</option>
+										{variantOptions.map(variant => (
+											<option key={variant} value={variant}>{variant}</option>
+										))}
+										<option value="__custom__">Tạo mới...</option>
+									</select>
+									{isCustomVariant ? (
+										<>
+											<input
+												type="text"
+												placeholder="Nhập phiên bản mới"
+												required
+												value={customVariantName}
+												onChange={e => {
+													setCustomVariantName(e.target.value);
+													setCreateCarData(d => ({ ...d, variant: { ...d.variant, variantName: e.target.value } }));
+												}}
+											/>
+											<input
+												type="text"
+												placeholder="Nhập mô tả phiên bản"
+												required
+												value={createCarData.variant.description}
+												onChange={e => setCreateCarData(d => ({ ...d, variant: { ...d.variant, description: e.target.value } }))}
+											/>
+										</>
+									) : (
+										<input type="text" placeholder="Mô tả phiên bản" required value={createCarData.variant.description} readOnly />
+									)}
+								</div>
+							</div>
+							<div className="form-section">
+								<h4 className="form-section-title">Configuration</h4>
+								<div className="form-row">
+									<input type="number" placeholder="Dung lượng pin" required value={createCarData.configuration.batteryCapacity} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, batteryCapacity: e.target.value } }))} />
+									<input type="text" placeholder="Loại pin" required value={createCarData.configuration.batteryType} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, batteryType: e.target.value } }))} />
+									<input type="number" placeholder="Thời gian sạc" required value={createCarData.configuration.fullChargeTime} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, fullChargeTime: e.target.value } }))} />
+									<input type="number" placeholder="Quãng đường" required value={createCarData.configuration.rangeKm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, rangeKm: e.target.value } }))} />
+									<input type="number" step="0.01" placeholder="Công suất" required value={createCarData.configuration.power} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, power: e.target.value } }))} />
+									<input type="number" step="0.01" placeholder="Mô men xoắn" required value={createCarData.configuration.torque} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, torque: e.target.value } }))} />
+									<input type="number" placeholder="Chiều dài" required value={createCarData.configuration.lengthMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, lengthMm: e.target.value } }))} />
+									<input type="number" placeholder="Chiều rộng" required value={createCarData.configuration.widthMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, widthMm: e.target.value } }))} />
+									<input type="number" placeholder="Chiều cao" required value={createCarData.configuration.heightMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, heightMm: e.target.value } }))} />
+									<input type="number" placeholder="Chiều dài cơ sở" required value={createCarData.configuration.wheelbaseMm} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, wheelbaseMm: e.target.value } }))} />
+									<input type="number" placeholder="Khối lượng" required value={createCarData.configuration.weightKg} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, weightKg: e.target.value } }))} />
+									<input type="number" placeholder="Dung tích cốp" required value={createCarData.configuration.trunkVolumeL} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, trunkVolumeL: e.target.value } }))} />
+									<input type="number" placeholder="Số ghế" required value={createCarData.configuration.seats} onChange={e => setCreateCarData(d => ({ ...d, configuration: { ...d.configuration, seats: e.target.value } }))} />
+								</div>
+							</div>
+							<div className="form-section">
+								<h4 className="form-section-title">Color</h4>
+								<div className="form-row">
+									<input type="text" placeholder="Màu xe" required value={createCarData.color} onChange={e => setCreateCarData(d => ({ ...d, color: e.target.value }))} />
+								</div>
+							</div>
+							<div className="form-section">
+								<h4 className="form-section-title">Car</h4>
+								<div className="form-row">
+									<input type="number" placeholder="Năm sản xuất" required value={createCarData.car.productionYear} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, productionYear: e.target.value } }))} />
+									<input type="number" placeholder="Giá xe" required value={createCarData.car.price} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, price: e.target.value } }))} />
+									<input type="text" placeholder="Trạng thái xe" required value={createCarData.car.status} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, status: e.target.value } }))} />
+									<input type="text" placeholder="Đường dẫn ảnh" required value={createCarData.car.imagePath} onChange={e => setCreateCarData(d => ({ ...d, car: { ...d.car, imagePath: e.target.value } }))} />
+								</div>
+							</div>
+							{createCarError && <div className="error-message">{createCarError}</div>}
+							{createCarSuccess && <div style={{ color: '#667eea', marginTop: 8, textAlign: 'center' }}>{createCarSuccess}</div>}
+							<button className="create-user-submit-btn" type="submit" disabled={createCarLoading}>
+								{createCarLoading ? "Đang tạo..." : "Tạo xe mới"}
+							</button>
+						</form>
+					</div>
+				</div>
+			)}
+			{showUpdatePriceModal && (
+			   <div className="user-modal-overlay">
+				   <div className="create-user-modal">
+					   <div className="create-user-modal-header">
+						   <h3>Cập nhật giá tiền</h3>
+						   <button className="create-user-modal-close" onClick={() => setShowUpdatePriceModal(false)}>&times;</button>
+					   </div>
+					   <form className="create-user-form" onSubmit={handleUpdatePriceSubmit}>
+						   <div className="form-section">
+							   <h4 className="form-section-title">Thông tin xe</h4>
+							   <div className="form-row">
+								   <select required value={updatePriceData.modelName} onChange={e => handlePriceModelChange(e.target.value)}>
+									   <option value="">Chọn dòng xe</option>
+									   {modelOptions.map(m => (<option key={m} value={m}>{m}</option>))}
+								   </select>
+								   <select required value={updatePriceData.variantName} onChange={e => handlePriceVariantChange(e.target.value)} disabled={!updatePriceData.modelName}>
+									   <option value="">Chọn phiên bản</option>
+									   {priceVariantOptions.map(v => (<option key={v} value={v}>{v}</option>))}
+								   </select>
+								   <select required value={updatePriceData.colorName} onChange={e => setUpdatePriceData(d => ({ ...d, colorName: e.target.value }))} disabled={!updatePriceData.variantName}>
+									   <option value="">Chọn màu</option>
+									   {priceColorOptions.map(c => (<option key={c} value={c}>{c}</option>))}
+								   </select>
+							   </div>
+						   </div>
+						   <div className="form-section">
+							   <h4 className="form-section-title">Giá tiền hiện tại</h4>
+							   <div className="form-row">
+								<input type="text" value={manufacturerPrice === null ? '' : (manufacturerPrice === 'Đang tải...' || manufacturerPrice === 'Không có dữ liệu' ? manufacturerPrice : new Intl.NumberFormat('vi-VN').format(manufacturerPrice))} readOnly />
+							   </div>
+						   </div>
+						   <div className="form-section">
+							   <h4 className="form-section-title">Giá mới</h4>
+							   <div className="form-row">
+								   <input type="number" min="0" placeholder="Nhập giá mới (VND)" value={newPrice} onChange={e => setNewPrice(e.target.value)} required />
+							   </div>
+						   </div>
+						   {updatePriceMessage && <div className="error-message">{updatePriceMessage}</div>}
+						   <button className="create-user-submit-btn" type="submit" disabled={updatePriceLoading}>{updatePriceLoading ? 'Đang cập nhật...' : 'Cập nhật giá'}</button>
+					   </form>
+				   </div>
+			   </div>
+			)}
+		</div>
 	);
 }
 export default CarManagement;

@@ -7,7 +7,7 @@ import {
   transformConfigurationData,
   getCurrentUser 
 } from '../../services/carVariantApi';
-import { searchCarVariantsByVariantName, searchCarVariantsByModelName, searchCarVariantsByModelAndVariant } from '../../services/carVariantApi';
+import { searchCarVariantsByVariantName, searchCarVariantsByModelName, searchCarVariantsByModelAndVariant, fetchAllModelNames, fetchVariantNamesByModel } from '../../services/carVariantApi';
 
 import './VehicleInfoFeature.css';
 
@@ -17,6 +17,27 @@ const VehicleInfoFeature = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBrand, setFilterBrand] = useState('all');
   const [filterVersion, setFilterVersion] = useState('all');
+  const [modelOptions, setModelOptions] = useState([]);
+  const [variantOptions, setVariantOptions] = useState([]);
+  // Load all model names on mount
+  useEffect(() => {
+    fetchAllModelNames()
+      .then(models => setModelOptions(models))
+      .catch(() => setModelOptions([]));
+  }, []);
+
+  // Load variant names when filterBrand changes
+  useEffect(() => {
+    if (filterBrand && filterBrand !== 'all') {
+      fetchVariantNamesByModel(filterBrand)
+        .then(variants => setVariantOptions(Array.isArray(variants) ? variants : (variants.variantNames || [])))
+        .catch(() => setVariantOptions([]));
+    } else {
+      setVariantOptions([]);
+    }
+    // Reset variant filter if brand changes
+    setFilterVersion('all');
+  }, [filterBrand]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [selectedColor, setSelectedColor] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -35,16 +56,18 @@ const VehicleInfoFeature = () => {
     try {
       const apiData = await getCarVariantDetails();
       const transformedData = transformCarVariantData(apiData);
-      if (transformedData.length === 0) {
+      // Attach colorPricesRaw to each vehicle
+      const withRaw = transformedData.map((v, idx) => ({ ...v, colorPricesRaw: apiData[idx]?.colorPrices || [] }));
+      if (withRaw.length === 0) {
         setError('Không có xe nào được tìm thấy tại đại lý này.');
         setVehicles([]);
         setFilteredVehicles([]);
       } else {
-        setVehicles(transformedData);
-        setFilteredVehicles(transformedData);
+        setVehicles(withRaw);
+        setFilteredVehicles(withRaw);
         // Initialize selected color
         const initialColors = {};
-        transformedData.forEach(vehicle => {
+        withRaw.forEach(vehicle => {
           initialColors[vehicle.id] = vehicle.colors[0];
         });
         setSelectedColor(initialColors);
@@ -71,6 +94,7 @@ const VehicleInfoFeature = () => {
       filterVersion !== 'all' &&
       filterBrand && filterVersion
     ) {
+      // Sử dụng API thật để search theo modelName và variantName
       handleSearchByModelAndVariant(filterBrand, filterVersion);
     } else if (filterBrand !== 'all') {
       handleSearchByModelName(filterBrand);
@@ -88,10 +112,11 @@ const VehicleInfoFeature = () => {
     try {
       const searchResults = await searchCarVariantsByModelName(modelName);
       const transformedResults = transformCarVariantData(searchResults);
-      setFilteredVehicles(transformedResults);
+      const withRaw = transformedResults.map((v, idx) => ({ ...v, colorPricesRaw: searchResults[idx]?.colorPrices || [] }));
+      setFilteredVehicles(withRaw);
       // Initialize colors for search results
       const newColors = {};
-      transformedResults.forEach(vehicle => {
+      withRaw.forEach(vehicle => {
         if (!selectedColor[vehicle.id]) {
           newColors[vehicle.id] = vehicle.colors[0];
         }
@@ -113,10 +138,11 @@ const VehicleInfoFeature = () => {
     try {
       const searchResults = await searchCarVariantsByVariantName(variantName);
       const transformedResults = transformCarVariantData(searchResults);
-      setFilteredVehicles(transformedResults);
+      const withRaw = transformedResults.map((v, idx) => ({ ...v, colorPricesRaw: searchResults[idx]?.colorPrices || [] }));
+      setFilteredVehicles(withRaw);
       // Initialize colors for search results
       const newColors = {};
-      transformedResults.forEach(vehicle => {
+      withRaw.forEach(vehicle => {
         if (!selectedColor[vehicle.id]) {
           newColors[vehicle.id] = vehicle.colors[0];
         }
@@ -132,16 +158,18 @@ const VehicleInfoFeature = () => {
     }
   };
 
+  // Đảm bảo luôn dùng API thật, không filter local
   const handleSearchByModelAndVariant = async (modelName, variantName) => {
     setIsSearching(true);
     setError('');
     try {
       const searchResults = await searchCarVariantsByModelAndVariant(modelName, variantName);
       const transformedResults = transformCarVariantData(searchResults);
-      setFilteredVehicles(transformedResults);
+      const withRaw = transformedResults.map((v, idx) => ({ ...v, colorPricesRaw: searchResults[idx]?.colorPrices || [] }));
+      setFilteredVehicles(withRaw);
       // Initialize colors for search results
       const newColors = {};
-      transformedResults.forEach(vehicle => {
+      withRaw.forEach(vehicle => {
         if (!selectedColor[vehicle.id]) {
           newColors[vehicle.id] = vehicle.colors[0];
         }
@@ -163,10 +191,11 @@ const VehicleInfoFeature = () => {
     try {
       const searchResults = await searchCarVariants(query);
       const transformedResults = transformCarVariantData(searchResults);
-      setFilteredVehicles(transformedResults);
+      const withRaw = transformedResults.map((v, idx) => ({ ...v, colorPricesRaw: searchResults[idx]?.colorPrices || [] }));
+      setFilteredVehicles(withRaw);
       // Initialize colors for search results
       const newColors = {};
-      transformedResults.forEach(vehicle => {
+      withRaw.forEach(vehicle => {
         if (!selectedColor[vehicle.id]) {
           newColors[vehicle.id] = vehicle.colors[0];
         }
@@ -230,9 +259,14 @@ const VehicleInfoFeature = () => {
     return vehicle.images[currentColor] || vehicle.defaultImage;
   };
 
+  // Always use dealerPrice for price display
   const getCurrentPrice = (vehicle) => {
     const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
-    return vehicle.colorPrices[currentColor];
+    if (vehicle.colorPricesRaw) {
+      const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === currentColor);
+      if (colorObj && colorObj.dealerPrice != null) return colorObj.dealerPrice;
+    }
+    return 0;
   };
 
   const getCurrentQuantity = (vehicle) => {
@@ -322,22 +356,21 @@ const VehicleInfoFeature = () => {
             className={searchTerm ? 'disabled-filter' : ''}
           >
             <option value="all">Tất cả dòng xe</option>
-            <option value="VF3">VF3</option>
-            <option value="VF5">VF5</option>
-            <option value="VF7">VF7</option>
-            <option value="VF8">VF8</option>
-            <option value="VF9">VF9</option>
+            {modelOptions.map(model => (
+              <option key={model} value={model}>{model}</option>
+            ))}
           </select>
 
           <select
             value={filterVersion}
             onChange={(e) => setFilterVersion(e.target.value)}
-            disabled={!!searchTerm}
+            disabled={!!searchTerm || filterBrand === 'all'}
             className={searchTerm ? 'disabled-filter' : ''}
           >
             <option value="all">Tất cả phiên bản</option>
-            <option value="Eco">Eco</option>
-            <option value="Plus">Plus</option>
+            {variantOptions.map(variant => (
+              <option key={variant} value={variant}>{variant}</option>
+            ))}
           </select>
 
           {/* Nút Làm mới */}
@@ -452,6 +485,7 @@ const VehicleInfoFeature = () => {
   );
 };
 
+
 // VehicleDetailModal component
 const VehicleDetailModal = ({ vehicle, onClose }) => {
   const [selectedModalColor, setSelectedModalColor] = useState(vehicle.colors[0]);
@@ -460,8 +494,13 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
     return vehicle.images[selectedModalColor] || vehicle.defaultImage;
   };
 
+  // Always use dealerPrice for modal price display
   const getCurrentModalPrice = () => {
-    return vehicle.colorPrices[selectedModalColor];
+    if (vehicle.colorPricesRaw) {
+      const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === selectedModalColor);
+      if (colorObj && colorObj.dealerPrice != null) return colorObj.dealerPrice;
+    }
+    return 0;
   };
 
   const getCurrentModalQuantity = () => {
@@ -516,26 +555,33 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
             <div className="detail-section">
               <h3>Chọn màu sắc</h3>
               <div className="color-price-grid">
-                {vehicle.colors.map((color, index) => (
-                  <div 
-                    key={index} 
-                    className={`color-price-item ${selectedModalColor === color ? 'active' : ''}`}
-                    onClick={() => setSelectedModalColor(color)}
-                  >
-                    <div>
-                      <div className="color-name">{color}</div>
-                      <div className={`color-qty-info ${selectedModalColor === color ? 'active' : ''}`}>
-                        Tồn: {vehicle.colorQuantities[color]} xe
+                {vehicle.colors.map((color, index) => {
+                  let price = 0;
+                  if (vehicle.colorPricesRaw) {
+                    const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === color);
+                    if (colorObj && colorObj.dealerPrice != null) price = colorObj.dealerPrice;
+                  }
+                  return (
+                    <div 
+                      key={index} 
+                      className={`color-price-item ${selectedModalColor === color ? 'active' : ''}`}
+                      onClick={() => setSelectedModalColor(color)}
+                    >
+                      <div>
+                        <div className="color-name">{color}</div>
+                        <div className={`color-qty-info ${selectedModalColor === color ? 'active' : ''}`}>
+                          Tồn: {vehicle.colorQuantities[color]} xe
+                        </div>
+                      </div>
+                      <div className="color-price">
+                        {new Intl.NumberFormat('vi-VN', { 
+                          style: 'currency', 
+                          currency: 'VND' 
+                        }).format(price)}
                       </div>
                     </div>
-                    <div className="color-price">
-                      {new Intl.NumberFormat('vi-VN', { 
-                        style: 'currency', 
-                        currency: 'VND' 
-                      }).format(vehicle.colorPrices[color])}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="selected-price">
                 <strong className="selected-price-value">
