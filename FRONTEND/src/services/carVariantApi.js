@@ -360,7 +360,7 @@ export const fetchVariantNamesByModel = async (modelName) => {
   return response.json();
 };
 // Thêm xe vào đại lý
-export const addCarToDealer = async ({ variantId, colorName, dealerName, quantity }) => {
+export const addCarToDealer = async ({modelName, variantName,colorName, dealerName, quantity }) => {
   const token = getAuthToken();
   if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
   const response = await fetch(`${API_BASE_URL}/cars/add-to-dealer`, {
@@ -370,7 +370,7 @@ export const addCarToDealer = async ({ variantId, colorName, dealerName, quantit
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify({ variantId, colorName, dealerName, quantity })
+    body: JSON.stringify({ modelName, variantName, colorName, dealerName, quantity })
   });
   if (!response.ok) {
     if (response.status === 401) {
@@ -451,6 +451,70 @@ export const fetchManufacturerPriceByModelVariantColor = async (modelName, varia
   const url = `${API_BASE_URL}/cars/manufacturer-price?modelName=${encodeURIComponent(modelName)}&variantName=${encodeURIComponent(variantName)}&colorName=${encodeURIComponent(colorName)}`;
   const response = await fetch(url, {
     method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+};
+// Upload image file to server
+export const uploadImage = async (file) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE_URL}/images/upload-file`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+      // 'Content-Type' KHÔNG được set khi dùng FormData
+    },
+    body: formData
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  // Parse JSON and return only the filename
+  const data = await response.json();
+  return data.filename;
+};
+// Search car variants by status
+export const searchCarVariantsByStatus = async (status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  const url = `${API_BASE_URL}/car-variants/search/status?status=${encodeURIComponent(status)}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+};
+// Cập nhật giá và trạng thái xe theo model, variant, color (Dealer Manager)
+export const updateDealerCarPriceAndStatus = async ({ modelName, variantName, colorName, dealerPrice, status }) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  const url = `${API_BASE_URL}/car-variants/update-dealer-car?modelName=${encodeURIComponent(modelName)}&variantName=${encodeURIComponent(variantName)}&colorName=${encodeURIComponent(colorName)}&dealerPrice=${encodeURIComponent(dealerPrice)}&status=${encodeURIComponent(status)}`;
+  const response = await fetch(url, {
+    method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/json'

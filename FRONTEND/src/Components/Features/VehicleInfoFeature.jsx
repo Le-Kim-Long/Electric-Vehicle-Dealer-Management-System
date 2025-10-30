@@ -536,15 +536,6 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
             <div className="detail-section">
               <h3>Thông tin cơ bản</h3>
               <div className="detail-grid">
-                {/* ✅ XÓA dòng Hãng xe */}
-                {/* <div className="detail-item">
-                  <span>Hãng xe:</span>
-                  <span>{vehicle.brand}</span>
-                </div> */}
-                <div className="detail-item">
-                  <span>Khoảng giá:</span>
-                  <span>{vehicle.priceRange}</span>
-                </div>
                 <div className="detail-item">
                   <span>Tổng tồn kho:</span>
                   <span>{vehicle.stock} xe</span>

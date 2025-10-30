@@ -1,5 +1,10 @@
+
 import React, { useState } from 'react';
 import './DealerManager.css';
+import DealerCarManagement from '../ManagerFeatures/DealerCarManagement';
+import OrderManagement from '../ManagerFeatures/OrderManagement';
+import CustomerManagement from '../ManagerFeatures/CustomerManagement';
+import PromotionManagement from '../ManagerFeatures/PromotionManagement';
 
 const DealerManager = ({ user, onLogout }) => {
   const [activeFeature, setActiveFeature] = useState('car-management');
@@ -11,13 +16,13 @@ const DealerManager = ({ user, onLogout }) => {
   const renderMainContent = () => {
     switch (activeFeature) {
       case 'car-management':
-        return <div className="feature-content"><h3>Quản lý xe cho đại lý</h3><p>Chức năng quản lý xe sẽ được phát triển...</p></div>;
+        return <DealerCarManagement />;
       case 'order-management':
-        return <div className="feature-content"><h3>Quản lý đơn hàng</h3><p>Chức năng quản lý đơn hàng sẽ được phát triển...</p></div>;
+        return <OrderManagement />;
       case 'customer-management':
-        return <div className="feature-content"><h3>Quản lý khách hàng</h3><p>Chức năng quản lý khách hàng sẽ được phát triển...</p></div>;
+        return <CustomerManagement />;
       case 'promotion-management':
-        return <div className="feature-content"><h3>Quản lý khuyến mãi</h3><p>Chức năng quản lý khuyến mãi sẽ được phát triển...</p></div>;
+        return <PromotionManagement />;
       default:
         return null;
     }
