@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Admin.css';
 import UserManagement from './AdminFeatures/UserManagement';
+import UserProfile from './UserProfile';
 
 const Admin = ({ user, onLogout }) => {
+  const [showProfile, setShowProfile] = useState(false);
+
   return (
     <div className="admin-layout">
       <header className="admin-header">
@@ -11,7 +14,7 @@ const Admin = ({ user, onLogout }) => {
         </div>
         
         <div className="header-right">
-          <div className="user-info">
+          <div className="user-info" onClick={() => setShowProfile(true)}>
             <div className="user-avatar">
               {user.username ? user.username.charAt(0).toUpperCase() : 'A'}
             </div>
@@ -29,6 +32,8 @@ const Admin = ({ user, onLogout }) => {
       <main className="admin-content">
         <UserManagement />
       </main>
+      
+      {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
     </div>
   );
 };

@@ -300,6 +300,7 @@
   border: 1px solid rgba(102, 126, 234, 0.2);
   font-weight: 500;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .color-tag:hover {

@@ -16,7 +16,7 @@ import {
     fetchAllModelNames,
     fetchVariantNamesByModel
 } from '../services/carVariantApi';
-import '../ManagerFeatures/DealerCarManagement.css';
+import './DealerCarManagement.css';
 
 
 const DealerCarManagement = () => {

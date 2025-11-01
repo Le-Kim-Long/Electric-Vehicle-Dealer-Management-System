@@ -91,6 +91,48 @@ export const fetchDealerNames = async () => {
   return response.json();
 };
 
+// Lấy thông tin dealer của user hiện tại
+export const fetchMyDealerInfo = async () => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/dealers/my-dealer`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('Failed to fetch dealer info');
+  return response.json();
+};
+
+// Lấy thông tin profile của user hiện tại đang đăng nhập
+export const fetchCurrentUserProfile = async () => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/admin/users/profile`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('Failed to fetch user profile');
+  return response.json();
+};
+
+// Cập nhật thông tin profile của user hiện tại (chỉ username, password, phoneNumber)
+export const updateCurrentUserProfile = async (profileData) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/admin/users/profile`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(profileData)
+  });
+  if (!response.ok) throw new Error('Failed to update user profile');
+  return response.json();
+};
+
 // Lấy danh sách tên các role
 export const fetchRoleNames = async () => {
   const token = getAuthToken();

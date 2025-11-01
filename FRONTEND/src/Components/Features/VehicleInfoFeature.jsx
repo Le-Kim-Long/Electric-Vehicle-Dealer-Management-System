@@ -439,7 +439,6 @@ const VehicleInfoFeature = () => {
                       key={index} 
                       className={`color-tag ${selectedColor[vehicle.id] === color ? 'active' : ''}`}
                       onClick={() => handleColorChange(vehicle.id, color)}
-                      style={{ cursor: 'pointer' }}
                       title={`Tồn kho: ${vehicle.colorQuantities[color]} xe`}
                     >
                       {color}

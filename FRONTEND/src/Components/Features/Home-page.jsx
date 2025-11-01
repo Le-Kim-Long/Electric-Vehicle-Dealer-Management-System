@@ -27,12 +27,7 @@ const HomePage = ({ onMenuClick }) => {
       title: 'Thanh toán',
       description: 'Xử lý thanh toán và hóa đơn'
     },
-    {
-      id: 'feedback-test-drive',
-      icon: '💬',
-      title: 'Phản hồi & Lái thử',
-      description: 'Xử lý phản hồi và đặt lịch lái thử'
-    }
+    
   ];
 
   return (

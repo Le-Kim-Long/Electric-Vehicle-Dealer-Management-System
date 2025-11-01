@@ -1,13 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './DealerManager.css';
 import DealerCarManagement from '../ManagerFeatures/DealerCarManagement';
 import OrderManagement from '../ManagerFeatures/OrderManagement';
 import CustomerManagement from '../ManagerFeatures/CustomerManagement';
 import PromotionManagement from '../ManagerFeatures/PromotionManagement';
+import UserProfile from './UserProfile';
+import { fetchMyDealerInfo } from '../services/adminApi';
 
 const DealerManager = ({ user, onLogout }) => {
   const [activeFeature, setActiveFeature] = useState('car-management');
+  const [dealerInfo, setDealerInfo] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+
+  useEffect(() => {
+    const loadDealerInfo = async () => {
+      try {
+        const data = await fetchMyDealerInfo();
+        setDealerInfo(data);
+      } catch (error) {
+        console.error('Error loading dealer info:', error);
+      }
+    };
+    loadDealerInfo();
+  }, []);
 
   const handleMenuClick = (featureId) => {
     setActiveFeature(featureId);
@@ -76,7 +92,7 @@ const DealerManager = ({ user, onLogout }) => {
             </h1>
           </div>
           <div className="header-right">
-            <div className="user-info">
+            <div className="user-info" onClick={() => setShowProfile(true)}>
               <div className="user-avatar">
                 {user.name ? user.name.charAt(0) : user.username.charAt(0).toUpperCase()}
               </div>
@@ -91,10 +107,48 @@ const DealerManager = ({ user, onLogout }) => {
             </button>
           </div>
         </header>
-        <main className="content-area">
-          {renderMainContent()}
-        </main>
+        <div className="content-wrapper">
+          <main className="content-area">
+            {renderMainContent()}
+          </main>
+          <footer className="dealer-footer">
+            <div className="footer-content">
+              <div className="footer-section">
+                <div className="footer-icon">🏢</div>
+                <div className="footer-info">
+                  <span className="footer-label">Đại lý</span>
+                  <span className="footer-value">{dealerInfo?.dealerName || 'Đang tải...'}</span>
+                </div>
+              </div>
+              <div className="footer-section">
+                <div className="footer-icon">📍</div>
+                <div className="footer-info">
+                  <span className="footer-label">Địa chỉ</span>
+                  <span className="footer-value">{dealerInfo?.address || 'Đang tải...'}</span>
+                </div>
+              </div>
+              <div className="footer-section">
+                <div className="footer-icon">📞</div>
+                <div className="footer-info">
+                  <span className="footer-label">Điện thoại</span>
+                  <span className="footer-value">{dealerInfo?.phone || 'Đang tải...'}</span>
+                </div>
+              </div>
+              <div className="footer-section">
+                <div className="footer-icon">✉️</div>
+                <div className="footer-info">
+                  <span className="footer-label">Email</span>
+                  <span className="footer-value">{dealerInfo?.email || 'Đang tải...'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="footer-bottom">
+              <p>© 2025 EV Dealer Management System. All rights reserved.</p>
+            </div>
+          </footer>
+        </div>
       </div>
+      {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
     </div>
   );
 }

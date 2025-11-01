@@ -48,6 +48,14 @@
   background: #f8f9fa;
   border-radius: 25px;
   border: 1px solid #e9ecef;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background: white;
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .user-avatar {

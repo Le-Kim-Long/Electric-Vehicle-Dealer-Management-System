@@ -1,9 +1,11 @@
-﻿import React, { useState, createContext, useContext } from 'react';
+﻿import React, { useState, createContext, useContext, useEffect } from 'react';
 import './DealerStaff.css';
 import HomePage from './Features/Home-page';
 import VehicleInfoFeature from './Features/VehicleInfoFeature';
 import CreateOrderFeature from './Features/CreateOrderFeature';
 import OrderFeatureManagementPayment from './Features/OrderFeatureManagement&Payment';
+import UserProfile from './UserProfile';
+import { fetchMyDealerInfo } from '../services/adminApi';
 
 const TestDriveContext = createContext();
 
@@ -19,6 +21,20 @@ const DealerStaff = ({ user, onLogout }) => {
   const [activeFeature, setActiveFeature] = useState('dashboard');
   const [testDriveBookings, setTestDriveBookings] = useState([]);
   const [quoteRequests, setQuoteRequests] = useState([]);
+  const [dealerInfo, setDealerInfo] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+
+  useEffect(() => {
+    const loadDealerInfo = async () => {
+      try {
+        const data = await fetchMyDealerInfo();
+        setDealerInfo(data);
+      } catch (error) {
+        console.error('Error loading dealer info:', error);
+      }
+    };
+    loadDealerInfo();
+  }, []);
 
   const addTestDriveBooking = (booking) => {
     const newBooking = {
@@ -138,7 +154,7 @@ const DealerStaff = ({ user, onLogout }) => {
             </div>
             
             <div className="header-right">
-              <div className="user-info">
+              <div className="user-info" onClick={() => setShowProfile(true)}>
                 <div className="user-avatar">
                   {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
                 </div>
@@ -153,12 +169,52 @@ const DealerStaff = ({ user, onLogout }) => {
             </div>
           </header>
 
-          {/* Content area */}
-          <main className="content-area">
-            {renderMainContent()}
-          </main>
+          {/* Content area with footer */}
+          <div className="content-wrapper">
+            <main className="content-area">
+              {renderMainContent()}
+            </main>
+
+            {/* Footer */}
+            <footer className="dealer-footer">
+              <div className="footer-content">
+                <div className="footer-section">
+                  <div className="footer-icon">🏢</div>
+                  <div className="footer-info">
+                    <span className="footer-label">Đại lý</span>
+                    <span className="footer-value">{dealerInfo?.dealerName || 'Đang tải...'}</span>
+                  </div>
+                </div>
+                <div className="footer-section">
+                  <div className="footer-icon">📍</div>
+                  <div className="footer-info">
+                    <span className="footer-label">Địa chỉ</span>
+                    <span className="footer-value">{dealerInfo?.address || 'Đang tải...'}</span>
+                  </div>
+                </div>
+                <div className="footer-section">
+                  <div className="footer-icon">📞</div>
+                  <div className="footer-info">
+                    <span className="footer-label">Điện thoại</span>
+                    <span className="footer-value">{dealerInfo?.phone || 'Đang tải...'}</span>
+                  </div>
+                </div>
+                <div className="footer-section">
+                  <div className="footer-icon">✉️</div>
+                  <div className="footer-info">
+                    <span className="footer-label">Email</span>
+                    <span className="footer-value">{dealerInfo?.email || 'Đang tải...'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="footer-bottom">
+                <p>© 2025 EV Dealer Management System. All rights reserved.</p>
+              </div>
+            </footer>
+          </div>
         </div>
       </div>
+      {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
     </TestDriveContext.Provider>
   );
 };

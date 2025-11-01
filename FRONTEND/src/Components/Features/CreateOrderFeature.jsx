@@ -621,18 +621,9 @@ const VehicleSelectionStep = ({
                   <img 
                     src={getCurrentImage(tempSelectedVehicle, tempColor)} 
                     alt={`${tempSelectedVehicle.name} ${tempSelectedVehicle.variant} - ${tempColor}`}
+                    className="vehicle-preview-image"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/400x250?text=VinFast+' + tempSelectedVehicle.name.split(' ')[1];
-                    }}
-                    style={{
-                      width: '100%',
-                      maxWidth: '400px',
-                      height: '250px',
-                      objectFit: 'cover',
-                      borderRadius: '12px',
-                      marginTop: '15px',
-                      border: '2px solid #e9ecef',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                     }}
                   />
                 </div>
@@ -701,15 +692,9 @@ const VehicleSelectionStep = ({
                   <img 
                     src={getCurrentImage(item.vehicle, item.color)} 
                     alt={`${item.vehicle.name} ${item.vehicle.variant} - ${item.color}`}
+                    className="cart-item-thumbnail"
                     onError={(e) => {
                       e.target.src = 'https://via.placeholder.com/120x80?text=VinFast+' + item.vehicle.name.split(' ')[1];
-                    }}
-                    style={{
-                      width: '120px',
-                      height: '80px',
-                      objectFit: 'cover',
-                      borderRadius: '8px',
-                      marginRight: '15px'
                     }}
                   />
                 </div>

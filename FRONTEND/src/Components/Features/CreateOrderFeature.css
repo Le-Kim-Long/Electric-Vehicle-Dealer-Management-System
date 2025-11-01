@@ -1371,3 +1371,24 @@
     padding: 20px 15px;
   }
 }
+
+/* Vehicle preview image */
+.vehicle-preview-image {
+  width: 100%;
+  max-width: 400px;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 15px;
+  border: 2px solid #e9ecef;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Cart item thumbnail */
+.cart-item-thumbnail {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 15px;
+}
