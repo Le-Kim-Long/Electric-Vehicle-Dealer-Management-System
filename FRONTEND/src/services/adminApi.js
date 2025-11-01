@@ -144,3 +144,18 @@ export const searchUsersByRoleAndDealer = async (roleName, dealerName) => {
   if (!response.ok) throw new Error('Failed to search users by role and dealer');
   return response.json();
 };
+// Xóa tài khoản theo userId
+export const deleteUserAccount = async (userId) => {
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) throw new Error('Failed to delete user');
+  // Backend returns plain text, not JSON
+  const textResponse = await response.text();
+  return { success: true, message: textResponse };
+};

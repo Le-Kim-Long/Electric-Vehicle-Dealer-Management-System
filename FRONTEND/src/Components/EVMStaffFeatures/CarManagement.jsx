@@ -1,14 +1,39 @@
 import React, { useEffect, useState } from 'react';
-import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor, fetchManufacturerPriceByModelVariantColor, uploadImage } from '../../services/carVariantApi';
+import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor, fetchManufacturerPriceByModelVariantColor, uploadImage, deleteCarByModelVariantColor} from '../../services/carVariantApi';
 import './CarManagement.css';
-// Modal hiển thị chi tiết xe
+// Modal hiển thị chi tiết xe (đồng bộ style user VehicleInfoFeature)
 const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, onClose }) => {
+	const [selectedModalColor, setSelectedModalColor] = useState(selectedColor || (vehicle.colors && vehicle.colors[0]));
 	if (!vehicle) return null;
-	// Close modal when clicking outside modal-content
 	const handleOverlayClick = (e) => {
 		if (e.target.classList.contains('modal-overlay')) {
 			onClose();
 		}
+	};
+	// Lấy giá và tồn kho cho từng màu
+	const getCurrentModalPrice = () => {
+		if (vehicle.colorPricesRaw) {
+			const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === selectedModalColor);
+			if (colorObj && colorObj.dealerPrice != null) return colorObj.dealerPrice;
+		}
+		if (vehicle.colorPrices) {
+			return vehicle.colorPrices[selectedModalColor] || 0;
+		}
+		return 0;
+	};
+	const getCurrentModalQuantity = () => {
+		if (vehicle.colorQuantities) {
+			return vehicle.colorQuantities[selectedModalColor] || 0;
+		}
+		return 0;
+	};
+	const getCurrentModalImage = () => {
+		return vehicle.images && vehicle.images[selectedModalColor] ? vehicle.images[selectedModalColor] : vehicle.defaultImage;
+	};
+	// Khi chọn màu mới
+	const handleColorClick = (color) => {
+		setSelectedModalColor(color);
+		if (onColorChange) onColorChange(color);
 	};
 	return (
 		<div className="modal-overlay" onClick={handleOverlayClick}>
@@ -20,111 +45,72 @@ const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, on
 				<div className="modal-body">
 					<div className="vehicle-detail-image">
 						<img
-							src={vehicle.images && vehicle.images[selectedColor] ? vehicle.images[selectedColor] : vehicle.defaultImage}
-							alt={`${vehicle.name || vehicle.modelName} - ${selectedColor}`}
+							src={getCurrentModalImage()}
+							alt={`${vehicle.name || vehicle.modelName} - ${selectedModalColor}`}
 							onError={e => { e.target.src = vehicle.defaultImage; }}
 							className="vehicle-detail-img"
 						/>
 					</div>
-					{loading ? (
-						<div className="vehicle-detail-loading">⏳ Đang tải thông tin chi tiết...</div>
-					) : (
-						<>
+					<div className="vehicle-detail-info">
+						{loading && (
+							<div className="vehicle-detail-loading">⏳ Đang tải thông tin chi tiết...</div>
+						)}
+									{/* Đã xóa phần thông tin cơ bản theo yêu cầu */}
+									<div className="detail-section">
+										<h3>Chọn màu sắc</h3>
+										<div className="colors-list">
+											{vehicle.colors && vehicle.colors.map((color, idx) => (
+												<span
+													key={color}
+													className={`color-tag${selectedModalColor === color ? ' active' : ''}`}
+													onClick={() => handleColorClick(color)}
+												>
+													{color}
+												</span>
+											))}
+										</div>
+									</div>
+						{vehicle.specs && (
 							<div className="detail-section">
-								<h3>Thông tin cơ bản</h3>
+								<h3>Thông số kỹ thuật</h3>
 								<div className="detail-grid">
-									<div className="detail-item">
-										<span className="detail-label">Phiên bản:</span>
-										<span className="detail-value">{vehicle.variantName || (vehicle.variant && vehicle.variant.variantName)}</span>
-									</div>
-									<div className="detail-item">
-										<span className="detail-label">Giá:</span>
-										<span className="vehicle-price">{vehicle.price ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(vehicle.price) : ''}</span>
-									</div>
+									{vehicle.specs.battery && (
+										<div className="detail-item"><span>Pin:</span><span>{vehicle.specs.battery}</span></div>
+									)}
+									{vehicle.range && (
+										<div className="detail-item"><span>Phạm vi hoạt động:</span><span>{vehicle.range} km</span></div>
+									)}
+									{vehicle.charging && (
+										<div className="detail-item"><span>Thời gian sạc:</span><span>{vehicle.charging}</span></div>
+									)}
+									{vehicle.power && (
+										<div className="detail-item"><span>Công suất:</span><span>{vehicle.power} kW</span></div>
+									)}
+									{vehicle.specs.torque && (
+										<div className="detail-item"><span>Mô-men xoắn:</span><span>{vehicle.specs.torque}</span></div>
+									)}
+									{vehicle.specs.seats && (
+										<div className="detail-item"><span>Số ghế:</span><span>{vehicle.specs.seats} ghế</span></div>
+									)}
+									{vehicle.specs.dimensions && (
+										<div className="detail-item"><span>Kích thước:</span><span>{vehicle.specs.dimensions}</span></div>
+									)}
+									{vehicle.specs.wheelbase && (
+										<div className="detail-item"><span>Chiều dài cơ sở:</span><span>{vehicle.specs.wheelbase}</span></div>
+									)}
+									{vehicle.specs.weight && (
+										<div className="detail-item"><span>Trọng lượng:</span><span>{vehicle.specs.weight}</span></div>
+									)}
 								</div>
 							</div>
-							{vehicle.colors && (
-								<div className="detail-section">
-									<h3>Chọn màu</h3>
-									<div className="colors-list">
-										{vehicle.colors.map((color, idx) => (
-											<span
-												key={color}
-												className={`color-tag${selectedColor === color ? ' active' : ''}`}
-												onClick={() => onColorChange(color)}
-												title={`Tồn kho: ${vehicle.colorQuantities ? vehicle.colorQuantities[color] : ''} xe`}
-											>{color}</span>
-										))}
-									</div>
-								</div>
-							)}
-							{vehicle.specs && (
-								<div className="detail-section">
-									<h3>Thông số kỹ thuật</h3>
-									<div className="detail-grid">
-										{[
-											{ key: 'battery', label: 'Pin', alt: ['batteryCapacity'] },
-											{ key: 'range', label: 'Phạm vi hoạt động', alt: ['rangeKm'] },
-											{ key: 'charging', label: 'Thời gian sạc', alt: ['fullChargeTime'] },
-											{ key: 'power', label: 'Công suất' },
-											{ key: 'torque', label: 'Mô-men xoắn' },
-											{ key: 'seats', label: 'Số ghế' },
-											{ key: 'dimensions', label: 'Kích thước' },
-											{ key: 'weight', label: 'Trọng lượng', alt: ['weightKg'] },
-											{ key: 'wheelbase', label: 'Chiều dài cơ sở', alt: ['wheelbaseMm'] },
-											{ key: 'batteryType', label: 'Loại pin' }
-										].map(field => {
-											let value = vehicle.specs[field.key];
-											if (!value && field.alt) {
-												for (let altKey of field.alt) {
-													if (vehicle.specs[altKey]) {
-														value = vehicle.specs[altKey];
-														break;
-													}
-												}
-											}
-											return value ? (
-												<div className="detail-item" key={field.key}>
-													<span className="detail-label">{field.label}:</span>
-													<span className="detail-value">{value}</span>
-												</div>
-											) : null;
-										})}
-									</div>
-								</div>
-							)}
-							{vehicle.range && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span className="detail-label">Quãng đường:</span>
-										<span className="detail-value">{vehicle.range} km</span>
-									</div>
-								</div>
-							)}
-							{vehicle.charging && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span className="detail-label">Thời gian sạc:</span>
-										<span className="detail-value">{vehicle.charging}</span>
-									</div>
-								</div>
-							)}
-							{vehicle.power && (
-								<div className="detail-section">
-									<div className="detail-item">
-										<span className="detail-label">Công suất:</span>
-										<span className="detail-value">{vehicle.power}</span>
-									</div>
-								</div>
-							)}
-						</>
-					)}
+						)}
+					</div>
 				</div>
 			</div>
 		</div>
 	);
-}
-// End of VehicleDetailModal
+};
+// End of VehicleDetailModal (chuẩn user)
 
 const CarManagement = () => {
 	// 1. State khai báo
@@ -164,6 +150,16 @@ const CarManagement = () => {
 	const [updatePriceLoading, setUpdatePriceLoading] = useState(false);
 	const [priceVariantOptions, setPriceVariantOptions] = useState([]);
 	const [priceColorOptions, setPriceColorOptions] = useState([]);
+
+	// Delete car modal state
+	const [showDeleteCarModal, setShowDeleteCarModal] = useState(false);
+	const [deleteCarData, setDeleteCarData] = useState({ modelName: '', variantName: '', colorName: '' });
+	const [deleteCarMessage, setDeleteCarMessage] = useState('');
+	const [deleteCarLoading, setDeleteCarLoading] = useState(false);
+	const [deleteVariantOptions, setDeleteVariantOptions] = useState([]);
+	const [deleteColorOptions, setDeleteColorOptions] = useState([]);
+
+	// ...existing code...
 	const [createCarData, setCreateCarData] = useState({
 		model: { modelName: "", segment: "" },
 		variant: { variantName: "", description: "" },
@@ -319,7 +315,18 @@ const CarManagement = () => {
 				setUpdatePriceLoading(false);
 				return;
 			}
-			await updateManufacturerPriceByModelVariantColor(updatePriceData.modelName, updatePriceData.variantName, updatePriceData.colorName, Number(newPrice));
+			const priceValue = Number(newPrice);
+			if (priceValue <= 0) {
+				setUpdatePriceMessage('Giá phải lớn hơn 0.');
+				setUpdatePriceLoading(false);
+				return;
+			}
+			await updateManufacturerPriceByModelVariantColor(
+				updatePriceData.modelName, 
+				updatePriceData.variantName, 
+				updatePriceData.colorName, 
+				priceValue
+			);
 			setUpdatePriceMessage('Cập nhật giá thành công!');
 			loadVehicles();
 		} catch (err) {
@@ -328,6 +335,108 @@ const CarManagement = () => {
 			setUpdatePriceLoading(false);
 		}
 	};
+
+	// Handlers for delete car modal
+	const handleDeleteModelChange = async (modelName) => {
+		setDeleteCarData(d => ({ ...d, modelName, variantName: '', colorName: '' }));
+		setDeleteVariantOptions([]);
+		setDeleteColorOptions([]);
+		if (!modelName) return;
+		try {
+			const variants = await fetchVariantNamesByModel(modelName);
+			setDeleteVariantOptions(variants || []);
+		} catch (err) {
+			setDeleteVariantOptions([]);
+		}
+	};
+
+	const handleDeleteVariantChange = async (variantName) => {
+		setDeleteCarData(d => ({ ...d, variantName, colorName: '' }));
+		setDeleteColorOptions([]);
+		if (!variantName || !deleteCarData.modelName) return;
+		try {
+			const colors = await fetchColorsByModelAndVariant(deleteCarData.modelName, variantName);
+			setDeleteColorOptions(colors || []);
+		} catch (err) {
+			setDeleteColorOptions([]);
+		}
+	};
+
+	const handleDeleteCarSubmit = async (e) => {
+		e.preventDefault();
+		setDeleteCarLoading(true);
+		setDeleteCarMessage('');
+		try {
+			if (!deleteCarData.modelName) {
+				setDeleteCarMessage('Vui lòng chọn ít nhất modelName!');
+				setDeleteCarLoading(false);
+				return;
+			}
+			
+			// Xác nhận trước khi xóa
+			let confirmMessage = '';
+			if (!deleteCarData.variantName && !deleteCarData.colorName) {
+				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ MODEL "${deleteCarData.modelName}"?\nHành động này sẽ xóa tất cả các variant và màu xe thuộc model này!`;
+			} else if (!deleteCarData.colorName) {
+				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ VARIANT "${deleteCarData.variantName}" của model "${deleteCarData.modelName}"?\nHành động này sẽ xóa tất cả màu xe thuộc variant này!`;
+			} else {
+				confirmMessage = `Bạn có chắc chắn muốn xóa xe "${deleteCarData.modelName} ${deleteCarData.variantName}" màu "${deleteCarData.colorName}"?`;
+			}
+			
+			if (!window.confirm(confirmMessage)) {
+				setDeleteCarLoading(false);
+				return;
+			}
+			
+			await deleteCarByModelVariantColor({
+				modelName: deleteCarData.modelName,
+				variantName: deleteCarData.variantName || null,
+				colorName: deleteCarData.colorName || null
+			});
+			
+			// Hiển thị thông báo chi tiết hơn
+			if (!deleteCarData.variantName && !deleteCarData.colorName) {
+				setDeleteCarMessage(`Xóa toàn bộ model "${deleteCarData.modelName}" thành công!`);
+			} else if (!deleteCarData.colorName) {
+				setDeleteCarMessage(`Xóa variant "${deleteCarData.variantName}" của model "${deleteCarData.modelName}" thành công!`);
+			} else {
+				setDeleteCarMessage(`Xóa xe màu "${deleteCarData.colorName}" thành công!`);
+			}
+			
+			// Reload vehicles and model options
+			loadVehicles();
+			// Cập nhật lại danh sách modelOptions sau khi xóa xe
+			fetchAllModelNames().then(models => setModelOptions(models)).catch(() => setModelOptions([]));
+			
+			// Reset form xóa xe sau khi xóa thành công
+			setDeleteCarData({ modelName: '', variantName: '', colorName: '' });
+			setDeleteVariantOptions([]);
+			setDeleteColorOptions([]);
+			
+			// Reset form tạo xe mới về trạng thái ban đầu
+			setCreateCarData({
+				model: { modelName: "", segment: "" },
+				variant: { variantName: "", description: "" },
+				configuration: {
+					batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
+				},
+				color: "",
+				car: { productionYear: "", price: "", status: "", imagePath: "" }
+			});
+			setVariantOptions([]);
+			setIsCustomModel(false);
+			setCustomModelName("");
+			setIsCustomVariant(false);
+			setCustomVariantName("");
+			setCreateCarError("");
+			setCreateCarSuccess("");
+		} catch (err) {
+			setDeleteCarMessage(err.message || 'Xóa xe thất bại!');
+		} finally {
+			setDeleteCarLoading(false);
+		}
+	};
+
 	const handleViewDetail = async (vehicle) => {
 		setSelectedVehicle(vehicle);
 		setVehicleDetailLoading(true);
@@ -629,6 +738,15 @@ const CarManagement = () => {
 				}}>
 					Cập nhật giá tiền
 				</button>
+				<button className="delete-car-btn" onClick={() => {
+					setShowDeleteCarModal(true);
+					setDeleteCarMessage('');
+					setDeleteCarData({ modelName: '', variantName: '', colorName: '' });
+					setDeleteVariantOptions([]);
+					setDeleteColorOptions([]);
+				}}>
+					Xóa xe
+				</button>
 			</div>
 			{showUpdateConfigModal && (
 				<div className="user-modal-overlay">
@@ -929,6 +1047,12 @@ const CarManagement = () => {
 									color: "",
 									car: { productionYear: "", price: "", status: "", imagePath: "" }
 								});
+								// Reset các custom state
+								setIsCustomModel(false);
+								setCustomModelName("");
+								setIsCustomVariant(false);
+								setCustomVariantName("");
+								setVariantOptions([]);
 								loadVehicles();
 								// Cập nhật lại danh sách modelOptions sau khi tạo xe mới
 								fetchAllModelNames().then(models => setModelOptions(models)).catch(() => { });
@@ -1152,11 +1276,46 @@ const CarManagement = () => {
 					</div>
 				</div>
 			)}
+			{showDeleteCarModal && (
+				<div className="user-modal-overlay">
+					<div className="create-user-modal">
+						<div className="create-user-modal-header">
+							<h3>Xóa xe</h3>
+							<button className="create-user-modal-close" onClick={() => setShowDeleteCarModal(false)}>&times;</button>
+						</div>
+						<form className="create-user-form" onSubmit={handleDeleteCarSubmit}>
+							<div className="form-section">
+								<h4 className="form-section-title">Thông tin xe cần xóa</h4>
+								<div className="delete-car-instruction">
+									<p>📌 <strong>Lưu ý:</strong></p>
+									<ul>
+										<li>Chỉ chọn <strong>Dòng xe</strong> → Xóa toàn bộ model</li>
+										<li>Chọn <strong>Dòng xe + Phiên bản</strong> → Xóa toàn bộ variant</li>
+										<li>Chọn <strong>Dòng xe + Phiên bản + Màu</strong> → Xóa xe theo màu cụ thể</li>
+									</ul>
+								</div>
+								<div className="form-row">
+									<select required value={deleteCarData.modelName} onChange={e => handleDeleteModelChange(e.target.value)}>
+										<option value="">Chọn dòng xe</option>
+										{modelOptions.map(m => (<option key={m} value={m}>{m}</option>))}
+									</select>
+									<select value={deleteCarData.variantName} onChange={e => handleDeleteVariantChange(e.target.value)} disabled={!deleteCarData.modelName}>
+										<option value="">Chọn phiên bản (Optional)</option>
+										{deleteVariantOptions.map(v => (<option key={v} value={v}>{v}</option>))}
+									</select>
+									<select value={deleteCarData.colorName} onChange={e => setDeleteCarData(d => ({ ...d, colorName: e.target.value }))} disabled={!deleteCarData.variantName}>
+										<option value="">Chọn màu (Optional)</option>
+										{deleteColorOptions.map(c => (<option key={c} value={c}>{c}</option>))}
+									</select>
+								</div>
+							</div>
+							{deleteCarMessage && <div className="error-message">{deleteCarMessage}</div>}
+							<button className="create-user-submit-btn" type="submit" disabled={deleteCarLoading}>{deleteCarLoading ? 'Đang xóa...' : 'Xóa xe'}</button>
+						</form>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
 export default CarManagement;
-
-
-
-

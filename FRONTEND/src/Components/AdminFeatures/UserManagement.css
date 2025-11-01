@@ -1,3 +1,22 @@
+.delete-user-btn {
+  padding: 12px 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.98rem;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(102,126,234,0.14);
+  transition: background 0.2s, transform 0.2s;
+  margin-left: 4px;
+  width: 120px;
+  display: inline-block;
+}
+.delete-user-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+}
 /* Không có dữ liệu */
 .user-table-no-data {
   text-align: center;
@@ -93,7 +112,7 @@
 
 .create-user-form {
   background: none;
-  padding: 30px 30px 24px 30px;
+  padding: 32px 36px 28px 36px;
   border-radius: 0;
   box-shadow: none;
   width: 100%;
@@ -102,6 +121,15 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+}
+.create-user-form h3 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 24px;
+  text-align: left;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e1e8ed;
 }
 .create-user-form .form-row {
   width: 100%;
@@ -485,35 +513,72 @@
 }
 
 .update-user-btn {
-  padding: 12px 28px;
+  padding: 12px 0;
   border-radius: 10px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
   border: none;
   font-weight: 700;
-  font-size: 1.08rem;
+  font-size: 0.98rem;
   cursor: pointer;
   box-shadow: 0 2px 12px rgba(102,126,234,0.14);
   transition: background 0.2s, transform 0.2s;
   margin-left: 4px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 140px;
+}
+.update-user-btn:hover {
+  background: #4b5fc1;
+  transform: translateY(-2px);
+}
+/* Đảm bảo 2 nút luôn cùng hàng và cùng kích thước */
+.user-action-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+}
+
+.update-user-btn,
+.delete-user-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.98rem;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(102,126,234,0.14);
+  transition: background 0.2s, transform 0.2s;
+  margin-left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  max-width: none;
+  color: #fff;
+  border: none;
+}
+
+.update-user-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 .update-user-btn:hover {
   background: #4b5fc1;
   transform: translateY(-2px);
 }
 
-@media (max-width: 900px) {
-  .user-management-container {
-    padding: 0;
-    min-width: 100vw;
-  }
-  .user-table {
-    width: 100vw;
-    max-width: 100vw;
-    min-width: 600px;
-    font-size: 0.95rem;
-    border-radius: 0;
-    box-shadow: none;
-    overflow-x: auto;
-  }
+.delete-user-btn {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+.delete-user-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
 }

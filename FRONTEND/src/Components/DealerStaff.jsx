@@ -3,8 +3,6 @@ import './DealerStaff.css';
 import HomePage from './Features/Home-page';
 import VehicleInfoFeature from './Features/VehicleInfoFeature';
 import CreateOrderFeature from './Features/CreateOrderFeature';
-import CustomerManagementFeature from './Features/CustomerManagementFeature';
-import FeedbackTestDriveFeature from './Features/FeedbackTestDriveFeature';
 import OrderFeatureManagementPayment from './Features/OrderFeatureManagement&Payment';
 
 const TestDriveContext = createContext();
@@ -70,12 +68,8 @@ const DealerStaff = ({ user, onLogout }) => {
         return <VehicleInfoFeature />;
       case 'create-order':
         return <CreateOrderFeature />;
-      case 'customer-management':
-        return <CustomerManagementFeature />;
       case 'payment':
         return <OrderFeatureManagementPayment />;
-      case 'feedback-test-drive':
-        return <FeedbackTestDriveFeature testDriveBookings={testDriveBookings} quoteRequests={quoteRequests} />;
       default:
         return null;
     }
@@ -126,27 +120,11 @@ const DealerStaff = ({ user, onLogout }) => {
             </div>
             
             <div 
-              className={`menu-item ${activeFeature === 'customer-management' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('customer-management')}
-            >
-              <span className="menu-icon">👥</span>
-              <span className="menu-text">Quản lý khách hàng</span>
-            </div>
-            
-            <div 
               className={`menu-item ${activeFeature === 'payment' ? 'active' : ''}`}
               onClick={() => handleMenuClick('payment')}
             >
               <span className="menu-icon">💳</span>
               <span className="menu-text">Quản lý Đơn hàng & Thanh toán</span>
-            </div>
-            
-            <div 
-              className={`menu-item ${activeFeature === 'feedback-test-drive' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('feedback-test-drive')}
-            >
-              <span className="menu-icon">💬</span>
-              <span className="menu-text">Phản hồi & Lái thử</span>
             </div>
           </nav>
         </div>

@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from "react";
 import "./UserManagement.css";
-import { fetchAllUsers, searchUsers, searchUsersByRole, searchUsersByDealer, searchUsersByRoleAndDealer } from "../../services/adminApi";
+import { fetchAllUsers, searchUsers, searchUsersByRole, searchUsersByDealer, searchUsersByRoleAndDealer, deleteUserAccount } from "../../services/adminApi";
 import { createUserAccount, fetchDealerNames, fetchRoleNames, updateUserAccount } from "../../services/adminApi";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
-  // State to track password visibility per userId
   const [visiblePasswords, setVisiblePasswords] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchRole, setSearchRole] = useState("");
   const [searchDealer, setSearchDealer] = useState("");
   const [searching, setSearching] = useState(false);
-
-  // State cho form tạo tài khoản mới
   const [newUser, setNewUser] = useState({
     username: "",
     password: "",
@@ -31,6 +28,23 @@ const UserManagement = () => {
   const [updateUser, setUpdateUser] = useState(null);
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState("");
+
+  const handleDeleteUser = async (userId) => {
+    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?");
+    if (!confirmDelete) return;
+
+    try {
+      await deleteUserAccount(userId);
+      alert("Xóa tài khoản thành công!");
+      const updatedUsers = await fetchAllUsers();
+      setUsers(updatedUsers);
+    } catch (err) {
+      alert("Xóa tài khoản thất bại!");
+    }
+  };
+
+
+
 
   useEffect(() => {
     fetchAllUsers()
@@ -108,6 +122,7 @@ const UserManagement = () => {
         roleName: "DealerStaff",
         dealerName: ""
       });
+      alert("Tạo tài khoản thành công!");
     } catch (err) {
       setCreateError("Tạo tài khoản thất bại. Vui lòng kiểm tra lại thông tin hoặc thử lại sau.");
     }
@@ -261,7 +276,7 @@ const UserManagement = () => {
                   <input type="text" required autoComplete="new-username" placeholder="Tên người dùng" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} />
                 </div>
                 <div className="form-group">
-                  <input type="password" required autoComplete="new-password" placeholder="Mật khẩu" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
+                  <input type="password" required autoComplete="new-password" placeholder="Mật khẩu (ít nhất 6 ký tự)" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
                 </div>
                 <div className="form-group">
                   <input type="email" required autoComplete="off" placeholder="Email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
@@ -412,7 +427,10 @@ const UserManagement = () => {
                   <td>{user.status}</td>
                   <td>{new Date(user.createdDate).toLocaleString()}</td>
                   <td>
-                    <button type="button" className="update-user-btn" onClick={() => handleShowUpdateForm(user)}>Cập nhật</button>
+                    <div className="user-action-btns">
+                      <button type="button" className="update-user-btn" onClick={() => handleShowUpdateForm(user)}>Cập nhật</button>
+                      <button type="button" className="delete-user-btn" onClick={() => handleDeleteUser(user.userId)}>Xóa</button>
+                    </div>
                   </td>
                 </tr>
               ))

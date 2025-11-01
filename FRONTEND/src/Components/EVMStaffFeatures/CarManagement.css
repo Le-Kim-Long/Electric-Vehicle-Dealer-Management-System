@@ -251,6 +251,38 @@
 	margin-bottom: 8px;
 	margin-left: 4px;
 }
+
+.delete-car-instruction {
+	background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+	border-left: 4px solid #ffc107;
+	padding: 16px 20px;
+	margin-bottom: 16px;
+	border-radius: 8px;
+	font-size: 0.95rem;
+	color: #856404;
+}
+
+.delete-car-instruction p {
+	margin: 0 0 8px 0;
+	font-weight: 600;
+}
+
+.delete-car-instruction ul {
+	margin: 0;
+	padding-left: 24px;
+	list-style-type: disc;
+}
+
+.delete-car-instruction li {
+	margin: 6px 0;
+	line-height: 1.5;
+}
+
+.delete-car-instruction strong {
+	color: #d63031;
+	font-weight: 700;
+}
+
 .reset-create-car-btn-row {
 	display: flex;
 	justify-content: flex-end;
@@ -317,9 +349,11 @@
 	margin: 28px 0 18px 0;
 }
 
+/* Nút chức năng trong create-car-btn-row */
 .create-car-btn,
 .update-car-btn,
-.update-price-btn {
+.update-price-btn,
+.delete-car-btn {
 	min-width: 180px;
 	max-width: 220px;
 	height: 48px;
@@ -334,16 +368,26 @@
 	transition: background 0.2s, transform 0.2s;
 	display: inline-block;
 	vertical-align: middle;
-}
-.update-car-btn,
-.update-price-btn {
 	margin-left: 12px;
+	cursor: pointer;
+}
+.create-car-btn {
+	margin-left: 0;
+}
+.delete-car-btn {
+	background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+	box-shadow: 0 2px 12px rgba(231,76,60,0.12);
 }
 .create-car-btn:hover,
 .update-car-btn:hover,
 .update-price-btn:hover {
 	background: #4b5fc1;
 	transform: translateY(-2px);
+}
+.delete-car-btn:hover {
+	background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 16px rgba(231,76,60,0.18);
 }
 .search-form-container {
 	display: flex;

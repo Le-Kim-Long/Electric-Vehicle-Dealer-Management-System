@@ -414,15 +414,23 @@ export const updateManufacturerPriceByModelVariantColor = async (modelName, vari
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
-    body: JSON.stringify({ price: newPrice })
+    body: JSON.stringify({ manufacturerPrice: newPrice })
   });
   if (!response.ok) {
     if (response.status === 401) {
       throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
     }
-    throw new Error(`HTTP error! status: ${response.status}`);
+    // Try to get error message from response
+    try {
+      const errorData = await response.text();
+      throw new Error(`Lỗi cập nhật giá: ${errorData || response.status}`);
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
   }
-  return response.json();
+  // Backend returns plain text "Successful", not JSON
+  const textResponse = await response.text();
+  return { success: true, message: textResponse };
 };
 // Lấy danh sách màu theo modelName và variantName
 export const fetchColorsByModelAndVariant = async (modelName, variantName) => {
@@ -527,4 +535,34 @@ export const updateDealerCarPriceAndStatus = async ({ modelName, variantName, co
     throw new Error(`HTTP error! status: ${response.status}`);
   }
   return response.json();
+};
+
+// Xóa xe theo modelName, variantName và colorName
+export const deleteCarByModelVariantColor = async ({ modelName, variantName, colorName }) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Build URL with optional parameters
+  let url = `${API_BASE_URL}/admin/cars/delete?modelName=${encodeURIComponent(modelName)}`;
+  if (variantName) {
+    url += `&variantName=${encodeURIComponent(variantName)}`;
+  }
+  if (colorName) {
+    url += `&colorName=${encodeURIComponent(colorName)}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.text();
 };
