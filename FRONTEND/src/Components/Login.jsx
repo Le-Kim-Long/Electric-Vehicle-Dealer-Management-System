@@ -74,7 +74,15 @@ const Login = ({ onLogin }) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Login failed: ${response.status} - ${errorText}`);
+      
+      // Xử lý các thông báo lỗi cụ thể từ API
+      if (errorText.includes('Account does not exist')) {
+        throw new Error('Tài khoản không tồn tại');
+      } else if (errorText.includes('Incorrect password')) {
+        throw new Error('Mật khẩu không chính xác');
+      } else {
+        throw new Error(`Đăng nhập thất bại: ${errorText}`);
+      }
     }
 
     return response.json();
@@ -86,6 +94,7 @@ const Login = ({ onLogin }) => {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
     
     try {
       const response = await loginAPI(formData);
@@ -114,7 +123,7 @@ const Login = ({ onLogin }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ general: `Đăng nhập thất bại: ${error.message}` });
+      setErrors({ general: error.message });
     } finally {
       setIsLoading(false);
     }

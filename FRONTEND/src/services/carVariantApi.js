@@ -566,3 +566,259 @@ export const deleteCarByModelVariantColor = async ({ modelName, variantName, col
   }
   return response.text();
 };
+
+// Lấy danh sách khuyến mãi của đại lý
+export const fetchPromotionsByDealer = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Tạo khuyến mãi mới
+export const createPromotion = async (promotionData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate dates
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to start of day
+  
+  const startDate = new Date(promotionData.startDate);
+  const endDate = new Date(promotionData.endDate);
+  
+  if (startDate < today) {
+    throw new Error('Ngày bắt đầu phải từ hôm nay trở đi');
+  }
+  
+  if (endDate <= startDate) {
+    throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
+  }
+  
+  // Validate type
+  if (!['VND', '%'].includes(promotionData.type)) {
+    throw new Error('Loại khuyến mãi chỉ có thể là "VND" hoặc "%"');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/promotions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(promotionData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Tìm kiếm khuyến mãi theo type
+export const searchPromotionsByType = async (type) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/search/type?type=${encodeURIComponent(type)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Tìm kiếm khuyến mãi theo status
+export const searchPromotionsByStatus = async (status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/search/status?status=${encodeURIComponent(status)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Tìm kiếm khuyến mãi theo type và status
+export const searchPromotionsByTypeAndStatus = async (type, status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/search?type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Lấy thông tin khuyến mãi theo promotionId
+export const fetchPromotionById = async (promotionId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/${promotionId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Cập nhật khuyến mãi theo promotionId
+export const updatePromotion = async (promotionId, promotionData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate dates if provided
+  if (promotionData.startDate && promotionData.endDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const startDate = new Date(promotionData.startDate);
+    const endDate = new Date(promotionData.endDate);
+    
+    if (startDate < today) {
+      throw new Error('Ngày bắt đầu phải từ hôm nay trở đi');
+    }
+    
+    if (endDate <= startDate) {
+      throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
+    }
+  }
+  
+  // Validate type if provided
+  if (promotionData.type && !['VND', '%'].includes(promotionData.type)) {
+    throw new Error('Loại khuyến mãi chỉ có thể là "VND" hoặc "%"');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/${promotionId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(promotionData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Xóa khuyến mãi theo promotionId
+export const deletePromotion = async (promotionId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/${promotionId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  // Backend returns plain text message
+  const textResponse = await response.text();
+  return { success: true, message: textResponse };
+};

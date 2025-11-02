@@ -108,6 +108,21 @@ const UserManagement = () => {
     e.preventDefault();
     setCreating(true);
     setCreateError("");
+    
+    // Validate phone number
+    if (newUser.phoneNumber && newUser.phoneNumber.length !== 10) {
+      setCreateError("Số điện thoại phải có đúng 10 chữ số");
+      setCreating(false);
+      return;
+    }
+    
+    // Validate phone number contains only digits
+    if (newUser.phoneNumber && !/^\d{10}$/.test(newUser.phoneNumber)) {
+      setCreateError("Số điện thoại chỉ được chứa số và phải có đúng 10 chữ số");
+      setCreating(false);
+      return;
+    }
+    
     try {
       await createUserAccount(newUser);
       // Sau khi tạo thành công, load lại danh sách user
@@ -123,8 +138,26 @@ const UserManagement = () => {
         dealerName: ""
       });
       alert("Tạo tài khoản thành công!");
+      setShowCreateForm(false);
     } catch (err) {
-      setCreateError("Tạo tài khoản thất bại. Vui lòng kiểm tra lại thông tin hoặc thử lại sau.");
+      const errorMessage = err.message || err.toString();
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      
+      if (errorMessage.includes("Phone number must be exactly 10 digits")) {
+        setCreateError("Số điện thoại phải có đúng 10 chữ số");
+      } else if (lowerErrorMessage.includes("email already exists")) {
+        setCreateError("Email đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("phone number already exists")) {
+        setCreateError("Số điện thoại đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("email") && lowerErrorMessage.includes("already")) {
+        setCreateError("Email đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("phone") && lowerErrorMessage.includes("already")) {
+        setCreateError("Số điện thoại đã tồn tại trong hệ thống");
+      } else if (errorMessage === "Failed to create user") {
+        setCreateError("Tạo tài khoản thất bại. Email hoặc số điện thoại có thể đã tồn tại.");
+      } else {
+        setCreateError(errorMessage);
+      }
     }
     setCreating(false);
   };
@@ -145,6 +178,21 @@ const UserManagement = () => {
     e.preventDefault();
     setUpdating(true);
     setUpdateError("");
+    
+    // Validate phone number
+    if (updateUser.phoneNumber && updateUser.phoneNumber.length !== 10) {
+      setUpdateError("Số điện thoại phải có đúng 10 chữ số");
+      setUpdating(false);
+      return;
+    }
+    
+    // Validate phone number contains only digits
+    if (updateUser.phoneNumber && !/^\d{10}$/.test(updateUser.phoneNumber)) {
+      setUpdateError("Số điện thoại chỉ được chứa số và phải có đúng 10 chữ số");
+      setUpdating(false);
+      return;
+    }
+    
     try {
       await updateUserAccount(updateUser.userId, {
         username: updateUser.username,
@@ -159,8 +207,26 @@ const UserManagement = () => {
       const updatedUsers = await fetchAllUsers();
       setUsers(updatedUsers);
       setShowUpdateForm(false);
+      alert("Cập nhật tài khoản thành công!");
     } catch (err) {
-      setUpdateError("Cập nhật tài khoản thất bại. Vui lòng kiểm tra lại thông tin hoặc thử lại sau.");
+      const errorMessage = err.message || err.toString();
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      
+      if (errorMessage.includes("Phone number must be exactly 10 digits")) {
+        setUpdateError("Số điện thoại phải có đúng 10 chữ số");
+      } else if (lowerErrorMessage.includes("email already exists")) {
+        setUpdateError("Email đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("phone number already exists")) {
+        setUpdateError("Số điện thoại đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("email") && lowerErrorMessage.includes("already")) {
+        setUpdateError("Email đã tồn tại trong hệ thống");
+      } else if (lowerErrorMessage.includes("phone") && lowerErrorMessage.includes("already")) {
+        setUpdateError("Số điện thoại đã tồn tại trong hệ thống");
+      } else if (errorMessage === "Failed to update user") {
+        setUpdateError("Cập nhật tài khoản thất bại. Email hoặc số điện thoại có thể đã tồn tại.");
+      } else {
+        setUpdateError(errorMessage);
+      }
     }
     setUpdating(false);
   };

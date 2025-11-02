@@ -37,7 +37,24 @@ export const createUserAccount = async (userData) => {
     },
     body: JSON.stringify(userData)
   });
-  if (!response.ok) throw new Error('Failed to create user');
+  if (!response.ok) {
+    let errorMessage = '';
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorData.error || responseText;
+      } catch (jsonError) {
+        errorMessage = responseText;
+      }
+    } catch (e) {
+      errorMessage = 'Failed to create user';
+    }
+    
+    throw new Error(errorMessage || 'Failed to create user');
+  }
   return response.json();
 };
 
@@ -170,7 +187,24 @@ export const updateUserAccount = async (userId, userData) => {
     },
     body: JSON.stringify(userData)
   });
-  if (!response.ok) throw new Error('Failed to update user');
+  if (!response.ok) {
+    let errorMessage = '';
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorData.error || responseText;
+      } catch (jsonError) {
+        errorMessage = responseText;
+      }
+    } catch (e) {
+      errorMessage = 'Failed to update user';
+    }
+    
+    throw new Error(errorMessage || 'Failed to update user');
+  }
   return response.json();
 };
 // Search users by both role and dealer
