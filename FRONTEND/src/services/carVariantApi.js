@@ -11,7 +11,6 @@ export const getCurrentUser = () => {
   try {
     return JSON.parse(userDataStr);
   } catch (error) {
-    console.error('Error parsing user data:', error);
     return null;
   }
 };
@@ -42,7 +41,6 @@ export const getCarVariantDetails = async () => {
     return await response.json();
 
   } catch (error) {
-    console.error('API Error:', error);
     throw error;
   }
 };
@@ -73,7 +71,6 @@ export const searchCarVariants = async (query) => {
     return await response.json();
 
   } catch (error) {
-    console.error('Search Error:', error);
     throw error;
   }
 };
@@ -104,14 +101,12 @@ export const getVariantConfiguration = async (variantId) => {
     return await response.json();
 
   } catch (error) {
-    console.error('API Error:', error);
     return null;
   }
 };
 
 export const transformCarVariantData = (apiData) => {
   if (!Array.isArray(apiData)) {
-    console.error('API data is not an array:', apiData);
     return [];
   }
 
@@ -572,22 +567,40 @@ export const fetchPromotionsByDealer = async () => {
   const token = getAuthToken();
   if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
   
-  const response = await fetch(`${API_BASE_URL}/promotions`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json'
+  try {
+    const response = await fetch(`${API_BASE_URL}/promotions`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+      if (response.status === 403) {
+        throw new Error('Bạn không có quyền truy cập danh sách khuyến mãi.');
+      }
+      if (response.status === 404) {
+        throw new Error('Không tìm thấy API khuyến mãi.');
+      }
+      
+      // Thử đọc thông báo lỗi từ server
+      try {
+        const errorText = await response.text();
+        throw new Error(`Lỗi ${response.status}: ${errorText || 'Không thể tải danh sách khuyến mãi'}`);
+      } catch (e) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
     }
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
-    }
-    throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
   }
-  
-  return response.json();
 };
 
 // Tạo khuyến mãi mới
@@ -716,28 +729,7 @@ export const searchPromotionsByTypeAndStatus = async (type, status) => {
   return response.json();
 };
 
-// Lấy thông tin khuyến mãi theo promotionId
-export const fetchPromotionById = async (promotionId) => {
-  const token = getAuthToken();
-  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
-  
-  const response = await fetch(`${API_BASE_URL}/promotions/${promotionId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json'
-    }
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
-    }
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  
-  return response.json();
-};
+
 
 // Cập nhật khuyến mãi theo promotionId
 export const updatePromotion = async (promotionId, promotionData) => {
@@ -821,4 +813,808 @@ export const deletePromotion = async (promotionId) => {
   // Backend returns plain text message
   const textResponse = await response.text();
   return { success: true, message: textResponse };
+};
+
+// Tạo khách hàng mới
+export const createCustomer = async (customerData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate required fields
+  if (!customerData.fullName || !customerData.phoneNumber || !customerData.email) {
+    throw new Error('Vui lòng điền đầy đủ thông tin: Họ tên, Số điện thoại, Email');
+  }
+  
+  // Validate full name (only letters and spaces)
+  const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/;
+  if (!nameRegex.test(customerData.fullName)) {
+    throw new Error('Họ tên chỉ được chứa chữ cái và khoảng trắng');
+  }
+  
+  // Validate phone number (10 or 11 digits)
+  const phoneRegex = /^[0-9]{10,11}$/;
+  if (!phoneRegex.test(customerData.phoneNumber)) {
+    throw new Error('Số điện thoại phải có 10 hoặc 11 chữ số');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/customers`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(customerData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    // Xử lý lỗi từ backend
+    let errorMessage = `Lỗi HTTP ${response.status}`;
+    
+    try {
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      
+      if (responseText) {
+        // Thử parse JSON trước
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorData.error || responseText;
+          } catch (jsonError) {
+            errorMessage = responseText;
+          }
+        } else {
+          // Nếu là plain text, loại bỏ prefix "Error: " nếu có
+          errorMessage = responseText.replace(/^Error:\s*/i, '');
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+    
+    throw new Error(errorMessage);
+  }
+  
+  return response.json();
+};
+
+// Lấy thông tin khách hàng theo customerId
+export const getCustomerById = async (customerId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate customerId
+  if (!customerId) {
+    throw new Error('customerId là bắt buộc để lấy thông tin khách hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/customers/${customerId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Cập nhật thông tin khách hàng
+export const updateCustomer = async (customerId, customerData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate customerId
+  if (!customerId) {
+    throw new Error('customerId là bắt buộc để cập nhật thông tin khách hàng');
+  }
+  
+  // Validate full name if provided
+  if (customerData.fullName) {
+    const nameRegex = /^[a-zA-ZÀ-ỹ\s]+$/;
+    if (!nameRegex.test(customerData.fullName)) {
+      throw new Error('Họ tên chỉ được chứa chữ cái và khoảng trắng');
+    }
+  }
+  
+  // Validate phone number if provided
+  if (customerData.phoneNumber) {
+    const phoneRegex = /^[0-9]{10,11}$/;
+    if (!phoneRegex.test(customerData.phoneNumber)) {
+      throw new Error('Số điện thoại phải có 10 hoặc 11 chữ số');
+    }
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/customers/${customerId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(customerData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    // Xử lý lỗi từ backend
+    let errorMessage = `Lỗi HTTP ${response.status}`;
+    
+    try {
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      
+      if (responseText) {
+        // Thử parse JSON trước
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorData.error || responseText;
+          } catch (jsonError) {
+            errorMessage = responseText;
+          }
+        } else {
+          // Nếu là plain text, loại bỏ prefix "Error: " nếu có
+          errorMessage = responseText.replace(/^Error:\s*/i, '');
+        }
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+    
+    throw new Error(errorMessage);
+  }
+  
+  return response.json();
+};
+
+// Tạo đơn hàng rỗng (draft order) với customerId
+export const createDraftOrder = async (customerId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate customerId
+  if (!customerId) {
+    throw new Error('customerId là bắt buộc để tạo đơn hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/draft`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ customerId })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  const result = await response.json();
+  
+  // Lưu orderId vào sessionStorage để sử dụng sau
+  if (result.orderId) {
+    sessionStorage.setItem('currentOrderId', result.orderId);
+  }
+  
+  return result;
+};
+
+// Tạo order detail (thêm xe vào đơn hàng)
+export const createOrderDetail = async (orderDetailData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate required fields
+  if (!orderDetailData.orderId) {
+    throw new Error('orderId là bắt buộc để tạo chi tiết đơn hàng');
+  }
+  if (!orderDetailData.modelName || !orderDetailData.variantName || !orderDetailData.colorName) {
+    throw new Error('Vui lòng điền đầy đủ thông tin xe: Dòng xe, Phiên bản, Màu sắc');
+  }
+  if (!orderDetailData.quantity || orderDetailData.quantity < 1) {
+    throw new Error('Số lượng phải lớn hơn 0');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/details`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(orderDetailData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Cập nhật khuyến mãi cho đơn hàng
+export const updateOrderPromotion = async (orderId, promotionId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để cập nhật khuyến mãi');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/promotion`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ promotionId })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Cập nhật phương thức thanh toán cho đơn hàng
+export const updateOrderPaymentMethod = async (orderId, paymentMethod) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để cập nhật phương thức thanh toán');
+  }
+  
+  // Validate paymentMethod
+  if (!paymentMethod) {
+    throw new Error('paymentMethod là bắt buộc');
+  }
+  
+  const validPaymentMethods = ['Trả thẳng', 'Trả góp'];
+  if (!validPaymentMethods.some(method => method.toLowerCase() === paymentMethod.toLowerCase())) {
+    throw new Error('Phương thức thanh toán chỉ có thể là "Trả thẳng" hoặc "Trả góp"');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/payment-method`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ paymentMethod })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Cập nhật số lượng cho order detail
+export const updateOrderDetailQuantity = async (orderDetailId, quantity) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderDetailId
+  if (!orderDetailId) {
+    throw new Error('orderDetailId là bắt buộc để cập nhật số lượng');
+  }
+  
+  // Validate quantity
+  if (!quantity || quantity < 1) {
+    throw new Error('Số lượng phải lớn hơn 0');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/details/${orderDetailId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ quantity })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Cập nhật trạng thái đơn hàng
+export const updateOrderStatus = async (orderId, status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để cập nhật trạng thái');
+  }
+  
+  // Validate status
+  if (!status) {
+    throw new Error('status là bắt buộc');
+  }
+  
+  const validStatuses = ['Chưa xác nhận', 'Đang xử lý', 'Chưa thanh toán', 'Đã thanh toán', 'Đã hủy'];
+  if (!validStatuses.some(validStatus => validStatus.toLowerCase() === status.toLowerCase())) {
+    throw new Error('Trạng thái không hợp lệ. Chỉ chấp nhận: Chưa xác nhận, Đang xử lý, Chưa thanh toán, Đã thanh toán, Đã hủy');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ status })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Lấy thông tin chi tiết đơn hàng theo orderId
+export const getOrderById = async (orderId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để lấy thông tin đơn hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Lấy thông tin đơn hàng cho bước xác nhận (Step 5) - đã lọc bỏ các field không cần thiết
+export const getOrderSummaryForConfirmation = async (orderId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để lấy thông tin đơn hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  const fullData = await response.json();
+  
+  // Transform data - bỏ các field không cần thiết
+  return {
+    orderInfo: {
+      orderDate: fullData.orderInfo.orderDate,
+      subTotal: fullData.orderInfo.subTotal,
+      discountAmount: fullData.orderInfo.discountAmount,
+      totalAmount: fullData.orderInfo.totalAmount,
+      paymentMethod: fullData.orderInfo.paymentMethod,
+      status: fullData.orderInfo.status,
+      promotionName: fullData.orderInfo.promotionName
+    },
+    customer: {
+      customerName: fullData.customer.customerName,
+      customerPhone: fullData.customer.customerPhone,
+      customerEmail: fullData.customer.customerEmail
+    },
+    orderDetails: fullData.orderDetails.map(detail => ({
+      carName: detail.carName,
+      modelName: detail.modelName,
+      variantName: detail.variantName,
+      colorName: detail.colorName,
+      quantity: detail.quantity,
+      finalPrice: detail.finalPrice
+    }))
+  };
+};
+
+// Xóa order detail (chi tiết đơn hàng)
+export const deleteOrderDetail = async (orderDetailId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderDetailId
+  if (!orderDetailId) {
+    throw new Error('orderDetailId là bắt buộc để xóa chi tiết đơn hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/details/${orderDetailId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  // Backend returns plain text message
+  const textResponse = await response.text();
+  return { success: true, message: textResponse };
+};
+
+// Lấy thông tin phương thức thanh toán của đơn hàng
+export const getOrderPaymentMethod = async (orderId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để lấy thông tin phương thức thanh toán');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/payment-method`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Lấy thông tin trả góp của đơn hàng
+export const getOrderInstallment = async (orderId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để lấy thông tin trả góp');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/installment`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    // Handle case when no installment plan exists
+    if (response.status === 404) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Không tìm thấy kế hoạch trả góp cho đơn hàng này');
+    }
+    
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Tạo kế hoạch trả góp mới
+export const createInstallmentPlan = async (installmentData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate required fields
+  if (!installmentData.orderId) {
+    throw new Error('orderId là bắt buộc để tạo kế hoạch trả góp');
+  }
+  if (!installmentData.termCount || installmentData.termCount < 1) {
+    throw new Error('Số kỳ trả góp phải lớn hơn 0');
+  }
+  if (!installmentData.interestRate || installmentData.interestRate < 0) {
+    throw new Error('Lãi suất phải lớn hơn hoặc bằng 0');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/installments`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(installmentData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Cập nhật kế hoạch trả góp
+export const updateInstallmentPlan = async (orderId, installmentData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate required fields
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để cập nhật kế hoạch trả góp');
+  }
+  if (!installmentData.termCount || installmentData.termCount < 1) {
+    throw new Error('Số kỳ trả góp phải lớn hơn 0');
+  }
+  if (installmentData.interestRate === undefined || installmentData.interestRate < 0) {
+    throw new Error('Lãi suất phải lớn hơn hoặc bằng 0');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/installments/order/${orderId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(installmentData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Lấy danh sách chi tiết đơn hàng (order details)
+export const getOrderDetails = async (orderId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Validate orderId
+  if (!orderId) {
+    throw new Error('orderId là bắt buộc để lấy danh sách chi tiết đơn hàng');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/details`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Lấy tất cả đơn hàng của đại lý
+export const getAllDealerOrders = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/dealer/orders`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+
+// Lấy thông tin khuyến mãi theo promotionId
+export const fetchPromotionById = async (promotionId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  const response = await fetch(`${API_BASE_URL}/promotions/${promotionId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
 };
