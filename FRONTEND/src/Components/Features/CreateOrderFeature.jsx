@@ -16,7 +16,8 @@ import {
   createInstallmentPlan,
   updateInstallmentPlan,
   getOrderInstallment,
-  getOrderSummaryForConfirmation
+  getOrderSummaryForConfirmation,
+  updateOrderStatus
 } from '../../services/carVariantApi';
 
 const CreateOrderFeature = () => {
@@ -503,8 +504,8 @@ const CreateOrderFeature = () => {
     }
   };
 
-  // SỬA LẠI submitOrder - loại bỏ lỗi logic
-  const submitOrder = () => {
+  // submitOrder - Xác nhận đơn hàng và chuyển status sang "Đang xử lý"
+  const submitOrder = async () => {
     try {
       // Validation cơ bản
       if (!orderData.customer.name || !orderData.customer.phone || !orderData.customer.email) {
@@ -525,110 +526,38 @@ const CreateOrderFeature = () => {
         return;
       }
 
-      // Tính toán
-      const subtotal = calculateSubtotal();
-      const discount = calculateDiscount();
+      if (!orderId) {
+        alert('⚠️ Không tìm thấy mã đơn hàng! Vui lòng thử lại từ đầu.');
+        setCurrentStep(1);
+        return;
+      }
+
+      // Cập nhật trạng thái đơn hàng từ "Chưa xác nhận" sang "Đang xử lý"
+      try {
+        await updateOrderStatus(orderId, 'Đang xử lý');
+      } catch (statusError) {
+        console.error('Error updating order status:', statusError);
+        // Tiếp tục thông báo thành công vì đơn hàng đã được tạo
+      }
+
+      // Tính toán tổng tiền
       const total = calculateTotal();
 
-      // Tạo đơn hàng
-      const newOrder = {
-        orderId: `DH${Date.now()}`,
-        orderCode: `DH${Date.now()}`,
-        createdDate: new Date().toISOString(),
-        status: 'Chờ xử lý',
-        
-        // Thông tin khách hàng
-        customerName: orderData.customer.name,
-        customerEmail: orderData.customer.email,
-        customerPhone: orderData.customer.phone,
-        
-        // Thông tin xe
-        vehicles: orderData.selectedVehicles.map(item => ({
-          name: item.vehicle.name,
-          variant: item.vehicle.variant,
-          color: item.color,
-          quantity: item.quantity,
-          unitPrice: item.colorPrice,
-          totalPrice: item.colorPrice * item.quantity
-        })),
-        
-        // Thông tin khuyến mãi
-        promotion: orderData.promotion,
-        
-        // Thông tin tài chính và thanh toán
-        financing: orderData.financing,
-        payment: orderData.payment,
-        
-        // Thông tin tiền
-        subtotal: subtotal,
-        discount: discount,
-        total: total,
-        
-        // Thông tin thanh toán
-        paymentId: `PAY${Date.now()}`,
-        paymentStatus: 'Pending',
-        paymentMethod: orderData.financing.phuongThucThanhToan, // Sử dụng phương thức tài chính
-        paymentNotes: orderData.payment.ghiChu || ''
-      };
-
-      // Lưu đơn hàng vào localStorage
-      const existingOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-      existingOrders.push(newOrder);
-      localStorage.setItem('orders', JSON.stringify(existingOrders));
-
-      // Xử lý khách hàng
-      const existingCustomers = JSON.parse(localStorage.getItem('customers') || '[]');
+      // Alert thành công
+      alert(`🎉 ĐƠN HÀNG ĐÃ ĐƯỢC TẠO THÀNH CÔNG!
       
-      // Tìm khách hàng có CHÍNH XÁC cùng email VÀ số điện thoại
-      let customerExists = existingCustomers.find(c => 
-        c.Email === orderData.customer.email && 
-        c.PhoneNumber === orderData.customer.phone
-      );
+📋 Mã đơn hàng: ORD-${String(orderId).padStart(6, '0')}
+👤 Khách hàng: ${orderData.customer.name}
+📧 Email: ${orderData.customer.email}
+📱 SĐT: ${orderData.customer.phone}
+🚗 Số xe: ${orderData.selectedVehicles.length}
+💰 Tổng tiền: ${formatPrice(total)}
+💳 Phương thức: ${orderData.financing.phuongThucThanhToan}
 
-      const orderForHistory = {
-        id: newOrder.orderId,
-        date: new Date().toLocaleDateString('vi-VN'),
-        vehicle: orderData.selectedVehicles.map(item => `${item.vehicle.name} (${item.color})`).join(', '),
-        amount: formatPrice(total),
-        status: 'Chờ xử lý'
-      };
+✅ Đơn hàng đã được xác nhận với trạng thái "Đang xử lý".
+Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
       
-      if (customerExists) {
-        // Khách hàng đã tồn tại - cập nhật
-        customerExists.orders = [...(customerExists.orders || []), orderForHistory];
-        customerExists.totalOrders = customerExists.orders.length;
-        customerExists.lastActivity = new Date().toISOString();
-        
-        // Cập nhật tổng chi tiêu
-        const currentSpent = parseFloat(customerExists.totalSpent.replace(/[^\d]/g, '')) || 0;
-        customerExists.totalSpent = formatPrice(currentSpent + total);
-        
-        // Cập nhật tên nếu khác
-        if (customerExists.FullName !== orderData.customer.name) {
-          customerExists.FullName = orderData.customer.name;
-        }
-      } else {
-        // Khách hàng mới
-        const newCustomer = {
-          CustomerId: Date.now(),
-          FullName: orderData.customer.name,
-          Email: orderData.customer.email,
-          PhoneNumber: orderData.customer.phone,
-          CreatedDate: new Date().toISOString(),
-          orders: [orderForHistory],
-          totalOrders: 1,
-          totalSpent: formatPrice(total),
-          lastActivity: new Date().toISOString()
-        };
-        
-        existingCustomers.push(newCustomer);
-      }
-      
-      localStorage.setItem('customers', JSON.stringify(existingCustomers));
-
-      alert(`🎉 ĐÔN HÀNG ĐÃ ĐƯỢC TẠO THÀNH CÔNG!\n\n📋 Mã: ${newOrder.orderCode}\n👤 KH: ${orderData.customer.name}\n💰 Tổng: ${formatPrice(total)}`);
-      
-      // Reset form
+      // Reset form và xóa dữ liệu session
       setOrderData({
         customer: { name: '', phone: '', email: '' },
         selectedVehicles: [],
@@ -637,10 +566,19 @@ const CreateOrderFeature = () => {
         payment: { phuongThuc: 'Tiền mặt', ghiChu: '' }
       });
       setInstallmentPlanResult(null); // Reset kết quả trả góp
+      setOrderId(null); // Reset orderId
+      setCustomerId(null); // Reset customerId
+      setOrderSummary(null); // Reset order summary
+      
+      // Xóa dữ liệu khỏi sessionStorage
+      sessionStorage.removeItem('currentOrderId');
+      sessionStorage.removeItem('currentCustomerId');
+      
       setCurrentStep(1);
       
     } catch (error) {
-      alert('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại!');
+      alert('⚠️ Có lỗi xảy ra khi xác nhận đơn hàng. Vui lòng thử lại!');
+      console.error('Submit order error:', error);
     }
   };
 

@@ -1236,9 +1236,9 @@ export const updateOrderStatus = async (orderId, status) => {
     throw new Error('status là bắt buộc');
   }
   
-  const validStatuses = ['Chưa xác nhận', 'Đang xử lý', 'Chưa thanh toán', 'Đã thanh toán', 'Đã hủy'];
+  const validStatuses = ['Chưa xác nhận', 'Đang xử lý', 'Chưa thanh toán', 'Đang trả góp', 'Đã thanh toán', 'Đã hủy'];
   if (!validStatuses.some(validStatus => validStatus.toLowerCase() === status.toLowerCase())) {
-    throw new Error('Trạng thái không hợp lệ. Chỉ chấp nhận: Chưa xác nhận, Đang xử lý, Chưa thanh toán, Đã thanh toán, Đã hủy');
+    throw new Error('Trạng thái không hợp lệ. Chỉ chấp nhận: Chưa xác nhận, Đang xử lý, Chưa thanh toán, Đang trả góp, Đã thanh toán, Đã hủy');
   }
   
   const response = await fetch(`${API_BASE_URL}/dealer/orders/${orderId}/status`, {

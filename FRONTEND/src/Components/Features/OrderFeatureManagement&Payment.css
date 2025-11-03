@@ -37,6 +37,39 @@
   z-index: 1;
 }
 
+.refresh-btn {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.refresh-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .order-management-header-icon {
   font-size: 3rem;
   background: rgba(255, 255, 255, 0.2);
@@ -340,6 +373,24 @@
   border: 1px solid #fdcb6e;
 }
 
+.status-processing {
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+  color: white;
+  border: 1px solid #0984e3;
+}
+
+.status-unpaid {
+  background: linear-gradient(135deg, #fab1a0 0%, #e17055 100%);
+  color: white;
+  border: 1px solid #e17055;
+}
+
+.status-installment {
+  background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+  color: white;
+  border: 1px solid #6c5ce7;
+}
+
 .status-partial {
   background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
   color: white;
@@ -586,14 +637,41 @@
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-top: 2px dashed #dee2e6;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-row {
+  display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.summary-row.discount {
+  color: #e74c3c;
+}
+
+.summary-row.discount .summary-value {
+  font-weight: 600;
+}
+
+.summary-row.total {
+  padding-top: 10px;
+  border-top: 2px solid #dee2e6;
+  margin-top: 8px;
 }
 
 .summary-label {
   font-weight: 700;
   color: #495057;
   font-size: 1rem;
+}
+
+.summary-value {
+  color: #6c757d;
+  font-size: 0.95rem;
 }
 
 .summary-amount {
@@ -671,8 +749,28 @@
   color: #8b6914;
 }
 
+.status-processing {
+  background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+  color: white;
+}
+
+.status-unpaid {
+  background: linear-gradient(135deg, #fab1a0 0%, #e17055 100%);
+  color: white;
+}
+
+.status-installment {
+  background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+  color: white;
+}
+
 .status-success {
   background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+  color: white;
+}
+
+.status-failed {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: white;
 }
 
@@ -859,6 +957,11 @@
 
 .summary-grid .remaining {
   color: #e74c3c !important;
+}
+
+.summary-grid .discount-text {
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 /* Payment Methods */

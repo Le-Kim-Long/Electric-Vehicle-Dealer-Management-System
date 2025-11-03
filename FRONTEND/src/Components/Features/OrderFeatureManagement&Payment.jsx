@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './OrderFeatureManagement&Payment.css';
+import { getAllDealerOrders } from '../../services/carVariantApi';
 
 const OrderFeatureManagementPayment = () => {
   const [orders, setOrders] = useState([]);
@@ -7,66 +8,88 @@ const OrderFeatureManagementPayment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMethod, setFilterMethod] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Load orders từ localStorage khi component mount
+  // Load orders từ API khi component mount
   useEffect(() => {
-    const loadOrders = () => {
-      try {
-        const savedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-        setOrders(savedOrders);
-        console.log('Loaded orders:', savedOrders);
-      } catch (error) {
-        console.error('Error loading orders:', error);
-        setOrders([]);
-      }
-    };
-
     loadOrders();
-
-    // Listen cho localStorage changes (khi có đơn hàng mới)
-    const handleStorageChange = () => {
-      loadOrders();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
     
-    // Check mỗi 1 giây để update real-time
-    const interval = setInterval(loadOrders, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
+    // Refresh every 30 seconds
+    const interval = setInterval(loadOrders, 30000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Tạo payments từ orders
-  const payments = orders.map(order => ({
-    paymentId: order.paymentId,
-    orderId: order.orderId,
-    orderCode: order.orderCode,
-    customerName: order.customerName,
-    customerEmail: order.customerEmail,
-    customerPhone: order.customerPhone,
-    amount: order.total,
-    method: order.paymentMethod,
-    status: order.paymentStatus || 'Pending',
-    createdDate: order.createdDate,
-    notes: order.paymentNotes,
-    vehicles: order.vehicles,
-    promotion: order.promotion,
-    orderStatus: order.status,
-    financing: order.financing,
-    payment: order.payment
-  }));
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getAllDealerOrders();
+      
+      // Transform API data to match expected format
+      const transformedOrders = response.map(order => {
+        const orderInfo = order.orderInfo || {};
+        const customer = order.customer || {};
+        const dealer = order.dealer || {};
+        const orderDetails = order.orderDetails || [];
+        
+        return {
+          paymentId: orderInfo.orderId,
+          orderId: orderInfo.orderId,
+          orderCode: `ORD-${String(orderInfo.orderId).padStart(6, '0')}`,
+          customerName: customer.customerName,
+          customerEmail: customer.customerEmail,
+          customerPhone: customer.customerPhone,
+          dealerName: dealer.dealerName,
+          dealerAddress: dealer.dealerAddress,
+          dealerPhone: dealer.dealerPhone,
+          subTotal: orderInfo.subTotal || 0,
+          discountAmount: orderInfo.discountAmount || 0,
+          total: orderInfo.totalAmount || 0,
+          paymentMethod: orderInfo.paymentMethod,
+          createdDate: orderInfo.orderDate,
+          status: orderInfo.status,
+          promotionId: orderInfo.promotionId,
+          promotionName: orderInfo.promotionName,
+          vehicles: orderDetails.map(detail => ({
+            orderDetailId: detail.orderDetailId,
+            carId: detail.carId,
+            name: detail.carName,
+            modelName: detail.modelName,
+            variant: detail.variantName,
+            color: detail.colorName,
+            quantity: detail.quantity,
+            unitPrice: detail.unitPrice,
+            finalPrice: detail.finalPrice,
+            totalPrice: detail.finalPrice
+          }))
+        };
+      });
+      
+      setOrders(transformedOrders);
+    } catch (error) {
+      setError(error.message || 'Không thể tải danh sách đơn hàng');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Lọc thanh toán
+  // Sử dụng trực tiếp orders, không cần transform lại
+  const payments = orders;
+
+  // Lọc đơn hàng
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.paymentId.toString().includes(searchTerm) ||
-                         payment.orderCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    const paymentIdStr = payment.paymentId ? payment.paymentId.toString() : '';
+    const orderCodeStr = payment.orderCode ? payment.orderCode.toLowerCase() : '';
+    const customerNameStr = payment.customerName ? payment.customerName.toLowerCase() : '';
+    
+    const matchesSearch = paymentIdStr.includes(searchTerm) ||
+                         orderCodeStr.includes(searchLower) ||
+                         customerNameStr.includes(searchLower);
     
     const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
-    const matchesMethod = filterMethod === 'all' || payment.method === filterMethod;
+    const matchesMethod = filterMethod === 'all' || payment.paymentMethod === filterMethod;
     
     return matchesSearch && matchesStatus && matchesMethod;
   });
@@ -90,36 +113,15 @@ const OrderFeatureManagementPayment = () => {
     });
   };
 
-  // Cập nhật trạng thái thanh toán
-  const updatePaymentStatus = (paymentId, newStatus) => {
-    const updatedOrders = orders.map(order => 
-      order.paymentId === paymentId 
-        ? { ...order, paymentStatus: newStatus }
-        : order
-    );
-    
-    setOrders(updatedOrders);
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
-  };
-
-  // Cập nhật trạng thái đơn hàng
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map(order => 
-      order.orderId === orderId 
-        ? { ...order, status: newStatus }
-        : order
-    );
-    
-    setOrders(updatedOrders);
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
-  };
-
-  // Render status badge
+  // Render status badge - CHỈ HIỂN THỊ ORDER STATUS (không còn payment status)
   const renderStatusBadge = (status) => {
     const statusConfig = {
-      Pending: { text: 'Chờ xử lý', class: 'status-pending' },
-      Success: { text: 'Thành công', class: 'status-success' },
-      Failed: { text: 'Thất bại', class: 'status-failed' }
+      'Chưa xác nhận': { text: 'Chưa xác nhận', class: 'status-pending' },
+      'Đang xử lý': { text: 'Đang xử lý', class: 'status-processing' },
+      'Chưa thanh toán': { text: 'Chưa thanh toán', class: 'status-unpaid' },
+      'Đang trả góp': { text: 'Đang trả góp', class: 'status-installment' },
+      'Đã thanh toán': { text: 'Đã thanh toán', class: 'status-success' },
+      'Đã hủy': { text: 'Đã hủy', class: 'status-failed' }
     };
     
     const config = statusConfig[status] || { text: status, class: 'status-pending' };
@@ -131,13 +133,15 @@ const OrderFeatureManagementPayment = () => {
     const methodConfig = {
       'Tiền mặt': { icon: '💵', class: 'method-cash' },
       'Chuyển khoản': { icon: '🏦', class: 'method-bank' },
-      'Thẻ tín dụng': { icon: '💳', class: 'method-card' }
+      'Thẻ tín dụng': { icon: '💳', class: 'method-card' },
+      'Trả góp': { icon: '📅', class: 'method-ewallet' },
+      'Thanh toán trả góp': { icon: '📅', class: 'method-ewallet' }
     };
     
     const config = methodConfig[method] || { icon: '💰', class: 'method-other' };
     return (
       <span className={`method-badge ${config.class}`}>
-        {config.icon} {method}
+        {config.icon} {method || 'Chưa xác định'}
       </span>
     );
   };
@@ -149,14 +153,43 @@ const OrderFeatureManagementPayment = () => {
         <div className="order-management-header-content">
           <div className="order-management-header-icon">💳</div>
           <div className="order-management-header-text">
-            <h2>Quản lý Đơn hàng & Thanh toán</h2>
+            <h2>Quản lý Đơn hàng & Thanh toán (Staff)</h2>
             <p>Theo dõi và xử lý các giao dịch thanh toán đơn hàng ({orders.length} đơn hàng)</p>
           </div>
+          <button 
+            className="refresh-btn" 
+            onClick={loadOrders}
+            disabled={loading}
+            title="Làm mới dữ liệu"
+          >
+            🔄 Làm mới
+          </button>
         </div>
       </div>
 
-      {/* Search and Filter Controls */}
-      <div className="order-management-controls">
+      {/* Loading State */}
+      {loading && (
+        <div className="no-orders">
+          <div className="no-orders-icon">⏳</div>
+          <h3>Đang tải dữ liệu...</h3>
+          <p>Vui lòng chờ trong giây lát</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="no-orders">
+          <div className="no-orders-icon">⚠️</div>
+          <h3>Có lỗi xảy ra</h3>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {/* Main Content - Only show when not loading and no error */}
+      {!loading && !error && (
+        <>
+          {/* Search and Filter Controls */}
+          <div className="order-management-controls">
         <div className="search-section">
           <div className="search-box">
             <input
@@ -177,9 +210,12 @@ const OrderFeatureManagementPayment = () => {
             className="filter-select"
           >
             <option value="all">Tất cả</option>
-            <option value="Pending">Chờ xử lý</option>
-            <option value="Success">Thành công</option>
-            <option value="Failed">Thất bại</option>
+            <option value="Chưa xác nhận">Chưa xác nhận</option>
+            <option value="Đang xử lý">Đang xử lý</option>
+            <option value="Chưa thanh toán">Chưa thanh toán</option>
+            <option value="Đang trả góp">Đang trả góp</option>
+            <option value="Đã thanh toán">Đã thanh toán</option>
+            <option value="Đã hủy">Đã hủy</option>
           </select>
         </div>
 
@@ -194,6 +230,8 @@ const OrderFeatureManagementPayment = () => {
             <option value="Tiền mặt">Tiền mặt</option>
             <option value="Chuyển khoản">Chuyển khoản</option>
             <option value="Thẻ tín dụng">Thẻ tín dụng</option>
+            <option value="Trả góp">Trả góp</option>
+            <option value="Thanh toán trả góp">Thanh toán trả góp</option>
           </select>
         </div>
       </div>
@@ -208,7 +246,7 @@ const OrderFeatureManagementPayment = () => {
                 <div className="order-code-section">
                   <h3>{payment.orderCode}</h3>
                   <span className="payment-id-badge">
-                    #{payment.paymentId.slice(-6)}
+                    ID: {payment.orderId}
                   </span>
                 </div>
                 {renderStatusBadge(payment.status)}
@@ -240,19 +278,29 @@ const OrderFeatureManagementPayment = () => {
                 <div className="section-content">
                   <h4>Xe đã đặt ({payment.vehicles.length})</h4>
                   <div className="vehicles-list">
-                    {payment.vehicles.slice(0, 2).map((vehicle, index) => (
-                      <div key={index} className="vehicle-item">
-                        <span className="vehicle-name">
-                          {vehicle.name} {vehicle.variant}
+                    {payment.vehicles.length > 0 ? (
+                      <>
+                        {payment.vehicles.slice(0, 2).map((vehicle, index) => (
+                          <div key={index} className="vehicle-item">
+                            <span className="vehicle-name">
+                              {vehicle.name} {vehicle.variant}
+                            </span>
+                            <span className="vehicle-details">
+                              ({vehicle.color}) x{vehicle.quantity}
+                            </span>
+                          </div>
+                        ))}
+                        {payment.vehicles.length > 2 && (
+                          <div className="more-vehicles">
+                            +{payment.vehicles.length - 2} xe khác
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="vehicle-item">
+                        <span className="vehicle-name" style={{ fontStyle: 'italic', color: '#999' }}>
+                          Chưa có xe nào
                         </span>
-                        <span className="vehicle-details">
-                          ({vehicle.color}) x{vehicle.quantity}
-                        </span>
-                      </div>
-                    ))}
-                    {payment.vehicles.length > 2 && (
-                      <div className="more-vehicles">
-                        +{payment.vehicles.length - 2} xe khác
                       </div>
                     )}
                   </div>
@@ -266,18 +314,38 @@ const OrderFeatureManagementPayment = () => {
                   <span className="info-value">{formatDateTime(payment.createdDate)}</span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Thanh toán:</span>
-                  <span className="info-value">{renderMethodBadge(payment.method)}</span>
+                  <span className="info-label">💳 Thanh toán:</span>
+                  <span className="info-value">{renderMethodBadge(payment.paymentMethod)}</span>
                 </div>
+                {payment.promotionName && (
+                  <div className="info-row">
+                    <span className="info-label">🎁 Khuyến mãi:</span>
+                    <span className="info-value">{payment.promotionName}</span>
+                  </div>
+                )}
               </div>
 
               {/* Summary Section */}
               <div className="order-card-summary">
-                <div className="summary-label">Tổng tiền:</div>
-                <div className="summary-amount">{formatCurrency(payment.amount)}</div>
+                {payment.discountAmount > 0 && (
+                  <div className="summary-row">
+                    <span className="summary-label">Tạm tính:</span>
+                    <span className="summary-value">{formatCurrency(payment.subTotal)}</span>
+                  </div>
+                )}
+                {payment.discountAmount > 0 && (
+                  <div className="summary-row discount">
+                    <span className="summary-label">Giảm giá:</span>
+                    <span className="summary-value">-{formatCurrency(payment.discountAmount)}</span>
+                  </div>
+                )}
+                <div className="summary-row total">
+                  <span className="summary-label">Tổng tiền:</span>
+                  <span className="summary-amount">{formatCurrency(payment.total)}</span>
+                </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - DealerStaff chỉ có nút xem chi tiết */}
               <div className="order-card-actions">
                 <button
                   className="btn-view"
@@ -285,22 +353,6 @@ const OrderFeatureManagementPayment = () => {
                 >
                   📋 Chi tiết
                 </button>
-                {payment.status === 'Pending' && (
-                  <>
-                    <button
-                      className="btn-success"
-                      onClick={() => updatePaymentStatus(payment.paymentId, 'Success')}
-                    >
-                      ✓ Xác nhận
-                    </button>
-                    <button
-                      className="btn-failed"
-                      onClick={() => updatePaymentStatus(payment.paymentId, 'Failed')}
-                    >
-                      ✕ Từ chối
-                    </button>
-                  </>
-                )}
               </div>
             </div>
           ))}
@@ -336,22 +388,10 @@ const OrderFeatureManagementPayment = () => {
 
             <div className="modal-body">
               <div className="order-summary">
-                <h4>Thông tin thanh toán</h4>
+                <h4>Thông tin đơn hàng</h4>
                 <div className="summary-grid">
-                  <div>Payment ID:</div>
-                  <div>#{selectedPayment.paymentId.slice(-8)}</div>
-                  <div>Order ID:</div>
-                  <div>{selectedPayment.orderCode}</div>
-                  <div>Khách hàng:</div>
-                  <div>{selectedPayment.customerName}</div>
-                  <div>Số điện thoại:</div>
-                  <div>{selectedPayment.customerPhone}</div>
-                  <div>Email:</div>
-                  <div>{selectedPayment.customerEmail}</div>
-                  <div>Số tiền:</div>
-                  <div className="highlight">{formatCurrency(selectedPayment.amount)}</div>
-                  <div>Phương thức:</div>
-                  <div>{renderMethodBadge(selectedPayment.method)}</div>
+                  <div>Mã đơn hàng:</div>
+                  <div><strong>{selectedPayment.orderCode}</strong></div>
                   <div>Trạng thái:</div>
                   <div>{renderStatusBadge(selectedPayment.status)}</div>
                   <div>Ngày tạo:</div>
@@ -359,42 +399,76 @@ const OrderFeatureManagementPayment = () => {
                 </div>
               </div>
 
-              <div className="vehicles-detail">
-                <h4>Danh sách xe</h4>
-                {selectedPayment.vehicles.map((vehicle, index) => (
-                  <div key={index} className="vehicle-detail-item">
-                    <div><strong>Xe:</strong> {vehicle.name} {vehicle.variant}</div>
-                    <div><strong>Màu:</strong> {vehicle.color}</div>
-                    <div><strong>Số lượng:</strong> {vehicle.quantity}</div>
-                    <div><strong>Đơn giá:</strong> {formatCurrency(vehicle.unitPrice)}</div>
-                    <div><strong>Thành tiền:</strong> {formatCurrency(vehicle.totalPrice)}</div>
-                    <hr />
-                  </div>
-                ))}
+              <div className="order-summary">
+                <h4>Thông tin khách hàng</h4>
+                <div className="summary-grid">
+                  <div>Họ tên:</div>
+                  <div><strong>{selectedPayment.customerName}</strong></div>
+                  <div>Số điện thoại:</div>
+                  <div>{selectedPayment.customerPhone}</div>
+                  <div>Email:</div>
+                  <div>{selectedPayment.customerEmail}</div>
+                </div>
               </div>
 
-              {selectedPayment.promotion && (
+              <div className="order-summary">
+                <h4>Thông tin đại lý</h4>
+                <div className="summary-grid">
+                  <div>Tên đại lý:</div>
+                  <div><strong>{selectedPayment.dealerName}</strong></div>
+                  <div>Địa chỉ:</div>
+                  <div>{selectedPayment.dealerAddress}</div>
+                  <div>Số điện thoại:</div>
+                  <div>{selectedPayment.dealerPhone}</div>
+                </div>
+              </div>
+
+              <div className="vehicles-detail">
+                <h4>Danh sách xe</h4>
+                {selectedPayment.vehicles && selectedPayment.vehicles.length > 0 ? (
+                  selectedPayment.vehicles.map((vehicle, index) => (
+                    <div key={index} className="vehicle-detail-item">
+                      <div><strong>Xe:</strong> {vehicle.name}</div>
+                      <div><strong>Dòng xe:</strong> {vehicle.modelName}</div>
+                      <div><strong>Phiên bản:</strong> {vehicle.variant}</div>
+                      <div><strong>Màu sắc:</strong> {vehicle.color}</div>
+                      <div><strong>Số lượng:</strong> {vehicle.quantity}</div>
+                      <div><strong>Đơn giá:</strong> {formatCurrency(vehicle.unitPrice)}</div>
+                      <div><strong>Thành tiền:</strong> {formatCurrency(vehicle.finalPrice)}</div>
+                      <hr />
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontStyle: 'italic', color: '#999', padding: '10px' }}>
+                    Chưa có xe nào trong đơn hàng
+                  </div>
+                )}
+              </div>
+
+              {selectedPayment.promotionName && (
                 <div className="promotion-detail">
                   <h4>Khuyến mãi</h4>
-                  <div><strong>Chương trình:</strong> {selectedPayment.promotion.tenKhuyenMai}</div>
-                  <div><strong>Mô tả:</strong> {selectedPayment.promotion.moTa}</div>
-                  <div><strong>Giá trị:</strong> {selectedPayment.promotion.loai === 'VNĐ' ? 
-                    formatCurrency(selectedPayment.promotion.giaTri) : 
-                    `${selectedPayment.promotion.giaTri}%`
-                  }</div>
+                  <div><strong>Chương trình:</strong> {selectedPayment.promotionName}</div>
+                  <div><strong>Giá trị giảm:</strong> {formatCurrency(selectedPayment.discountAmount)}</div>
                 </div>
               )}
 
               <div className="financing-detail">
-                <h4>Thông tin tài chính</h4>
-                <div><strong>Hình thức:</strong> {selectedPayment.financing?.phuongThucThanhToan}</div>
-                {selectedPayment.financing?.phuongThucThanhToan === 'Trả góp' && (
-                  <>
-                    <div><strong>Số kỳ hạn:</strong> {selectedPayment.financing.loanTerm} tháng</div>
-                    <div><strong>Lãi suất:</strong> {selectedPayment.financing.laiSuat}%/năm</div>
-                  </>
-                )}
-                <div><strong>Phương thức thanh toán:</strong> {selectedPayment.method}</div>
+                <h4>Thông tin thanh toán</h4>
+                <div className="summary-grid">
+                  <div>Phương thức:</div>
+                  <div>{renderMethodBadge(selectedPayment.paymentMethod)}</div>
+                  <div>Tạm tính:</div>
+                  <div>{formatCurrency(selectedPayment.subTotal)}</div>
+                  {selectedPayment.discountAmount > 0 && (
+                    <>
+                      <div>Giảm giá:</div>
+                      <div className="discount-text">-{formatCurrency(selectedPayment.discountAmount)}</div>
+                    </>
+                  )}
+                  <div><strong>Tổng cộng:</strong></div>
+                  <div className="highlight"><strong>{formatCurrency(selectedPayment.total)}</strong></div>
+                </div>
               </div>
             </div>
 
@@ -402,33 +476,11 @@ const OrderFeatureManagementPayment = () => {
               <button className="cancel-btn" onClick={() => setSelectedPayment(null)}>
                 Đóng
               </button>
-              {selectedPayment.status === 'Pending' && (
-                <>
-                  <button 
-                    className="confirm-btn" 
-                    onClick={() => {
-                      updatePaymentStatus(selectedPayment.paymentId, 'Success');
-                      updateOrderStatus(selectedPayment.orderId, 'Đã thanh toán');
-                      setSelectedPayment(null);
-                    }}
-                  >
-                    Xác nhận thanh toán
-                  </button>
-                  <button 
-                    className="reject-btn" 
-                    onClick={() => {
-                      updatePaymentStatus(selectedPayment.paymentId, 'Failed');
-                      updateOrderStatus(selectedPayment.orderId, 'Thanh toán thất bại');
-                      setSelectedPayment(null);
-                    }}
-                  >
-                    Từ chối thanh toán
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
