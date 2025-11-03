@@ -25,7 +25,7 @@ const Login = ({ onLogin }) => {
           rememberMe: true
         }));
       } catch (error) {
-        console.error('Error parsing remembered user:', error);
+        // Silently fail
       }
     }
   }, []);
@@ -122,7 +122,6 @@ const Login = ({ onLogin }) => {
         setErrors({ general: 'Đăng nhập thất bại - không nhận được token' });
       }
     } catch (error) {
-      console.error('Login error:', error);
       setErrors({ general: error.message });
     } finally {
       setIsLoading(false);

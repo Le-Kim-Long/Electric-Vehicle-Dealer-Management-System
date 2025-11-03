@@ -38,7 +38,6 @@ const UserProfile = ({ onClose }) => {
       setError('');
     } catch (err) {
       setError('Không thể tải thông tin profile');
-      console.error('Error loading profile:', err);
     } finally {
       setLoading(false);
     }
@@ -102,7 +101,6 @@ const UserProfile = ({ onClose }) => {
       }));
     } catch (err) {
       setError('Không thể cập nhật thông tin. Vui lòng thử lại');
-      console.error('Error updating profile:', err);
     } finally {
       setSaving(false);
     }

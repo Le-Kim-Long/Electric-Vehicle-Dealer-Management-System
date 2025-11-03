@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './OrderFeatureManagement&Payment.css';
-import { getAllDealerOrders } from '../../services/carVariantApi';
+import { 
+  getAllDealerOrders, 
+  createPayment, 
+  deletePayment,
+  getPaymentsByOrderId,
+  updatePaymentStatus,
+  updatePaymentMethod
+} from '../../services/carVariantApi';
 
 const OrderFeatureManagementPayment = () => {
   const [orders, setOrders] = useState([]);
@@ -10,14 +17,74 @@ const OrderFeatureManagementPayment = () => {
   const [filterMethod, setFilterMethod] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [processingPayment, setProcessingPayment] = useState(null); // Track which order is being processed
+  
+  // Payment form modal states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [paymentFormData, setPaymentFormData] = useState({
+    paymentId: null,
+    method: 'Tiền mặt',
+    note: '',
+    isExisting: false
+  });
+  const [paymentFormLoading, setPaymentFormLoading] = useState(false);
+  
+  // Payment list modal states (hiển thị danh sách thanh toán của đơn hàng)
+  const [showPaymentListModal, setShowPaymentListModal] = useState(false);
+  const [currentPayments, setCurrentPayments] = useState([]);
+  const [paymentListLoading, setPaymentListLoading] = useState(false);
+  const [currentOrderStatus, setCurrentOrderStatus] = useState(''); // Lưu trạng thái đơn hàng
+  
+  // Update payment modal states
+  const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false);
+  const [updatePaymentData, setUpdatePaymentData] = useState({
+    paymentId: null,
+    method: 'Tiền mặt',
+    note: ''
+  });
+  const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
+  
+  // Helper functions for localStorage cache (cache array of payments cho mỗi orderId)
+  const PAYMENT_CACHE_KEY = 'dealer_payment_cache';
+  
+  const getPaymentCache = () => {
+    try {
+      const cached = localStorage.getItem(PAYMENT_CACHE_KEY);
+      return cached ? JSON.parse(cached) : {};
+    } catch (error) {
+      return {};
+    }
+  };
+  
+  const setPaymentCache = (orderId, paymentsArray) => {
+    try {
+      const cache = getPaymentCache();
+      cache[orderId] = paymentsArray;
+      localStorage.setItem(PAYMENT_CACHE_KEY, JSON.stringify(cache));
+    } catch (error) {
+      // Silently fail
+    }
+  };
+  
+  const removePaymentCache = (orderId) => {
+    try {
+      const cache = getPaymentCache();
+      delete cache[orderId];
+      localStorage.setItem(PAYMENT_CACHE_KEY, JSON.stringify(cache));
+    } catch (error) {
+      // Silently fail
+    }
+  };
 
   // Load orders từ API khi component mount
   useEffect(() => {
     loadOrders();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(loadOrders, 30000);
-    return () => clearInterval(interval);
+    // Tắt auto-refresh để tránh reload liên tục
+    // Người dùng có thể dùng nút "Làm mới" để refresh thủ công
+    // const interval = setInterval(loadOrders, 30000);
+    // return () => clearInterval(interval);
   }, []);
 
   const loadOrders = async () => {
@@ -134,8 +201,9 @@ const OrderFeatureManagementPayment = () => {
       'Tiền mặt': { icon: '💵', class: 'method-cash' },
       'Chuyển khoản': { icon: '🏦', class: 'method-bank' },
       'Thẻ tín dụng': { icon: '💳', class: 'method-card' },
+      'Trả thẳng': { icon: '💰', class: 'method-cash' },
       'Trả góp': { icon: '📅', class: 'method-ewallet' },
-      'Thanh toán trả góp': { icon: '📅', class: 'method-ewallet' }
+      'Thanh toán trà góp': { icon: '📅', class: 'method-ewallet' }
     };
     
     const config = methodConfig[method] || { icon: '💰', class: 'method-other' };
@@ -144,6 +212,283 @@ const OrderFeatureManagementPayment = () => {
         {config.icon} {method || 'Chưa xác định'}
       </span>
     );
+  };
+
+  // Xử lý mở danh sách thanh toán
+  const handleOpenPaymentList = async (orderId, orderStatus) => {
+    setCurrentOrderId(orderId);
+    setCurrentOrderStatus(orderStatus);
+    setShowPaymentListModal(true);
+    setPaymentListLoading(true);
+    
+    try {
+      const cache = getPaymentCache();
+      if (cache[orderId] && cache[orderId].length > 0) {
+        setCurrentPayments(cache[orderId]);
+        setPaymentListLoading(false);
+        return;
+      }
+      
+      const payments = await getPaymentsByOrderId(orderId);
+      
+      if (payments && payments.length > 0) {
+        setCurrentPayments(payments);
+        setPaymentCache(orderId, payments);
+      } else {
+        setCurrentPayments([]);
+      }
+    } catch (error) {
+      setCurrentPayments([]);
+      alert(`❌ Lỗi: ${error.message}`);
+    } finally {
+      setPaymentListLoading(false);
+    }
+  };
+
+  // Đóng danh sách thanh toán
+  const handleClosePaymentList = () => {
+    setShowPaymentListModal(false);
+    setCurrentOrderId(null);
+    setCurrentOrderStatus('');
+    setCurrentPayments([]);
+  };
+
+  // Xử lý mở form tạo thanh toán mới
+  const handleOpenCreatePaymentForm = () => {
+    setShowPaymentListModal(false); // Đóng danh sách
+    setShowPaymentModal(true); // Mở form tạo mới
+    setPaymentFormData({
+      paymentId: null,
+      method: 'Tiền mặt',
+      note: '',
+      isExisting: false
+    });
+  };
+
+  // Đóng form thanh toán
+  const handleClosePaymentForm = () => {
+    setShowPaymentModal(false);
+    setCurrentOrderId(null);
+    setPaymentFormData({
+      paymentId: null,
+      method: 'Tiền mặt',
+      note: '',
+      isExisting: false
+    });
+  };
+
+  // Xử lý thay đổi input trong form
+  const handlePaymentFormChange = (field, value) => {
+    setPaymentFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Xử lý tạo payment mới
+  const handleCreatePayment = async () => {
+    if (!currentOrderId) return;
+
+    if (!window.confirm('Bạn có chắc chắn muốn tạo thanh toán cho đơn hàng này?')) {
+      return;
+    }
+
+    try {
+      setPaymentFormLoading(true);
+
+      const paymentData = {
+        orderId: currentOrderId,
+        method: paymentFormData.method,
+        note: paymentFormData.note
+      };
+
+      const result = await createPayment(paymentData);
+      
+      alert(
+        `✅ Thanh toán thành công!\n\n` +
+        `Payment ID: ${result.paymentId}\n` +
+        `Order ID: ${result.orderId}\n` +
+        `Số tiền: ${formatCurrency(result.amount)}\n` +
+        `Ngày thanh toán: ${formatDateTime(result.paymentDate)}\n` +
+        `Phương thức: ${result.method}\n` +
+        `Trạng thái: ${result.status}\n` +
+        `Ghi chú: ${result.note}\n\n` +
+        `${result.message}`
+      );
+      
+      // Reload orders
+      await loadOrders();
+      
+      // Cập nhật localStorage cache - thêm payment mới vào array
+      const cache = getPaymentCache();
+      const existingPayments = cache[currentOrderId] || [];
+      const updatedPayments = [...existingPayments, result];
+      setPaymentCache(currentOrderId, updatedPayments);
+      
+      // Đóng form và mở lại danh sách
+      handleClosePaymentForm();
+      await handleOpenPaymentList(currentOrderId);
+      
+    } catch (error) {
+      alert(`❌ Lỗi tạo thanh toán: ${error.message}`);
+    } finally {
+      setPaymentFormLoading(false);
+    }
+  };
+
+  // Xử lý xóa payment
+  const handleDeletePayment = async (paymentId) => {
+    if (!paymentId) return;
+
+    if (!window.confirm('⚠️ Bạn có chắc chắn muốn XÓA thanh toán này?\n\nHành động này không thể hoàn tác!')) {
+      return;
+    }
+
+    try {
+      setPaymentListLoading(true);
+
+      const result = await deletePayment(paymentId);
+      
+      alert(`✅ ${result.message || 'Xóa thanh toán thành công!'}`);
+      
+      // Cập nhật cache và state - xóa payment khỏi array
+      const updatedPayments = currentPayments.filter(p => p.paymentId !== paymentId);
+      setCurrentPayments(updatedPayments);
+      
+      if (currentOrderId) {
+        if (updatedPayments.length > 0) {
+          setPaymentCache(currentOrderId, updatedPayments);
+        } else {
+          removePaymentCache(currentOrderId);
+        }
+      }
+      
+      // Reload orders
+      await loadOrders();
+      
+    } catch (error) {
+      alert(`❌ Lỗi xóa thanh toán: ${error.message}`);
+    } finally {
+      setPaymentListLoading(false);
+    }
+  };
+
+  // Xử lý cập nhật trạng thái thanh toán (Chờ xử lý -> Hoàn thành)
+  const handleUpdatePaymentStatus = async (paymentId, currentStatus) => {
+    if (!paymentId) return;
+
+    // Chỉ cho phép cập nhật từ "Chờ xử lý" -> "Hoàn thành"
+    if (currentStatus === 'Hoàn thành') {
+      alert('ℹ️ Thanh toán này đã được hoàn thành!');
+      return;
+    }
+
+    if (!window.confirm('Xác nhận khách hàng đã thanh toán?\n\nTrạng thái sẽ được chuyển sang "Hoàn thành".')) {
+      return;
+    }
+
+    try {
+      setPaymentListLoading(true);
+
+      const result = await updatePaymentStatus(paymentId, {
+        status: 'Hoàn thành',
+        note: 'Khách hàng đã thanh toán'
+      });
+      
+      alert(
+        `✅ Cập nhật trạng thái thành công!\n\n` +
+        `Payment ID: ${result.paymentId}\n` +
+        `Trạng thái: ${result.status}\n` +
+        `Order Status: ${result.orderStatus}\n\n` +
+        `${result.message}`
+      );
+      
+      // Cập nhật cache và state
+      const updatedPayments = currentPayments.map(p => 
+        p.paymentId === paymentId 
+          ? { ...p, status: result.status, note: result.note }
+          : p
+      );
+      setCurrentPayments(updatedPayments);
+      
+      if (currentOrderId) {
+        setPaymentCache(currentOrderId, updatedPayments);
+      }
+      
+      // Reload orders để cập nhật order status
+      await loadOrders();
+      
+    } catch (error) {
+      alert(`❌ Lỗi cập nhật trạng thái: ${error.message}`);
+    } finally {
+      setPaymentListLoading(false);
+    }
+  };
+
+  // Xử lý mở modal cập nhật phương thức thanh toán
+  const handleOpenUpdatePayment = (payment) => {
+    setUpdatePaymentData({
+      paymentId: payment.paymentId,
+      method: payment.method,
+      note: payment.note || ''
+    });
+    setShowUpdatePaymentModal(true);
+  };
+
+  // Xử lý đóng modal cập nhật
+  const handleCloseUpdatePayment = () => {
+    setShowUpdatePaymentModal(false);
+    setUpdatePaymentData({
+      paymentId: null,
+      method: 'Tiền mặt',
+      note: ''
+    });
+  };
+
+  // Xử lý cập nhật phương thức thanh toán
+  const handleUpdatePayment = async () => {
+    if (!updatePaymentData.paymentId) return;
+
+    if (!window.confirm('Xác nhận cập nhật thông tin thanh toán?')) {
+      return;
+    }
+
+    try {
+      setUpdatePaymentLoading(true);
+
+      const result = await updatePaymentMethod(updatePaymentData.paymentId, {
+        method: updatePaymentData.method,
+        note: updatePaymentData.note
+      });
+      
+      alert(
+        `✅ Cập nhật thanh toán thành công!\n\n` +
+        `Payment ID: ${result.paymentId}\n` +
+        `Phương thức: ${result.method}\n` +
+        `Số tiền: ${formatCurrency(result.amount)}`
+      );
+      
+      // Cập nhật cache và state
+      const updatedPayments = currentPayments.map(p => 
+        p.paymentId === updatePaymentData.paymentId 
+          ? { ...p, method: result.method, note: result.note }
+          : p
+      );
+      setCurrentPayments(updatedPayments);
+      
+      if (currentOrderId) {
+        setPaymentCache(currentOrderId, updatedPayments);
+      }
+      
+      // Đóng modal và reload
+      handleCloseUpdatePayment();
+      await loadOrders();
+      
+    } catch (error) {
+      alert(`❌ Lỗi cập nhật thanh toán: ${error.message}`);
+    } finally {
+      setUpdatePaymentLoading(false);
+    }
   };
 
   return (
@@ -230,6 +575,7 @@ const OrderFeatureManagementPayment = () => {
             <option value="Tiền mặt">Tiền mặt</option>
             <option value="Chuyển khoản">Chuyển khoản</option>
             <option value="Thẻ tín dụng">Thẻ tín dụng</option>
+            <option value="Trả thẳng">Trả thẳng</option>
             <option value="Trả góp">Trả góp</option>
             <option value="Thanh toán trả góp">Thanh toán trả góp</option>
           </select>
@@ -249,14 +595,13 @@ const OrderFeatureManagementPayment = () => {
                     ID: {payment.orderId}
                   </span>
                 </div>
-                {renderStatusBadge(payment.status)}
               </div>
 
               {/* Customer Info Section */}
               <div className="order-card-section customer-section">
                 <div className="section-icon">👤</div>
                 <div className="section-content">
-                  <h4>Thông tin khách hàng</h4>
+                  <h4>Khách hàng</h4>
                   <div className="info-row">
                     <span className="info-label">Họ tên:</span>
                     <span className="info-value">{payment.customerName}</span>
@@ -265,10 +610,6 @@ const OrderFeatureManagementPayment = () => {
                     <span className="info-label">SĐT:</span>
                     <span className="info-value">{payment.customerPhone}</span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Email:</span>
-                    <span className="info-value">{payment.customerEmail}</span>
-                  </div>
                 </div>
               </div>
 
@@ -276,11 +617,11 @@ const OrderFeatureManagementPayment = () => {
               <div className="order-card-section vehicles-section">
                 <div className="section-icon">🚗</div>
                 <div className="section-content">
-                  <h4>Xe đã đặt ({payment.vehicles.length})</h4>
+                  <h4>Xe đã đặt</h4>
                   <div className="vehicles-list">
                     {payment.vehicles.length > 0 ? (
                       <>
-                        {payment.vehicles.slice(0, 2).map((vehicle, index) => (
+                        {payment.vehicles.slice(0, 1).map((vehicle, index) => (
                           <div key={index} className="vehicle-item">
                             <span className="vehicle-name">
                               {vehicle.name} {vehicle.variant}
@@ -290,15 +631,15 @@ const OrderFeatureManagementPayment = () => {
                             </span>
                           </div>
                         ))}
-                        {payment.vehicles.length > 2 && (
+                        {payment.vehicles.length > 1 && (
                           <div className="more-vehicles">
-                            +{payment.vehicles.length - 2} xe khác
+                            +{payment.vehicles.length - 1} xe khác
                           </div>
                         )}
                       </>
                     ) : (
                       <div className="vehicle-item">
-                        <span className="vehicle-name" style={{ fontStyle: 'italic', color: '#999' }}>
+                        <span className="vehicle-name vehicle-name-empty">
                           Chưa có xe nào
                         </span>
                       </div>
@@ -307,48 +648,72 @@ const OrderFeatureManagementPayment = () => {
                 </div>
               </div>
 
-              {/* Payment Info Section */}
+              {/* Payment Info Section - Thêm grid layout */}
               <div className="order-card-section payment-info-section">
-                <div className="info-row">
-                  <span className="info-label">📅 Ngày tạo:</span>
-                  <span className="info-value">{formatDateTime(payment.createdDate)}</span>
-                </div>
-                <div className="info-row">
-                  <span className="info-label">💳 Thanh toán:</span>
-                  <span className="info-value">{renderMethodBadge(payment.paymentMethod)}</span>
-                </div>
-                {payment.promotionName && (
+                <div className="payment-info-grid">
                   <div className="info-row">
-                    <span className="info-label">🎁 Khuyến mãi:</span>
-                    <span className="info-value">{payment.promotionName}</span>
+                    <span className="info-label">Trạng thái:</span>
+                    <span className="info-value">{renderStatusBadge(payment.status)}</span>
                   </div>
-                )}
+                  <div className="info-row">
+                    <span className="info-label">Thanh toán:</span>
+                    <span className="info-value">{renderMethodBadge(payment.paymentMethod)}</span>
+                  </div>
+                  
+                  {/* Nút quản lý thanh toán - chỉ hiển thị cho trạng thái cụ thể */}
+                  {(payment.status === 'Đã thanh toán' || 
+                    payment.status === 'Chưa thanh toán' || 
+                    payment.status === 'Đang trả góp') && (
+                    <button
+                      className="btn-payment-inline"
+                      onClick={() => handleOpenPaymentList(payment.orderId, payment.status)}
+                      disabled={processingPayment === payment.orderId}
+                    >
+                      💳 Quản lý thanh toán
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Summary Section */}
               <div className="order-card-summary">
-                {payment.discountAmount > 0 && (
-                  <div className="summary-row">
-                    <span className="summary-label">Tạm tính:</span>
-                    <span className="summary-value">{formatCurrency(payment.subTotal)}</span>
-                  </div>
-                )}
-                {payment.discountAmount > 0 && (
-                  <div className="summary-row discount">
-                    <span className="summary-label">Giảm giá:</span>
-                    <span className="summary-value">-{formatCurrency(payment.discountAmount)}</span>
-                  </div>
-                )}
                 <div className="summary-row total">
                   <span className="summary-label">Tổng tiền:</span>
                   <span className="summary-amount">{formatCurrency(payment.total)}</span>
                 </div>
+                {payment.discountAmount > 0 && (
+                  <div className="summary-row discount">
+                    <span className="summary-label">Đã giảm:</span>
+                    <span className="summary-value">{formatCurrency(payment.discountAmount)}</span>
+                  </div>
+                )}
+                
+                {/* Hiển thị số tiền KH đã trả cho đơn "Đang trả góp" */}
+                {payment.status === 'Đang trả góp' && (() => {
+                  const cache = getPaymentCache();
+                  const payments = cache[payment.orderId] || [];
+                  const completedAmount = payments
+                    .filter(p => p.status === 'Hoàn thành')
+                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+                  
+                  if (completedAmount > 0) {
+                    return (
+                      <div className="summary-row paid">
+                        <span className="summary-label">💰 KH đã trả:</span>
+                        <span className="summary-value">
+                          {formatCurrency(completedAmount)}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
-              {/* Actions - DealerStaff chỉ có nút xem chi tiết */}
+              {/* Actions - Nút chi tiết luôn ở cuối card */}
               <div className="order-card-actions">
                 <button
-                  className="btn-view"
+                  className="btn-view-full"
                   onClick={() => setSelectedPayment(payment)}
                 >
                   📋 Chi tiết
@@ -475,6 +840,295 @@ const OrderFeatureManagementPayment = () => {
             <div className="modal-footer">
               <button className="cancel-btn" onClick={() => setSelectedPayment(null)}>
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment List Modal - Danh sách thanh toán của đơn hàng */}
+      {showPaymentListModal && (
+        <div className="modal-overlay" onClick={handleClosePaymentList}>
+          <div className="modal-content payment-list-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💳 Danh sách thanh toán - Order #{currentOrderId}</h3>
+              <button className="modal-close" onClick={handleClosePaymentList}>×</button>
+            </div>
+
+            <div className="modal-body">
+              {paymentListLoading ? (
+                <div className="loading-container">
+                  <div className="loading-icon">⏳</div>
+                  <p>Đang tải danh sách thanh toán...</p>
+                </div>
+              ) : currentPayments.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">📭</div>
+                  <p>Chưa có thanh toán nào cho đơn hàng này</p>
+                  <button 
+                    className="btn-create-payment"
+                    onClick={handleOpenCreatePaymentForm}
+                  >
+                    ➕ Tạo thanh toán mới
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="payments-list">
+                    {currentPayments.map((payment, index) => (
+                      <div key={payment.paymentId} className="payment-item">
+                        <div className="payment-item-header">
+                          <div className="payment-item-title">
+                            <span className="payment-number">#{index + 1}</span>
+                            <span className="payment-id">ID: {payment.paymentId}</span>
+                          </div>
+                          <span className={`payment-status-badge status-${payment.status === 'Hoàn thành' ? 'completed' : 'pending'}`}>
+                            {payment.status === 'Hoàn thành' ? '✅' : '⏳'} {payment.status}
+                          </span>
+                        </div>
+
+                        <div className="payment-item-body">
+                          <div className="payment-info-row">
+                            <span className="label">Số tiền:</span>
+                            <span className="value amount">{formatCurrency(payment.amount)}</span>
+                          </div>
+                          <div className="payment-info-row">
+                            <span className="label">Phương thức:</span>
+                            <span className="value">{payment.method}</span>
+                          </div>
+                          <div className="payment-info-row">
+                            <span className="label">Ngày tạo:</span>
+                            <span className="value">{formatDateTime(payment.paymentDate)}</span>
+                          </div>
+                          {payment.note && (
+                            <div className="payment-info-row">
+                              <span className="label">Ghi chú:</span>
+                              <span className="value">{payment.note}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="payment-item-actions">
+                          {payment.status === 'Chờ xử lý' && (
+                            <button
+                              className="btn-complete-payment"
+                              onClick={() => handleUpdatePaymentStatus(payment.paymentId, payment.status)}
+                              disabled={paymentListLoading}
+                            >
+                              ✅ Xác nhận đã thanh toán
+                            </button>
+                          )}
+                          
+                          {/* Chỉ cho phép Cập nhật và Xóa khi đơn hàng CHƯA "Đã thanh toán" */}
+                          {currentOrderStatus !== 'Đã thanh toán' && (
+                            <>
+                              <button
+                                className="btn-update-payment-small"
+                                onClick={() => handleOpenUpdatePayment(payment)}
+                                disabled={paymentListLoading}
+                              >
+                                ✏️ Cập nhật
+                              </button>
+                              <button
+                                className="btn-delete-payment-small"
+                                onClick={() => handleDeletePayment(payment.paymentId)}
+                                disabled={paymentListLoading}
+                              >
+                                🗑️ Xóa
+                              </button>
+                            </>
+                          )}
+                          
+                          {/* Hiển thị thông báo khi đơn đã thanh toán */}
+                          {currentOrderStatus === 'Đã thanh toán' && (
+                            <div className="order-completed-notice">
+                              ✅ Đơn hàng đã thanh toán - Không thể chỉnh sửa
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Nút thêm thanh toán mới */}
+                  {/* Ẩn khi: "Chưa thanh toán" có 1 payment HOẶC đơn "Đã thanh toán" */}
+                  {!(
+                    (currentOrderStatus === 'Chưa thanh toán' && currentPayments.length >= 1) ||
+                    currentOrderStatus === 'Đã thanh toán'
+                  ) && (
+                    <div className="modal-footer">
+                      <button 
+                        className="btn-create-payment"
+                        onClick={handleOpenCreatePaymentForm}
+                        disabled={paymentListLoading}
+                      >
+                        ➕ Thêm thanh toán mới
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={handleClosePaymentList}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Form Modal */}
+      {showPaymentModal && (
+        <div className="modal-overlay" onClick={handleClosePaymentForm}>
+          <div className="modal-content payment-form-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>💳 Tạo thanh toán mới</h3>
+              <button className="modal-close" onClick={handleClosePaymentForm}>×</button>
+            </div>
+
+            <div className="modal-body">
+              {paymentFormLoading ? (
+                <div className="loading-container">
+                  <div className="loading-icon">⏳</div>
+                  <p>Đang tải thông tin...</p>
+                </div>
+              ) : (
+                <div className="payment-form">
+                  <div className="form-group">
+                    <label className="form-label">
+                      <span className="required">*</span> Phương thức thanh toán:
+                    </label>
+                    <select
+                      className="form-select"
+                      value={paymentFormData.method}
+                      onChange={(e) => handlePaymentFormChange('method', e.target.value)}
+                      disabled={paymentFormLoading}
+                    >
+                      <option value="Tiền mặt">💵 Tiền mặt</option>
+                      <option value="Chuyển khoản">🏦 Chuyển khoản</option>
+                      {/* Thẻ tín dụng chỉ cho đơn "Chưa thanh toán" (Trả thẳng) */}
+                      {currentOrderStatus === 'Chưa thanh toán' && (
+                        <option value="Thẻ tín dụng">💳 Thẻ tín dụng</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ghi chú:</label>
+                    <textarea
+                      className="form-textarea"
+                      rows="4"
+                      placeholder="Nhập ghi chú cho thanh toán (tùy chọn)..."
+                      value={paymentFormData.note}
+                      onChange={(e) => handlePaymentFormChange('note', e.target.value)}
+                      disabled={paymentFormLoading}
+                    />
+                  </div>
+
+                  <div className="form-info">
+                    <div className="info-icon">ℹ️</div>
+                    <div className="info-text">
+                      Thanh toán sẽ được tạo với trạng thái <strong>"Chờ xử lý"</strong>.
+                      <br />
+                      {currentOrderStatus === 'Chưa thanh toán' ? (
+                        <>Đơn hàng <strong>Trả thẳng</strong>: Chỉ được tạo 1 thanh toán duy nhất với số tiền = Tổng đơn hàng.</>
+                      ) : (
+                        <>Đơn hàng <strong>Trả góp</strong>: Có thể tạo nhiều thanh toán với số tiền = Số tiền mỗi kỳ.</>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer payment-form-footer">
+              <button 
+                className="cancel-btn" 
+                onClick={handleClosePaymentForm}
+                disabled={paymentFormLoading}
+              >
+                ❌ Đóng
+              </button>
+              
+              <button 
+                className="btn-create-payment" 
+                onClick={handleCreatePayment}
+                disabled={paymentFormLoading}
+              >
+                {paymentFormLoading ? '⏳ Đang xử lý...' : '✅ Tạo thanh toán'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cập nhật phương thức thanh toán */}
+      {showUpdatePaymentModal && (
+        <div className="modal-overlay" onClick={handleCloseUpdatePayment}>
+          <div className="modal-content payment-form-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>✏️ Cập nhật thông tin thanh toán</h3>
+              <button className="modal-close" onClick={handleCloseUpdatePayment}>×</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="payment-form">
+                <div className="form-group">
+                  <label className="form-label">
+                    <span className="required">*</span> Phương thức thanh toán:
+                  </label>
+                  <select
+                    className="form-select"
+                    value={updatePaymentData.method}
+                    onChange={(e) => setUpdatePaymentData({...updatePaymentData, method: e.target.value})}
+                    disabled={updatePaymentLoading}
+                  >
+                    <option value="Tiền mặt">💵 Tiền mặt</option>
+                    <option value="Chuyển khoản">🏦 Chuyển khoản</option>
+                    {currentOrderStatus === 'Chưa thanh toán' && (
+                      <option value="Thẻ tín dụng">💳 Thẻ tín dụng</option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Ghi chú:</label>
+                  <textarea
+                    className="form-textarea"
+                    rows="4"
+                    placeholder="Nhập ghi chú (tùy chọn)..."
+                    value={updatePaymentData.note}
+                    onChange={(e) => setUpdatePaymentData({...updatePaymentData, note: e.target.value})}
+                    disabled={updatePaymentLoading}
+                  />
+                </div>
+
+                <div className="form-info">
+                  <div className="info-icon">ℹ️</div>
+                  <div className="info-text">
+                    Cập nhật phương thức thanh toán và ghi chú. Số tiền thanh toán không thể thay đổi.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer payment-form-footer">
+              <button 
+                className="cancel-btn" 
+                onClick={handleCloseUpdatePayment}
+                disabled={updatePaymentLoading}
+              >
+                ❌ Hủy
+              </button>
+              
+              <button 
+                className="btn-update-payment" 
+                onClick={handleUpdatePayment}
+                disabled={updatePaymentLoading}
+              >
+                {updatePaymentLoading ? '⏳ Đang xử lý...' : '✅ Cập nhật'}
               </button>
             </div>
           </div>

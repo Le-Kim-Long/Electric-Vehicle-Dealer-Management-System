@@ -9,7 +9,6 @@ export const getCurrentUser = () => {
   try {
     return JSON.parse(userDataStr);
   } catch (error) {
-    console.error('Error parsing user data:', error);
     return null;
   }
 };

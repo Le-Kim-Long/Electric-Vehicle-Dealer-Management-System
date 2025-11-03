@@ -1,11 +1,12 @@
-/* Import styles from OrderFeatureManagement&Payment.css */
+/* Import base styles from OrderFeatureManagement&Payment.css */
 @import url('../Components/Features/OrderFeatureManagement&Payment.css');
 
-/* Customize header for Manager */
+/* Customize header gradient for Manager - same color scheme as other pages */
 .order-management-payment-header {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
 }
 
+/* Refresh Button - Already in main CSS but customized here */
 .refresh-btn {
   margin-left: auto;
   background: rgba(255, 255, 255, 0.2);
@@ -39,7 +40,7 @@
   cursor: not-allowed;
 }
 
-/* Customize buttons for Manager actions */
+/* Manager Action Buttons */
 .btn-success {
   background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
   color: white;
@@ -86,7 +87,7 @@
   cursor: not-allowed;
 }
 
-/* Modal buttons */
+/* Modal Action Buttons */
 .confirm-btn {
   background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
   color: white;
@@ -131,39 +132,19 @@
   cursor: not-allowed;
 }
 
-/* Vehicle detail item styling */
-.vehicle-detail-item {
+/* Inline style replacements for OrderManagement */
+.vehicle-name-empty {
+  font-style: italic;
+  color: #999;
+}
+
+.summary-row.discount {
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.no-data-message {
+  font-style: italic;
+  color: #999;
   padding: 10px;
-  margin-bottom: 10px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.vehicle-detail-item div {
-  padding: 4px 0;
-}
-
-.vehicle-detail-item hr {
-  margin: 10px 0;
-  border: none;
-  border-top: 1px solid #dee2e6;
-}
-
-.promotion-detail,
-.financing-detail {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.promotion-detail h4,
-.financing-detail h4 {
-  margin-bottom: 10px;
-  color: #2c3e50;
-}
-
-.promotion-detail div,
-.financing-detail div {
-  padding: 4px 0;
 }

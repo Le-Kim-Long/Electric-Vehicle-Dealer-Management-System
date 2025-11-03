@@ -23,13 +23,11 @@ function App() {
           if (userData.username && (userData.roleName || userData.role)) {
             setUser(userData);
             window.authToken = storedToken;
-            console.log('Auto-login successful:', userData.username, 'Role:', userData.roleName || userData.role);
           } else {
             clearStoredAuth();
           }
         }
       } catch (error) {
-        console.error('Error checking existing auth:', error);
         clearStoredAuth();
       } finally {
         setIsLoading(false);
@@ -39,7 +37,6 @@ function App() {
     checkExistingAuth();
   }, []);
 
-  // Clear stored authentication data
   const clearStoredAuth = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
@@ -48,27 +45,15 @@ function App() {
     delete window.authToken;
   };
 
-  // Handle successful login
   const handleLogin = (userData) => {
-    console.log('Login successful:', userData);
     setUser(userData);
   };
 
-  // Handle logout
   const handleLogout = async () => {
     try {
-      console.log('Logging out user:', user?.username);
-      
-      // Clear stored data
       clearStoredAuth();
-      
-      // Clear user state
       setUser(null);
-      
-      console.log('Logout successful');
     } catch (error) {
-      console.error('Logout error:', error);
-      // Force logout even if API fails
       clearStoredAuth();
       setUser(null);
     }
@@ -89,11 +74,8 @@ function App() {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Render appropriate component based on user role
   const renderUserInterface = () => {
     const userRole = user.roleName || user.role;
-    
-    console.log('Current user role:', userRole);
     
     switch (userRole) {
       case 'DealerStaff':
@@ -109,7 +91,6 @@ function App() {
         return <Admin user={user} onLogout={handleLogout} />;
       
       default:
-        console.warn('Unknown user role:', userRole);
         handleLogout();
         return <Login onLogin={handleLogin} />;
     }

@@ -463,7 +463,6 @@ const DealerCarManagement = () => {
                                     src={getCurrentImage(vehicle)}
                                     alt={`${vehicle.name} - ${currentColor}`}
                                     onError={(e) => {
-                                        console.error('Image load error:', e.target.src);
                                         e.target.src = vehicle.defaultImage;
                                     }}
                                 />

@@ -1415,3 +1415,131 @@
   padding: 40px;
   min-height: 200px;
 }
+
+/* Inline style replacements for CreateOrderFeature */
+.installment-plan-title {
+  margin: 0 0 12px 0;
+  color: #2e7d32;
+  font-size: 16px;
+}
+
+.installment-plan-info {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.installment-plan-interest {
+  color: #f57c00;
+}
+
+.installment-plan-total-pay {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.installment-plan-amount-per-term {
+  color: #1565c0;
+  font-weight: bold;
+}
+
+.installment-plan-divider {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid #81c784;
+}
+
+.installment-plan-summary {
+  font-size: 15px;
+}
+
+.installment-plan-note {
+  margin: 0;
+}
+
+.customer-loading {
+  font-size: 20px;
+}
+
+.customer-loading-text {
+  margin: 0;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.customer-search-error {
+  border-color: #ef5350 !important;
+}
+
+.customer-note-title {
+  margin: 5px 0;
+}
+
+.customer-note-list {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+.spinner-centered {
+  margin: 0 auto 10px;
+}
+
+.discount-hint {
+  margin: 5px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.empty-promotion-icon {
+  margin: 0 0 10px 0;
+  font-size: 48px;
+}
+
+.empty-promotion-title {
+  margin: 0 0 10px 0;
+  color: #495057;
+}
+
+.empty-promotion-text {
+  margin: 0;
+  color: #6c757d;
+}
+
+.modal-loading-text {
+  text-align: center;
+  padding: 20px;
+}
+
+.modal-error-text {
+  text-align: center;
+  padding: 20px;
+  color: #dc3545;
+}
+
+.order-detail-item {
+  margin: 0;
+}
+
+.installment-detail-title {
+  margin: 0 0 10px 0;
+  color: #1565c0;
+}
+
+.installment-detail-interest {
+  color: #f57c00;
+}
+
+.installment-detail-total {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.installment-detail-per-term {
+  color: #1565c0;
+  font-weight: bold;
+}
+
+.summary-divider {
+  margin: 15px 0;
+  border: 1px solid #999;
+}

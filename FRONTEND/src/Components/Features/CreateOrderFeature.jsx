@@ -205,24 +205,34 @@ const CreateOrderFeature = () => {
   // Load installment plan khi vào Step 4 (nếu đã có)
   useEffect(() => {
     const loadInstallmentPlan = async () => {
-      if (currentStep === 4 && orderId && orderData.financing.phuongThucThanhToan === 'Trả góp' && !installmentPlanResult) {
+      if (currentStep === 4 && orderId) {
+        // Cập nhật payment method ngay khi vào Step 4 để đảm bảo giá trị được lưu
         try {
-          const existingPlan = await getOrderInstallment(orderId);
-          if (existingPlan) {
-            setInstallmentPlanResult(existingPlan);
-            // Cập nhật financing data từ plan
-            setOrderData(prev => ({
-              ...prev,
-              financing: {
-                ...prev.financing,
-                loanTerm: existingPlan.termCount,
-                laiSuat: existingPlan.interestRate,
-                note: existingPlan.note || ''
-              }
-            }));
-          }
+          await updateOrderPaymentMethod(orderId, orderData.financing.phuongThucThanhToan);
         } catch (error) {
-          // 404 là bình thường - chưa có plan
+          console.error('Error updating payment method:', error);
+        }
+        
+        // Load installment plan nếu là Trả góp
+        if (orderData.financing.phuongThucThanhToan === 'Trả góp' && !installmentPlanResult) {
+          try {
+            const existingPlan = await getOrderInstallment(orderId);
+            if (existingPlan) {
+              setInstallmentPlanResult(existingPlan);
+              // Cập nhật financing data từ plan
+              setOrderData(prev => ({
+                ...prev,
+                financing: {
+                  ...prev.financing,
+                  loanTerm: existingPlan.termCount,
+                  laiSuat: existingPlan.interestRate,
+                  note: existingPlan.note || ''
+                }
+              }));
+            }
+          } catch (error) {
+            // 404 là bình thường - chưa có plan
+          }
         }
       }
     };
@@ -491,6 +501,16 @@ const CreateOrderFeature = () => {
           return; // Không chuyển bước nếu có lỗi
         } finally {
           setIsLoadingCustomer(false);
+        }
+      }
+      
+      // Xử lý Step 4: Đảm bảo payment method được cập nhật trước khi sang Step 5
+      if (currentStep === 4 && orderId) {
+        try {
+          await updateOrderPaymentMethod(orderId, orderData.financing.phuongThucThanhToan);
+        } catch (error) {
+          alert(`⚠️ Không thể cập nhật phương thức thanh toán: ${error.message}`);
+          return; // Không chuyển bước nếu có lỗi
         }
       }
 
@@ -896,7 +916,7 @@ const PaymentStep = ({ orderData, setOrderData, total, orderId, installmentPlanR
                     border: '2px solid #4caf50',
                     boxShadow: '0 2px 8px rgba(76, 175, 80, 0.2)'
                   }}>
-                    <h4 style={{ margin: '0 0 12px 0', color: '#2e7d32', fontSize: '16px' }}>
+                    <h4 className="installment-plan-title">
                       ✅ Kết quả tính toán trả góp
                     </h4>
                     <div style={{ 
@@ -905,39 +925,39 @@ const PaymentStep = ({ orderData, setOrderData, total, orderId, installmentPlanR
                       fontSize: '14px',
                       color: '#1b5e20'
                     }}>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <p className="installment-plan-info">
                         <strong>Mã kế hoạch:</strong> 
                         <span>#{installmentPlanResult.installmentId}</span>
                       </p>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <p className="installment-plan-info">
                         <strong>Số tiền gốc:</strong> 
                         <span>{formatPrice(installmentPlanResult.principalAmount)}</span>
                       </p>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <p className="installment-plan-info">
                         <strong>Số kỳ:</strong> 
                         <span>{installmentPlanResult.termCount} tháng</span>
                       </p>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <p className="installment-plan-info">
                         <strong>Lãi suất:</strong> 
                         <span>{installmentPlanResult.interestRate}%/năm</span>
                       </p>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between' }}>
+                      <p className="installment-plan-info">
                         <strong>Tổng lãi:</strong> 
-                        <span style={{ color: '#f57c00' }}>{formatPrice(installmentPlanResult.totalInterest)}</span>
+                        <span className="installment-plan-interest">{formatPrice(installmentPlanResult.totalInterest)}</span>
                       </p>
-                      <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #81c784' }} />
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
+                      <hr className="installment-plan-divider" />
+                      <p className="installment-plan-info installment-plan-summary">
                         <strong>Tổng thanh toán:</strong> 
-                        <strong style={{ color: '#c62828' }}>{formatPrice(installmentPlanResult.totalPay)}</strong>
+                        <strong className="installment-plan-total-pay">{formatPrice(installmentPlanResult.totalPay)}</strong>
                       </p>
-                      <p style={{ margin: 0, display: 'flex', justifyContent: 'space-between', fontSize: '15px' }}>
+                      <p className="installment-plan-info installment-plan-summary">
                         <strong>Trả mỗi kỳ:</strong> 
-                        <strong style={{ color: '#1565c0' }}>{formatPrice(installmentPlanResult.amountPerTerm)}</strong>
+                        <strong className="installment-plan-amount-per-term">{formatPrice(installmentPlanResult.amountPerTerm)}</strong>
                       </p>
                       {installmentPlanResult.note && (
                         <>
-                          <hr style={{ margin: '8px 0', border: 'none', borderTop: '1px solid #81c784' }} />
-                          <p style={{ margin: 0 }}>
+                          <hr className="installment-plan-divider" />
+                          <p className="installment-plan-note">
                             <strong>Ghi chú:</strong> {installmentPlanResult.note}
                           </p>
                         </>
@@ -973,8 +993,8 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
         alignItems: 'center',
         gap: '10px'
       }}>
-        <span style={{ fontSize: '20px' }}>⏳</span>
-        <p style={{ margin: 0, color: '#1976d2', fontWeight: '500' }}>Đang tải thông tin khách hàng...</p>
+        <span className="customer-loading">⏳</span>
+        <p className="customer-loading-text">Đang tải thông tin khách hàng...</p>
       </div>
     )}
     {customerError && (
@@ -1011,7 +1031,7 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
             onChange={(e) => handleChange(key, e.target.value)}
             placeholder={placeholder}
             disabled={isLoadingCustomer}
-            style={customerError ? { borderColor: '#ef5350' } : {}}
+            className={customerError ? 'customer-search-error' : ''}
           />
         </div>
       ))}
@@ -1025,8 +1045,8 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
         fontSize: '13px',
         color: '#666'
       }}>
-        <p style={{ margin: '5px 0' }}>💡 <strong>Lưu ý:</strong></p>
-        <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+        <p className="customer-note-title">💡 <strong>Lưu ý:</strong></p>
+        <ul className="customer-note-list">
           <li>Họ tên: Chỉ chứa chữ cái và khoảng trắng</li>
           <li>Số điện thoại: Phải có 10 hoặc 11 chữ số</li>
           <li>Email: Phải đúng định dạng và chưa được sử dụng</li>
@@ -1102,7 +1122,7 @@ const VehicleSelectionStep = ({
           borderRadius: '8px',
           margin: '20px 0'
         }}>
-          <div className="spinner" style={{ margin: '0 auto 10px' }}></div>
+          <div className="spinner spinner-centered"></div>
           <p>Đang tải danh sách xe...</p>
         </div>
       )}
@@ -1373,7 +1393,7 @@ const PromotionStep = ({ promotions, selectedPromotion, onSelect, isLoading, err
         }}>
           {error}
         </p>
-        <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+        <p className="discount-hint">
           💡 Nếu bạn không muốn áp dụng khuyến mãi, hãy bấm "Tiếp tục" để qua bước tiếp theo.
         </p>
       </div>
@@ -1385,9 +1405,9 @@ const PromotionStep = ({ promotions, selectedPromotion, onSelect, isLoading, err
         textAlign: 'center',
         border: '2px dashed #dee2e6'
       }}>
-        <p style={{ margin: '0 0 10px 0', fontSize: '48px' }}>📋</p>
-        <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>Không có khuyến mãi nào</h4>
-        <p style={{ margin: 0, color: '#6c757d' }}>Hiện tại đại lý chưa có chương trình khuyến mãi nào đang hoạt động.</p>
+        <p className="empty-promotion-icon">📋</p>
+        <h4 className="empty-promotion-title">Không có khuyến mãi nào</h4>
+        <p className="empty-promotion-text">Hiện tại đại lý chưa có chương trình khuyến mãi nào đang hoạt động.</p>
       </div>
     ) : (
       <div className="promotions-grid">
@@ -1446,7 +1466,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
     return (
       <div className="step-content">
         <h3>Xác nhận đơn hàng</h3>
-        <p style={{ textAlign: 'center', padding: '20px' }}>Đang tải thông tin đơn hàng...</p>
+        <p className="modal-loading-text">Đang tải thông tin đơn hàng...</p>
       </div>
     );
   }
@@ -1455,7 +1475,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
     return (
       <div className="step-content">
         <h3>Xác nhận đơn hàng</h3>
-        <p style={{ textAlign: 'center', padding: '20px', color: '#dc3545' }}>
+        <p className="modal-error-text">
           Không thể tải thông tin đơn hàng
         </p>
       </div>
@@ -1495,7 +1515,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
               borderRadius: '5px',
               border: '1px solid #ffc107'
             }}>
-              <p style={{ margin: 0 }}>
+              <p className="order-detail-item">
                 <strong>🎁 Khuyến mãi:</strong> {orderSummary.orderInfo.promotionName}
               </p>
             </div>
@@ -1519,16 +1539,16 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
               borderRadius: '8px',
               border: '2px solid #2196f3'
             }}>
-              <h5 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>
+              <h5 className="installment-detail-title">
                 📊 Chi tiết kế hoạch trả góp
               </h5>
               <p><strong>Mã kế hoạch:</strong> #{installmentPlanResult.installmentId}</p>
               <p><strong>Số tiền gốc:</strong> {formatPrice(installmentPlanResult.principalAmount)}</p>
               <p><strong>Số kỳ:</strong> {installmentPlanResult.termCount} tháng</p>
               <p><strong>Lãi suất:</strong> {installmentPlanResult.interestRate}%/năm</p>
-              <p><strong>Tổng lãi:</strong> <span style={{ color: '#f57c00' }}>{formatPrice(installmentPlanResult.totalInterest)}</span></p>
-              <p><strong>Tổng thanh toán:</strong> <span style={{ color: '#c62828', fontWeight: 'bold' }}>{formatPrice(installmentPlanResult.totalPay)}</span></p>
-              <p><strong>Trả mỗi kỳ:</strong> <span style={{ color: '#1565c0', fontWeight: 'bold' }}>{formatPrice(installmentPlanResult.amountPerTerm)}</span></p>
+              <p><strong>Tổng lãi:</strong> <span className="installment-detail-interest">{formatPrice(installmentPlanResult.totalInterest)}</span></p>
+              <p><strong>Tổng thanh toán:</strong> <span className="installment-detail-total">{formatPrice(installmentPlanResult.totalPay)}</span></p>
+              <p><strong>Trả mỗi kỳ:</strong> <span className="installment-detail-per-term">{formatPrice(installmentPlanResult.amountPerTerm)}</span></p>
               {installmentPlanResult.note && (
                 <p><strong>Ghi chú:</strong> {installmentPlanResult.note}</p>
               )}
@@ -1565,7 +1585,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
             </div>
           )}
           
-          <hr style={{ margin: '15px 0', border: '1px solid #999' }} />
+          <hr className="summary-divider" />
           
           <div style={{ 
             display: 'flex', 

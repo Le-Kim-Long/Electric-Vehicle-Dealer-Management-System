@@ -19,7 +19,7 @@ const DealerManager = ({ user, onLogout }) => {
         const data = await fetchMyDealerInfo();
         setDealerInfo(data);
       } catch (error) {
-        console.error('Error loading dealer info:', error);
+        // Silently fail
       }
     };
     loadDealerInfo();

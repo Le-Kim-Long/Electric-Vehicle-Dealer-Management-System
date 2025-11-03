@@ -180,6 +180,7 @@ const OrderManagement = () => {
       'Tiền mặt': { icon: '💵', class: 'method-cash' },
       'Chuyển khoản': { icon: '🏦', class: 'method-bank' },
       'Thẻ tín dụng': { icon: '💳', class: 'method-card' },
+      'Trả thẳng': { icon: '💰', class: 'method-cash' },
       'Trả góp': { icon: '📅', class: 'method-ewallet' },
       'Thanh toán trả góp': { icon: '📅', class: 'method-ewallet' }
     };
@@ -276,6 +277,7 @@ const OrderManagement = () => {
                 <option value="Tiền mặt">Tiền mặt</option>
                 <option value="Chuyển khoản">Chuyển khoản</option>
                 <option value="Thẻ tín dụng">Thẻ tín dụng</option>
+                <option value="Trả thẳng">Trả thẳng</option>
                 <option value="Trả góp">Trả góp</option>
                 <option value="Thanh toán trả góp">Thanh toán trả góp</option>
               </select>
@@ -295,101 +297,84 @@ const OrderManagement = () => {
                         ID: {payment.orderId}
                       </span>
                     </div>
-                    {renderStatusBadge(payment.status)}
                   </div>
 
-                  {/* Customer Info Section */}
-                  <div className="order-card-section customer-section">
-                    <div className="section-icon">👤</div>
-                    <div className="section-content">
-                      <h4>Thông tin khách hàng</h4>
-                      <div className="info-row">
-                        <span className="info-label">Họ tên:</span>
-                        <span className="info-value">{payment.customerName}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">SĐT:</span>
-                        <span className="info-value">{payment.customerPhone}</span>
-                      </div>
-                      <div className="info-row">
-                        <span className="info-label">Email:</span>
-                        <span className="info-value">{payment.customerEmail}</span>
-                      </div>
-                    </div>
+              {/* Customer Info Section */}
+              <div className="order-card-section customer-section">
+                <div className="section-icon">👤</div>
+                <div className="section-content">
+                  <h4>Khách hàng</h4>
+                  <div className="info-row">
+                    <span className="info-label">Họ tên:</span>
+                    <span className="info-value">{payment.customerName}</span>
                   </div>
+                  <div className="info-row">
+                    <span className="info-label">SĐT:</span>
+                    <span className="info-value">{payment.customerPhone}</span>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Vehicles Section */}
-                  <div className="order-card-section vehicles-section">
-                    <div className="section-icon">🚗</div>
-                    <div className="section-content">
-                      <h4>Xe đã đặt ({payment.vehicles.length})</h4>
-                      <div className="vehicles-list">
-                        {payment.vehicles.length > 0 ? (
-                          <>
-                            {payment.vehicles.slice(0, 2).map((vehicle, index) => (
-                              <div key={index} className="vehicle-item">
-                                <span className="vehicle-name">
-                                  {vehicle.name} {vehicle.variant}
-                                </span>
-                                <span className="vehicle-details">
-                                  ({vehicle.color}) x{vehicle.quantity}
-                                </span>
-                              </div>
-                            ))}
-                            {payment.vehicles.length > 2 && (
-                              <div className="more-vehicles">
-                                +{payment.vehicles.length - 2} xe khác
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="vehicle-item">
-                            <span className="vehicle-name" style={{ fontStyle: 'italic', color: '#999' }}>
-                              Chưa có xe nào
+              {/* Vehicles Section */}
+              <div className="order-card-section vehicles-section">
+                <div className="section-icon">🚗</div>
+                <div className="section-content">
+                  <h4>Xe đã đặt</h4>
+                  <div className="vehicles-list">
+                    {payment.vehicles.length > 0 ? (
+                      <>
+                        {payment.vehicles.slice(0, 1).map((vehicle, index) => (
+                          <div key={index} className="vehicle-item">
+                            <span className="vehicle-name">
+                              {vehicle.name} {vehicle.variant}
+                            </span>
+                            <span className="vehicle-details">
+                              ({vehicle.color}) x{vehicle.quantity}
                             </span>
                           </div>
+                        ))}
+                        {payment.vehicles.length > 1 && (
+                          <div className="more-vehicles">
+                            +{payment.vehicles.length - 1} xe khác
+                          </div>
                         )}
+                      </>
+                    ) : (
+                      <div className="vehicle-item">
+                        <span className="vehicle-name vehicle-name-empty">
+                          Chưa có xe nào
+                        </span>
                       </div>
-                    </div>
+                    )}
                   </div>
+                </div>
+              </div>
 
-                  {/* Payment Info Section */}
-                  <div className="order-card-section payment-info-section">
-                    <div className="info-row">
-                      <span className="info-label">📅 Ngày tạo:</span>
-                      <span className="info-value">{formatDateTime(payment.createdDate)}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">💳 Thanh toán:</span>
-                      <span className="info-value">{renderMethodBadge(payment.paymentMethod)}</span>
-                    </div>
-                    {payment.promotionName && (
-                      <div className="info-row">
-                        <span className="info-label">🎁 Khuyến mãi:</span>
-                        <span className="info-value">{payment.promotionName}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Payment Info Section */}
+              <div className="order-card-section payment-info-section">
+                <div className="info-row">
+                  <span className="info-label">Trạng thái:</span>
+                  <span className="info-value">{renderStatusBadge(payment.status)}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Thanh toán:</span>
+                  <span className="info-value">{renderMethodBadge(payment.paymentMethod)}</span>
+                </div>
+              </div>
 
-                  {/* Summary Section */}
-                  <div className="order-card-summary">
-                    {payment.discountAmount > 0 && (
-                      <div className="summary-row">
-                        <span className="summary-label">Tạm tính:</span>
-                        <span className="summary-value">{formatCurrency(payment.subTotal)}</span>
-                      </div>
-                    )}
-                    {payment.discountAmount > 0 && (
-                      <div className="summary-row discount">
-                        <span className="summary-label">Giảm giá:</span>
-                        <span className="summary-value">-{formatCurrency(payment.discountAmount)}</span>
-                      </div>
-                    )}
-                    <div className="summary-row total">
-                      <span className="summary-label">Tổng tiền:</span>
-                      <span className="summary-amount">{formatCurrency(payment.total)}</span>
-                    </div>
+              {/* Summary Section */}
+              <div className="order-card-summary">
+                <div className="summary-row total">
+                  <span className="summary-label">Tổng tiền:</span>
+                  <span className="summary-amount">{formatCurrency(payment.total)}</span>
+                </div>
+                {payment.discountAmount > 0 && (
+                  <div className="summary-row discount">
+                    <span className="summary-label">Đã giảm:</span>
+                    <span className="summary-value">{formatCurrency(payment.discountAmount)}</span>
                   </div>
+                )}
+              </div>
 
                   {/* Actions - Manager có quyền xác nhận/từ chối */}
                   <div className="order-card-actions">
@@ -503,7 +488,7 @@ const OrderManagement = () => {
                         </div>
                       ))
                     ) : (
-                      <div style={{ fontStyle: 'italic', color: '#999', padding: '10px' }}>
+                      <div className="no-data-message">
                         Chưa có xe nào trong đơn hàng
                       </div>
                     )}
