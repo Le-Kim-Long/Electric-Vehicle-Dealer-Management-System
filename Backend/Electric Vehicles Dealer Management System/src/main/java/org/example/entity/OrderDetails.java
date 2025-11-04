@@ -3,6 +3,8 @@ package org.example.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Getter
 @Setter
@@ -13,20 +15,24 @@ public class OrderDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "detail_id")
-    private Integer detail_id;
+    @Column(name = "OrderDetailId")
+    private Integer orderDetailId;
 
-    @Column(name = "order_id")
-    private Integer order_id;   // FK to Orders
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "OrderId", nullable = false)
+    private Orders order;
 
-    @Column(name = "car_id")
-    private Integer car_id;     // FK to Car
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CarId", nullable = false)
+    private Car car;
 
-    @Column(name = "quantity")
+    @Column(name = "Quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "price")
-    private Double price;
+    @Column(name = "UnitPrice", nullable = false)
+    private Double unitPrice;
 
+    @Column(name = "FinalPrice", insertable = false, updatable = false)
+    private BigDecimal finalPrice;
 
 }

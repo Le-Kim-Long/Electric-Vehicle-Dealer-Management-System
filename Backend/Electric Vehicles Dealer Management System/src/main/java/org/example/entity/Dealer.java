@@ -34,4 +34,10 @@ package org.example.entity;
 
         @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
         private List<UserAccount> userAccounts;
+
+        @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        private List<Promotion> promotions;
+
+        @OneToMany(mappedBy = "dealer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        private List<Orders> orders;
     }

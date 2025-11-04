@@ -2,7 +2,10 @@ package org.example.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -15,34 +18,44 @@ public class Orders {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "OrderId")
-    private Integer order_id;
+    private Integer orderId;
 
-    @Column(name = "CustomerId")
-    private Integer customer_id;   // FK to Customer
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CustomerId", nullable = false)
+    private Customer customer;
 
-    @Column(name = "DealerId")
-    private Integer dealer_id;   // FK to Dealer
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "DealerId", nullable = false)
+    private Dealer dealer;
 
     @Column(name = "OrderDate")
-    private LocalDateTime order_date;
+    private LocalDateTime orderDate;
 
     @Column(name = "SubTotal")
-    private int sub_total;
+    private BigDecimal subTotal;
 
     @Column(name = "DiscountAmount")
-    private int discount_amount;
+    private BigDecimal discountAmount;
 
-    @Column(name = "TotalAmont")
-    private int total_amount;
+    @Column(name = "TotalAmount", insertable = false, updatable = false)
+    private BigDecimal totalAmount;
 
     @Column(name = "PaymentMethod", length = 50)
-    private String payment_method;
+    private String paymentMethod;
 
-    @Column(name = "status", length = 50)
+    @Column(name = "Status", length = 50)
     private String status;
 
-    @Column(name = "PromotionId")
-    private int promotion_id;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PromotionId")
+    private Promotion promotion;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<OrderDetails> orderDetails;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Installment> installments;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments;
 }

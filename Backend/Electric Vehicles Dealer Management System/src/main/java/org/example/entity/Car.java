@@ -40,9 +40,6 @@ public class Car {
     @Column(name = "Price")
     private Long price;
 
-    @Column(name = "Status")
-    private String status;
-
     @Column(name = "ImagePath")
     private String imagePath;
 }

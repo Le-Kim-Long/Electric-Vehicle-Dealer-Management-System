@@ -24,7 +24,7 @@ public class Configuration {
     private CarVariant carVariant;
 
     @Column(name = "BatteryCapacity")
-    private String batteryCapacity;
+    private Double batteryCapacity;
 
     @Column(name = "BatteryType")
     private String batteryType;
@@ -39,7 +39,7 @@ public class Configuration {
     private Double power;
 
     @Column(name = "Torque")
-    private String torque;
+    private Double torque;
 
     @Column(name = "LengthMm")
     private int lengthMm;
