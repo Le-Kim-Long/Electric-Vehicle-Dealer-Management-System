@@ -70,7 +70,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(roleName)) {
@@ -131,7 +131,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(roleName)) {
@@ -193,7 +193,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(roleName)) {
@@ -261,7 +261,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(roleName)) {
@@ -332,7 +332,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin tạo user account
             if (!"Admin".equals(roleName)) {
@@ -394,7 +394,7 @@ public class UserAccountController {
                     .orElseThrow(() -> new RuntimeException("Current user not found with email: " + currentUserEmail));
 
             // Kiểm tra quyền Admin
-            if (!"Admin".equals(currentUser.getRole_id().getRole_name())) {
+            if (!"Admin".equals(currentUser.getRoleId().getRoleName())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body("Access denied. Only Admin can update user accounts.");
             }
@@ -486,7 +486,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String currentUserRole = user.getRole_id().getRole_name();
+            String currentUserRole = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(currentUserRole)) {
@@ -560,7 +560,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String currentUserRole = user.getRole_id().getRole_name();
+            String currentUserRole = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(currentUserRole)) {
@@ -651,7 +651,7 @@ public class UserAccountController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String currentUserRole = user.getRole_id().getRole_name();
+            String currentUserRole = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin truy cập
             if (!"Admin".equals(currentUserRole)) {
@@ -673,6 +673,200 @@ public class UserAccountController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while searching user accounts by role and dealer: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{userId}")
+    @Operation(
+        summary = "Delete user account by ID",
+        description = "Deletes a user account by ID. " +
+                     "Only accessible by Admin role. " +
+                     "Admin accounts cannot be deleted for security reasons. " +
+                     "This action is irreversible - once deleted, the user account cannot be recovered. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User account deleted successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only Admin can delete user accounts or Admin account cannot be deleted"),
+        @ApiResponse(responseCode = "404", description = "User not found with the specified ID"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> deleteUserAccount(
+            @Parameter(description = "User ID to delete", required = true, example = "9")
+            @PathVariable Integer userId) {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRoleId().getRoleName();
+
+            // Chỉ cho phép Admin xóa user account
+            if (!"Admin".equals(roleName)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only Admin can delete user accounts.");
+            }
+
+            // Xóa user account
+            userAccountService.deleteUserAccount(userId);
+
+            return ResponseEntity.ok("User account deleted successfully with ID: " + userId);
+
+        } catch (RuntimeException e) {
+            // Xử lý các lỗi cụ thể
+            String errorMessage = e.getMessage();
+
+            if (errorMessage.contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
+            } else if (errorMessage.contains("Cannot delete Admin account") ||
+                      errorMessage.contains("protected from deletion")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorMessage);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while deleting user account: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/profile")
+    @Operation(
+        summary = "Get current user profile",
+        description = "Returns the profile information of the currently logged-in user. " +
+                     "Accessible by all authenticated users (Admin, DealerManager, DealerStaff, EVMStaff). " +
+                     "Returns user's personal information including username, email, phone, role, and dealer assignment. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved current user profile"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getCurrentUserProfile() {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String currentUserEmail = authentication.getName();
+
+            if (currentUserEmail == null || currentUserEmail.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user hiện tại theo email
+            UserAccount currentUser = userAccountRepository.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Current user not found with email: " + currentUserEmail));
+
+            // Convert sang response DTO
+            UserAccountResponse userProfile = UserAccountResponse.builder()
+                    .userId(currentUser.getUserId())
+                    .username(currentUser.getUsername())
+                    .email(currentUser.getEmail())
+                    .password(currentUser.getPassword())
+                    .phoneNumber(currentUser.getPhoneNumber())
+                    .status(currentUser.getStatus())
+                    .createdDate(currentUser.getCreatedDate())
+                    .roleName(currentUser.getUserId() != null ? currentUser.getRoleId().getRoleName() : null)
+                    .dealerName(currentUser.getDealer() != null ? currentUser.getDealer().getDealerName() : null)
+                    .dealerId(currentUser.getDealer() != null ? currentUser.getDealer().getDealerId() : null)
+                    .build();
+
+            return ResponseEntity.ok(userProfile);
+
+        } catch (RuntimeException e) {
+            // Xử lý lỗi user not found
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while fetching user profile: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/profile")
+    @Operation(
+        summary = "Update current user profile",
+        description = "Updates the profile information of the currently logged-in user. " +
+                     "Accessible by all authenticated users (Admin, DealerManager, DealerStaff, EVMStaff). " +
+                     "Only provided fields will be updated. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "User profile updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Bad request - Invalid input data"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "404", description = "User not found"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> updateCurrentUserProfile(
+            @Parameter(description = "User profile update data", required = true)
+            @RequestBody UpdateUserAccountRequest request) {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String currentUserEmail = authentication.getName(); // JWT token lưu email, không phải username
+
+            // Tìm user hiện tại để cập nhật thông tin (tìm bằng email thay vì username)
+            UserAccount currentUser = userAccountRepository.findByEmail(currentUserEmail)
+                    .orElseThrow(() -> new RuntimeException("Current user not found with email: " + currentUserEmail));
+
+            // Cập nhật thông tin user
+            UserAccountResponse updatedUser = userAccountService.updateUserAccount(currentUser.getUserId(), request); // Changed from getUser_id
+
+            return ResponseEntity.ok(updatedUser);
+
+        } catch (RuntimeException e) {
+            // Xử lý các lỗi cụ thể
+            String errorMessage = e.getMessage();
+
+            if (errorMessage.contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
+            } else if (errorMessage.contains("already exists")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(errorMessage);
+            } else if (errorMessage.contains("Cannot update Admin account") ||
+                      errorMessage.contains("protected from modifications")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorMessage);
+            } else if (errorMessage.contains("required") ||
+                      errorMessage.contains("Invalid") ||
+                      errorMessage.contains("must be")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating user profile: " + e.getMessage());
         }
     }
 }

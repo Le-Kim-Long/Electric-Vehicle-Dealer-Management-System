@@ -57,7 +57,7 @@ public class ColorController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName(); // Changed from getRole_id().getRole_name()
 
             List<String> colorNames = colorService.getAllColorNames();
             return ResponseEntity.ok(colorNames);
@@ -68,6 +68,71 @@ public class ColorController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while retrieving color names: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/by-model-variant")
+    @Operation(
+        summary = "Get all colors by model name and variant name",
+        description = "Retrieve all available colors for a specific model and variant combination"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved colors for the model and variant"),
+            @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid model name or variant name"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+            @ApiResponse(responseCode = "404", description = "No colors found for the specified model and variant"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<?> getColorsByModelNameAndVariantName(
+            @RequestParam String modelName,
+            @RequestParam String variantName) {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Validate input parameters
+            if (modelName == null || modelName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Model name is required and cannot be empty");
+            }
+            if (variantName == null || variantName.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Variant name is required and cannot be empty");
+            }
+
+            // Lấy thông tin user để kiểm tra role (optional - all authenticated users can access)
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            List<String> colorNames = colorService.getColorNamesByModelNameAndVariantName(modelName, variantName);
+
+            if (colorNames.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No colors found for model: " + modelName + " and variant: " + variantName);
+            }
+
+            return ResponseEntity.ok(colorNames);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while retrieving colors: " + e.getMessage());
         }
     }
 }

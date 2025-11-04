@@ -71,7 +71,7 @@ public class DealerController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin và EVMStaff truy cập
             if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
@@ -127,7 +127,7 @@ public class DealerController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin và EVMStaff truy cập
             if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
@@ -187,7 +187,7 @@ public class DealerController {
             UserAccount user = userAccountRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
-            String roleName = user.getRole_id().getRole_name();
+            String roleName = user.getRoleId().getRoleName();
 
             // Chỉ cho phép Admin và EVMStaff truy cập
             if (!"Admin".equals(roleName) && !"EVMStaff".equals(roleName)) {
@@ -212,6 +212,76 @@ public class DealerController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while fetching car variants for dealer '" + dealerName + "': " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/my-dealer")
+    @Operation(
+        summary = "Get current user's dealer information",
+        description = "Returns the dealer information that the currently logged-in user belongs to. " +
+                     "Only accessible by DealerManager and DealerStaff roles. " +
+                     "Admin and EVMStaff are not associated with any specific dealer. " +
+                     "Returns dealer details including ID, name, address, phone, and email. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved current user's dealer information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Only DealerManager and DealerStaff can access this endpoint"),
+        @ApiResponse(responseCode = "404", description = "User is not associated with any dealer"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getCurrentUserDealer() {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role và dealer
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRoleId().getRoleName();
+
+            // Chỉ cho phép DealerManager và DealerStaff truy cập
+            if (!"DealerManager".equals(roleName) && !"DealerStaff".equals(roleName)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. Only DealerManager and DealerStaff can view their dealer information. " +
+                          "Admin and EVMStaff are not associated with any specific dealer.");
+            }
+
+            // Kiểm tra user có được gán vào dealer không
+            if (user.getDealer() == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User is not associated with any dealer. Please contact administrator to assign you to a dealer.");
+            }
+
+            // Lấy thông tin dealer của user
+            DealerResponse dealerInfo = dealerService.getDealerById(user.getDealer().getDealerId());
+
+            return ResponseEntity.ok(dealerInfo);
+
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while fetching dealer information: " + e.getMessage());
         }
     }
 }
