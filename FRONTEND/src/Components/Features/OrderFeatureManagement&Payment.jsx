@@ -498,11 +498,11 @@ const OrderFeatureManagementPayment = () => {
         <div className="order-management-header-content">
           <div className="order-management-header-icon">💳</div>
           <div className="order-management-header-text">
-            <h2>Quản lý Đơn hàng & Thanh toán (Staff)</h2>
+            <h2>Quản lý Đơn hàng & Thanh toán</h2>
             <p>Theo dõi và xử lý các giao dịch thanh toán đơn hàng ({orders.length} đơn hàng)</p>
           </div>
           <button 
-            className="refresh-btn" 
+            className="refresh-btn-order" 
             onClick={loadOrders}
             disabled={loading}
             title="Làm mới dữ liệu"
@@ -681,7 +681,7 @@ const OrderFeatureManagementPayment = () => {
                   <span className="summary-label">Tổng tiền:</span>
                   <span className="summary-amount">{formatCurrency(payment.total)}</span>
                 </div>
-                {payment.discountAmount > 0 && (
+                {payment.discountAmount > 0 && payment.status !== 'Đang trả góp' && (
                   <div className="summary-row discount">
                     <span className="summary-label">Đã giảm:</span>
                     <span className="summary-value">{formatCurrency(payment.discountAmount)}</span>
@@ -696,17 +696,14 @@ const OrderFeatureManagementPayment = () => {
                     .filter(p => p.status === 'Hoàn thành')
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
                   
-                  if (completedAmount > 0) {
-                    return (
-                      <div className="summary-row paid">
-                        <span className="summary-label">💰 KH đã trả:</span>
-                        <span className="summary-value">
-                          {formatCurrency(completedAmount)}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
+                  return (
+                    <div className="summary-row paid">
+                      <span className="summary-label">KH đã trả:</span>
+                      <span className="summary-value">
+                        {formatCurrency(completedAmount)}
+                      </span>
+                    </div>
+                  );
                 })()}
               </div>
 

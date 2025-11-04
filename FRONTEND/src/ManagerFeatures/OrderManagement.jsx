@@ -204,7 +204,7 @@ const OrderManagement = () => {
             <p>Xác nhận và quản lý các đơn hàng của đại lý ({orders.length} đơn hàng)</p>
           </div>
           <button 
-            className="refresh-btn" 
+            className="refresh-btn-order" 
             onClick={loadOrders}
             disabled={loading}
             title="Làm mới dữ liệu"
