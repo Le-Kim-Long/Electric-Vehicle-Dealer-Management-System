@@ -57,8 +57,8 @@ public class CreateCompleteCarRequest {
     @AllArgsConstructor
     public static class ConfigurationInfo {
         @NotNull(message = "Battery capacity is required")
-        @Min(value = 1, message = "Battery capacity must be greater than 0")
-        private Integer batteryCapacity;
+        @DecimalMin(value = "0.1", message = "Battery capacity must be greater than 0")
+        private Double batteryCapacity;
 
         @NotBlank(message = "Battery type is required")
         private String batteryType;
@@ -123,12 +123,6 @@ public class CreateCompleteCarRequest {
         @Min(value = 0, message = "Price must be greater than or equal to 0")
         private Long price;
 
-        @NotBlank(message = "Status is required")
-        @Pattern(regexp = "^(Available|Sold|Reserved|On Sale)$",
-                 message = "Status must be one of: Available, Sold, Reserved, On Sale")
-        private String status;
-
         private String imagePath;
     }
 }
-

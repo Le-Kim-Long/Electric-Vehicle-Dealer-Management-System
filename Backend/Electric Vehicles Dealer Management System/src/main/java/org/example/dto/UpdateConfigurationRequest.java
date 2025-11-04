@@ -2,15 +2,13 @@ package org.example.dto;
 
 import lombok.*;
 
-@Data
-@Builder
-@NoArgsConstructor
+@Getter
+@Setter
 @AllArgsConstructor
-public class ConfigurationResponse {
-    private Integer configId;
-    private Integer variantId;
-    private String modelName;
-    private String variantName;
+@NoArgsConstructor
+@Builder
+public class UpdateConfigurationRequest {
+
     private Double batteryCapacity;
     private String batteryType;
     private Integer fullChargeTime;

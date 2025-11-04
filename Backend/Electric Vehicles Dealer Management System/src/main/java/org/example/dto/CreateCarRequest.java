@@ -28,11 +28,5 @@ public class CreateCarRequest {
     @Min(value = 0, message = "Price must be greater than or equal to 0")
     private Long price;
 
-    @NotBlank(message = "Status is required")
-    @Pattern(regexp = "^(Available|Sold|Reserved)$",
-             message = "Status must be one of: Available, Sold, Reserved")
-    private String status;
-
     private String imagePath;
 }
-
