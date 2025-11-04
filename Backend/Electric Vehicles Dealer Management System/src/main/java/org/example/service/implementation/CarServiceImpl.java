@@ -4,6 +4,7 @@ import org.example.dto.AddCarToDealerRequest;
 import org.example.dto.CarResponse;
 import org.example.dto.CreateCarRequest;
 import org.example.dto.CreateCompleteCarRequest;
+import org.example.dto.UpdateManufacturerPriceRequest;
 import org.example.entity.Car;
 import org.example.entity.CarModel;
 import org.example.entity.CarVariant;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -123,7 +125,6 @@ public class CarServiceImpl implements CarService {
         car.setColorId(request.getColorId());
         car.setProductionYear(request.getProductionYear());
         car.setPrice(request.getPrice());
-        car.setStatus(request.getStatus());
         car.setImagePath(request.getImagePath());
 
         Car savedCar = carRepository.save(car);
@@ -184,12 +185,12 @@ public class CarServiceImpl implements CarService {
                 .orElseGet(() -> {
                     Configuration newConfig = new Configuration();
                     newConfig.setVariantId(carVariant.getVariantId());
-                    newConfig.setBatteryCapacity(String.valueOf(request.getConfiguration().getBatteryCapacity()));
+                    newConfig.setBatteryCapacity(request.getConfiguration().getBatteryCapacity());
                     newConfig.setBatteryType(request.getConfiguration().getBatteryType());
                     newConfig.setFullChargeTime(request.getConfiguration().getFullChargeTime());
                     newConfig.setRangeKm(request.getConfiguration().getRangeKm());
                     newConfig.setPower(request.getConfiguration().getPower());
-                    newConfig.setTorque(String.valueOf(request.getConfiguration().getTorque()));
+                    newConfig.setTorque(request.getConfiguration().getTorque());
                     newConfig.setLengthMm(request.getConfiguration().getLengthMm());
                     newConfig.setWidthMm(request.getConfiguration().getWidthMm());
                     newConfig.setHeightMm(request.getConfiguration().getHeightMm());
@@ -228,8 +229,7 @@ public class CarServiceImpl implements CarService {
         car.setVariantId(carVariant.getVariantId());
         car.setColorId(color.getColorId());
         car.setProductionYear(request.getCar().getProductionYear());
-        car.setPrice(request.getCar().getPrice());
-        car.setStatus(request.getCar().getStatus());
+        car.setPrice(request.getCar().getPrice()); // Fix: Add missing price assignment
         car.setImagePath(request.getCar().getImagePath());
 
         Car savedCar = carRepository.save(car);
@@ -263,9 +263,9 @@ public class CarServiceImpl implements CarService {
     @Transactional
     public String addCarToDealer(AddCarToDealerRequest request) {
         // Validate input
-        if (request.getVariantId() == null || request.getColorName() == null ||
-                request.getDealerName() == null || request.getQuantity() == null) {
-            throw new RuntimeException("All fields are required");
+        if (request.getModelName() == null || request.getVariantName() == null ||
+                request.getColorName() == null || request.getDealerName() == null || request.getQuantity() == null) {
+            throw new RuntimeException("All fields are required: modelName, variantName, colorName, dealerName, quantity");
         }
 
         if (request.getQuantity() <= 0) {
@@ -276,10 +276,12 @@ public class CarServiceImpl implements CarService {
         Dealer dealer = dealerRepository.findByDealerName(request.getDealerName())
                 .orElseThrow(() -> new RuntimeException("Dealer not found: " + request.getDealerName()));
 
-        // Find car by variantId and colorName
-        Car car = carRepository.findByVariantIdAndColorName(request.getVariantId(), request.getColorName())
+        // Find car by modelName, variantName and colorName
+        Car car = carRepository.findByModelNameAndVariantNameAndColorName(
+                request.getModelName(), request.getVariantName(), request.getColorName())
                 .orElseThrow(() -> new RuntimeException(
-                        "Car not found with variantId: " + request.getVariantId() +
+                        "Car not found with model: " + request.getModelName() +
+                                ", variant: " + request.getVariantName() +
                                 " and color: " + request.getColorName()));
 
         // Check if dealer already has this car
@@ -287,24 +289,95 @@ public class CarServiceImpl implements CarService {
                 car.getCarId(), dealer.getDealerId()).orElse(null);
 
         if (existingDealerCar != null) {
-            // Update quantity (add to existing)
+            // Dealer already has this car - add to quantity, keep existing dealer price and status
             int newQuantity = existingDealerCar.getQuantity() + request.getQuantity();
             existingDealerCar.setQuantity(newQuantity);
             dealerCarRepository.save(existingDealerCar);
 
-            return String.format("Successfully added %d cars to dealer %s. Total quantity now: %d",
-                    request.getQuantity(), request.getDealerName(), newQuantity);
+            return String.format("Successfully added %d cars to dealer %s. Total quantity now: %d. " +
+                            "Model: %s %s (%s). Dealer price: %s, Status: %s (unchanged)",
+                    request.getQuantity(), request.getDealerName(), newQuantity,
+                    request.getModelName(), request.getVariantName(), request.getColorName(),
+                    existingDealerCar.getDealerPrice() != null ? existingDealerCar.getDealerPrice() : "0",
+                    existingDealerCar.getStatus() != null ? existingDealerCar.getStatus() : "Pending");
         } else {
-            // Create new dealer car entry
+            // Dealer doesn't have this car - create new entry with dealer price = 0 and status = "Pending"
             DealerCar newDealerCar = new DealerCar();
             newDealerCar.setCarId(car.getCarId());
             newDealerCar.setDealerId(dealer.getDealerId());
             newDealerCar.setQuantity(request.getQuantity());
+            newDealerCar.setDealerPrice(BigDecimal.ZERO); // Set dealer price to 0
+            newDealerCar.setStatus("Pending"); // Set status to "Pending"
             dealerCarRepository.save(newDealerCar);
 
-            return String.format("Successfully added %d cars to dealer %s",
-                    request.getQuantity(), request.getDealerName());
+            return String.format("Successfully added %d cars to dealer %s. " +
+                            "Model: %s %s (%s). New car added with dealer price: 0, status: Pending",
+                    request.getQuantity(), request.getDealerName(),
+                    request.getModelName(), request.getVariantName(), request.getColorName());
         }
+    }
+
+    @Override
+    @Transactional
+    public String updateManufacturerPrice(String modelName, String variantName, String colorName, UpdateManufacturerPriceRequest request) {
+        // Validate input parameters
+        if (modelName == null || modelName.trim().isEmpty()) {
+            throw new RuntimeException("Model name is required and cannot be empty");
+        }
+        if (variantName == null || variantName.trim().isEmpty()) {
+            throw new RuntimeException("Variant name is required and cannot be empty");
+        }
+        if (colorName == null || colorName.trim().isEmpty()) {
+            throw new RuntimeException("Color name is required and cannot be empty");
+        }
+        if (request == null || request.getManufacturerPrice() == null) {
+            throw new RuntimeException("Manufacturer price is required");
+        }
+
+        // Find car by model name, variant name, and color name
+        Car car = carRepository.findByModelNameAndVariantNameAndColorName(
+                modelName.trim(), variantName.trim(), colorName.trim())
+                .orElseThrow(() -> new RuntimeException(
+                        "Car not found with model: " + modelName.trim() +
+                                ", variant: " + variantName.trim() +
+                                ", color: " + colorName.trim()));
+
+        // Store old price for response message
+        Long oldPrice = car.getPrice();
+
+        // Update manufacturer price
+        car.setPrice(request.getManufacturerPrice());
+        carRepository.save(car);
+
+        return String.format("Successfully updated manufacturer price for car: %s %s (%s). " +
+                        "Previous price: %s VND, New price: %s VND",
+                modelName.trim(), variantName.trim(), colorName.trim(),
+                oldPrice != null ? String.format("%,d", oldPrice) : "Not set",
+                String.format("%,d", request.getManufacturerPrice()));
+    }
+
+    @Override
+    public Long getManufacturerPrice(String modelName, String variantName, String colorName) {
+        // Validate input parameters
+        if (modelName == null || modelName.trim().isEmpty()) {
+            throw new RuntimeException("Model name is required and cannot be empty");
+        }
+        if (variantName == null || variantName.trim().isEmpty()) {
+            throw new RuntimeException("Variant name is required and cannot be empty");
+        }
+        if (colorName == null || colorName.trim().isEmpty()) {
+            throw new RuntimeException("Color name is required and cannot be empty");
+        }
+
+        // Find car by model name, variant name, and color name
+        Car car = carRepository.findByModelNameAndVariantNameAndColorName(
+                modelName.trim(), variantName.trim(), colorName.trim())
+                .orElseThrow(() -> new RuntimeException(
+                        "Car not found with model: " + modelName.trim() +
+                                ", variant: " + variantName.trim() +
+                                ", color: " + colorName.trim()));
+
+        return car.getPrice();
     }
 
     private List<DealerCar> performFlexibleSearchOnDealerCars(List<DealerCar> dealerCars, String searchTerm) {

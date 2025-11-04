@@ -96,22 +96,22 @@ public class UserAccountService {
     }
 
     /**
-     * Tạo user account mới
+     * Tạo user account mới với validation đầy đủ
      */
     public UserAccountResponse createUserAccount(CreateUserAccountRequest request) {
         // Validate input
         validateCreateUserRequest(request);
 
-        // Kiểm tra username đã tồn tại chưa
-        Optional<UserAccount> existingUserByUsername = userAccountRepository.findByUsername(request.getUsername());
-        if (existingUserByUsername.isPresent()) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
-        }
-
         // Kiểm tra email đã tồn tại chưa
         Optional<UserAccount> existingUserByEmail = userAccountRepository.findByEmail(request.getEmail());
         if (existingUserByEmail.isPresent()) {
             throw new RuntimeException("Email already exists: " + request.getEmail());
+        }
+
+        // Kiểm tra số điện thoại đã tồn tại chưa
+        Optional<UserAccount> existingUserByPhone = userAccountRepository.findByPhoneNumber(request.getPhoneNumber());
+        if (existingUserByPhone.isPresent()) {
+            throw new RuntimeException("Phone number already exists: " + request.getPhoneNumber());
         }
 
         // Lấy role theo tên
@@ -135,19 +135,19 @@ public class UserAccountService {
         newUser.setUsername(request.getUsername());
         newUser.setPassword(request.getPassword()); // Lưu password thông thường, không mã hóa
         newUser.setEmail(request.getEmail());
-        newUser.setPhone_number(request.getPhoneNumber());
-        newUser.setRole_id(role);
+        newUser.setPhoneNumber(request.getPhoneNumber());
+        newUser.setRoleId(role);
         newUser.setDealer(dealer);
         // Status sẽ được set default value "Active" bởi database
         newUser.setStatus("Active");
-        newUser.setCreated_date(LocalDateTime.now());
+        newUser.setCreatedDate(LocalDateTime.now());
 
         // Lưu vào database
         UserAccount savedUser = userAccountRepository.save(newUser);
 
         // Refresh entity để lấy giá trị default từ database (như status)
         userAccountRepository.flush();
-        UserAccount refreshedUser = userAccountRepository.findById(savedUser.getUser_id())
+        UserAccount refreshedUser = userAccountRepository.findById(savedUser.getUserId())
                 .orElse(savedUser);
 
         // Convert sang response DTO
@@ -163,7 +163,7 @@ public class UserAccountService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
         // Kiểm tra không cho phép update Admin account
-        if ("Admin".equals(existingUser.getRole_id().getRole_name())) {
+        if ("Admin".equals(existingUser.getRoleId().getRoleName())) {
             throw new RuntimeException("Cannot update Admin account. Admin accounts are protected from modifications.");
         }
 
@@ -173,10 +173,6 @@ public class UserAccountService {
         // Cập nhật các field nếu có giá trị mới
         if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
             // Kiểm tra username đã tồn tại chưa (trừ user hiện tại)
-            Optional<UserAccount> existingUserByUsername = userAccountRepository.findByUsername(request.getUsername());
-            if (existingUserByUsername.isPresent() && !existingUserByUsername.get().getUser_id().equals(userId)) {
-                throw new RuntimeException("Username already exists: " + request.getUsername());
-            }
             existingUser.setUsername(request.getUsername());
         }
 
@@ -187,14 +183,19 @@ public class UserAccountService {
         if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
             // Kiểm tra email đã tồn tại chưa (trừ user hiện tại)
             Optional<UserAccount> existingUserByEmail = userAccountRepository.findByEmail(request.getEmail());
-            if (existingUserByEmail.isPresent() && !existingUserByEmail.get().getUser_id().equals(userId)) {
+            if (existingUserByEmail.isPresent() && !existingUserByEmail.get().getUserId().equals(userId)) {
                 throw new RuntimeException("Email already exists: " + request.getEmail());
             }
             existingUser.setEmail(request.getEmail());
         }
 
         if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
-            existingUser.setPhone_number(request.getPhoneNumber());
+            // Kiểm tra số điện thoại đã tồn tại chưa (trừ user hiện tại)
+            Optional<UserAccount> existingUserByPhone = userAccountRepository.findByPhoneNumber(request.getPhoneNumber());
+            if (existingUserByPhone.isPresent() && !existingUserByPhone.get().getUserId().equals(userId)) {
+                throw new RuntimeException("Phone number already exists: " + request.getPhoneNumber());
+            }
+            existingUser.setPhoneNumber(request.getPhoneNumber());
         }
 
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
@@ -205,7 +206,7 @@ public class UserAccountService {
         if (request.getRoleName() != null && !request.getRoleName().trim().isEmpty()) {
             Role newRole = roleRepository.findByRoleName(request.getRoleName())
                     .orElseThrow(() -> new RuntimeException("Role not found: " + request.getRoleName()));
-            existingUser.setRole_id(newRole);
+            existingUser.setRoleId(newRole);
 
             // Xử lý dealer khi role thay đổi
             if ("DealerStaff".equals(request.getRoleName()) || "DealerManager".equals(request.getRoleName())) {
@@ -225,7 +226,7 @@ public class UserAccountService {
         } else {
             // Nếu không update role nhưng có dealerName thì chỉ update dealer
             if (request.getDealerName() != null && !request.getDealerName().trim().isEmpty()) {
-                String currentRole = existingUser.getRole_id().getRole_name();
+                String currentRole = existingUser.getRoleId().getRoleName();
                 if ("DealerStaff".equals(currentRole) || "DealerManager".equals(currentRole)) {
                     Dealer dealer = dealerRepository.findByDealerName(request.getDealerName().trim())
                             .orElseThrow(() -> new RuntimeException("Dealer not found with name: " + request.getDealerName()));
@@ -244,7 +245,28 @@ public class UserAccountService {
     }
 
     /**
-     * Validate request tạo user account
+     * Xóa user account theo ID
+     */
+    public void deleteUserAccount(Integer userId) {
+        // Tìm user theo ID
+        UserAccount existingUser = userAccountRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        // Kiểm tra không cho phép xóa Admin account
+        if ("Admin".equals(existingUser.getRoleId().getRoleName())) {
+            throw new RuntimeException("Cannot delete Admin account. Admin accounts are protected from deletion.");
+        }
+
+        // Xóa user account
+        userAccountRepository.deleteById(userId);
+    }
+
+    /**
+     * Validate request tạo user account với các yêu cầu:
+     * - Tên người dùng không có ký tự đặc biệt và số
+     * - Mật khẩu ít nhất 6 ký tự
+     * - Số điện thoại phải đúng 10 số
+     * - Email và số điện thoại là duy nhất không trùng
      */
     private void validateCreateUserRequest(CreateUserAccountRequest request) {
         if (request == null) {
@@ -268,21 +290,34 @@ public class UserAccountService {
             throw new RuntimeException("Phone number is required");
         }
 
+        // Validate username: chỉ chứa chữ cái (không có số và ký tự đặc biệt)
+        String username = request.getUsername().trim();
+        if (!username.matches("^[a-zA-ZàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđĐ\\s]+$")) {
+            throw new RuntimeException("Username must contain only letters (no numbers or special characters)");
+        }
+
+        // Validate password: ít nhất 6 ký tự
+        if (request.getPassword().length() < 6) {
+            throw new RuntimeException("Password must be at least 6 characters long");
+        }
+
+        // Validate phone number: đúng 10 số
+        String phoneNumber = request.getPhoneNumber().trim();
+        if (!phoneNumber.matches("^\\d{10}$")) {
+            throw new RuntimeException("Phone number must be exactly 10 digits");
+        }
+
+        // Validate email format
+        String email = request.getEmail().trim();
+        if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
+            throw new RuntimeException("Invalid email format");
+        }
+
         // Validate role
         if (!"DealerStaff".equals(request.getRoleName()) &&
             !"EVMStaff".equals(request.getRoleName()) &&
             !"DealerManager".equals(request.getRoleName())) {
             throw new RuntimeException("Invalid role. Valid roles are: DealerStaff, EVMStaff, DealerManager");
-        }
-
-        // Validate password length
-        if (request.getPassword().length() < 6) {
-            throw new RuntimeException("Password must be at least 6 characters long");
-        }
-
-        // Validate email format (basic)
-        if (!request.getEmail().contains("@") || !request.getEmail().contains(".")) {
-            throw new RuntimeException("Invalid email format");
         }
     }
 
@@ -294,14 +329,31 @@ public class UserAccountService {
             throw new RuntimeException("Update user request cannot be null");
         }
 
-        // Validate password length nếu có
+        // Validate username nếu có: chỉ chứa chữ cái (không có số và ký tự đặc biệt)
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            String username = request.getUsername().trim();
+            if (!username.matches("^[a-zA-ZàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđĐ\\s]+$")) {
+                throw new RuntimeException("Username must contain only letters (no numbers or special characters)");
+            }
+        }
+
+        // Validate password length nếu có: ít nhất 6 ký tự
         if (request.getPassword() != null && !request.getPassword().trim().isEmpty() && request.getPassword().length() < 6) {
             throw new RuntimeException("Password must be at least 6 characters long");
         }
 
+        // Validate phone number nếu có: đúng 10 số
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            String phoneNumber = request.getPhoneNumber().trim();
+            if (!phoneNumber.matches("^\\d{10}$")) {
+                throw new RuntimeException("Phone number must be exactly 10 digits");
+            }
+        }
+
         // Validate email format nếu có
         if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
-            if (!request.getEmail().contains("@") || !request.getEmail().contains(".")) {
+            String email = request.getEmail().trim();
+            if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$")) {
                 throw new RuntimeException("Invalid email format");
             }
         }
@@ -328,14 +380,14 @@ public class UserAccountService {
      */
     private UserAccountResponse convertToUserAccountResponse(UserAccount user) {
         return UserAccountResponse.builder()
-                .userId(user.getUser_id())
+                .userId(user.getUserId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .password(user.getPassword()) // Thêm password vào response
-                .phoneNumber(user.getPhone_number())
+                .phoneNumber(user.getPhoneNumber())
                 .status(user.getStatus())
-                .createdDate(user.getCreated_date())
-                .roleName(user.getRole_id() != null ? user.getRole_id().getRole_name() : null)
+                .createdDate(user.getCreatedDate())
+                .roleName(user.getRoleId() != null ? user.getRoleId().getRoleName() : null)
                 .dealerName(user.getDealer() != null ? user.getDealer().getDealerName() : null)
                 .dealerId(user.getDealer() != null ? user.getDealer().getDealerId() : null)
                 .build();
@@ -357,8 +409,114 @@ public class UserAccountService {
      */
     private RoleResponse convertToRoleResponse(Role role) {
         return RoleResponse.builder()
-                .roleId(role.getRole_id())
-                .roleName(role.getRole_name())
+                .roleId(role.getRoleId())
+                .roleName(role.getRoleName())
                 .build();
+    }
+
+    /**
+     * Cập nhật thông tin cá nhân của user hiện tại đang đăng nhập
+     * Dealer Manager và Dealer Staff chỉ có thể cập nhật: tên, số điện thoại, mật khẩu
+     * Không được phép cập nhật: email, role, status, dealer
+     */
+    public UserAccountResponse updateCurrentUserProfile(String currentUserEmail, UpdateUserAccountRequest request) {
+        // Tìm user hiện tại theo email
+        UserAccount currentUser = userAccountRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new RuntimeException("Current user not found with email: " + currentUserEmail));
+
+        String currentUserRole = currentUser.getRoleId().getRoleName(); // Changed from getRole_id().getRole_name()
+
+        // Kiểm tra role có được phép cập nhật profile không
+        if (!"DealerManager".equals(currentUserRole) && !"DealerStaff".equals(currentUserRole)) {
+            throw new RuntimeException("Access denied. Only DealerManager and DealerStaff can update their profile.");
+        }
+
+        // Validate input cho profile update (chỉ validate các field được phép)
+        validateProfileUpdateRequest(request, currentUserRole);
+
+        // Kiểm tra các field không được phép cập nhật
+        if (request.getEmail() != null && !request.getEmail().trim().isEmpty()) {
+            throw new RuntimeException("Access denied. " + currentUserRole + " cannot update email.");
+        }
+        if (request.getRoleName() != null && !request.getRoleName().trim().isEmpty()) {
+            throw new RuntimeException("Access denied. " + currentUserRole + " cannot update role.");
+        }
+        if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
+            throw new RuntimeException("Access denied. " + currentUserRole + " cannot update status.");
+        }
+        if (request.getDealerName() != null && !request.getDealerName().trim().isEmpty()) {
+            throw new RuntimeException("Access denied. " + currentUserRole + " cannot update dealer assignment.");
+        }
+
+        // Cập nhật các field được phép
+        boolean hasChanges = false;
+
+        // Cập nhật username nếu có
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            // Kiểm tra username đã tồn tại chưa (trừ user hiện tại)
+            Optional<UserAccount> existingUserByUsername = userAccountRepository.findByUsername(request.getUsername());
+            if (existingUserByUsername.isPresent() && !existingUserByUsername.get().getUserId().equals(currentUser.getUserId())) { // Changed from getUser_id
+                throw new RuntimeException("Username already exists: " + request.getUsername());
+            }
+            currentUser.setUsername(request.getUsername().trim());
+            hasChanges = true;
+        }
+
+        // Cập nhật password nếu có
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            currentUser.setPassword(request.getPassword());
+            hasChanges = true;
+        }
+
+        // Cập nhật phone number nếu có
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            // Kiểm tra số điện thoại đã tồn tại chưa (trừ user hiện tại)
+            Optional<UserAccount> existingUserByPhone = userAccountRepository.findByPhoneNumber(request.getPhoneNumber());
+            if (existingUserByPhone.isPresent() && !existingUserByPhone.get().getUserId().equals(currentUser.getUserId())) { // Changed from getUser_id
+                throw new RuntimeException("Phone number already exists: " + request.getPhoneNumber());
+            }
+            currentUser.setPhoneNumber(request.getPhoneNumber().trim()); // Changed from setPhone_number
+            hasChanges = true;
+        }
+
+        if (!hasChanges) {
+            throw new RuntimeException("No valid fields to update. You can only update: username, password, phoneNumber");
+        }
+
+        // Lưu thay đổi
+        UserAccount updatedUser = userAccountRepository.save(currentUser);
+
+        // Convert sang response DTO
+        return convertToUserAccountResponse(updatedUser);
+    }
+
+    /**
+     * Validate request cập nhật profile cho dealer manager và dealer staff
+     */
+    private void validateProfileUpdateRequest(UpdateUserAccountRequest request, String userRole) {
+        if (request == null) {
+            throw new RuntimeException("Update profile request cannot be null");
+        }
+
+        // Validate username nếu có: chỉ chứa chữ cái (không có số và ký tự đặc biệt)
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
+            String username = request.getUsername().trim();
+            if (!username.matches("^[a-zA-ZàáảãạâấầẩẫậăắằẳẵặèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđĐ\\s]+$")) {
+                throw new RuntimeException("Username must contain only letters (no numbers or special characters)");
+            }
+        }
+
+        // Validate password length nếu có: ít nhất 6 ký tự
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty() && request.getPassword().length() < 6) {
+            throw new RuntimeException("Password must be at least 6 characters long");
+        }
+
+        // Validate phone number nếu có: đúng 10 số
+        if (request.getPhoneNumber() != null && !request.getPhoneNumber().trim().isEmpty()) {
+            String phoneNumber = request.getPhoneNumber().trim();
+            if (!phoneNumber.matches("^\\d{10}$")) {
+                throw new RuntimeException("Phone number must be exactly 10 digits");
+            }
+        }
     }
 }

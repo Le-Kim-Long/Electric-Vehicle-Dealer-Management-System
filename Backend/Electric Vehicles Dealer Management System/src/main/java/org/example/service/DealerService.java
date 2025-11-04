@@ -38,4 +38,20 @@ public class DealerService {
                         .build())
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Lấy thông tin dealer theo ID
+     */
+    public DealerResponse getDealerById(Integer dealerId) {
+        Dealer dealer = dealerRepository.findById(dealerId)
+                .orElseThrow(() -> new RuntimeException("Dealer not found with ID: " + dealerId));
+
+        return DealerResponse.builder()
+                .dealerId(dealer.getDealerId())
+                .dealerName(dealer.getDealerName())
+                .address(dealer.getAddress())
+                .phone(dealer.getPhone())
+                .email(dealer.getEmail())
+                .build();
+    }
 }

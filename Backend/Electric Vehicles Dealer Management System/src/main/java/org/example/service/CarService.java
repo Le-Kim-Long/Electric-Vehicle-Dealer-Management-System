@@ -4,6 +4,7 @@ import org.example.dto.AddCarToDealerRequest;
 import org.example.dto.CarResponse;
 import org.example.dto.CreateCarRequest;
 import org.example.dto.CreateCompleteCarRequest;
+import org.example.dto.UpdateManufacturerPriceRequest;
 import java.util.List;
 
 public interface CarService {
@@ -22,4 +23,10 @@ public interface CarService {
 
     // Method to add car to dealer
     String addCarToDealer(AddCarToDealerRequest request);
+
+    // Method to update manufacturer price by model, variant, and color name
+    String updateManufacturerPrice(String modelName, String variantName, String colorName, UpdateManufacturerPriceRequest request);
+
+    // Method to get manufacturer price by model, variant, and color name
+    Long getManufacturerPrice(String modelName, String variantName, String colorName);
 }

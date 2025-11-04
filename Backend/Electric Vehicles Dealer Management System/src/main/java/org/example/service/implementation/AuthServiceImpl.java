@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,12 +22,25 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        UserAccount user = userRepo.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        // Validate input
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
 
-        // Plain text check (since DB has "123456" in sample data)
+        // Kiểm tra xem email có tồn tại không
+        Optional<UserAccount> userOptional = userRepo.findByEmail(request.getEmail().trim());
+        if (userOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account does not exist");
+        }
+
+        UserAccount user = userOptional.get();
+
+        // Kiểm tra password
         if (!Objects.equals(user.getPassword().trim(), request.getPassword().trim())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Incorrect password");
         }
 
         // Kiểm tra status của account - chỉ cho phép login khi status là "Active"
@@ -35,17 +49,17 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Kiểm tra role và xử lý dealer name phù hợp
-        String roleName = user.getRole_id().getRole_name();
+        String roleName = user.getRoleId().getRoleName();
         String dealerName = null;
 
         // Admin và EVMStaff không thuộc dealer nào (dealerId = null)
         if ("Admin".equals(roleName) || "EVMStaff".equals(roleName)) {
             dealerName = null; // Hoặc có thể set thành "System" tùy theo business logic
-        } else if ("DealerStaff".equals(roleName)) {
-            // DealerStaff phải thuộc một dealer
+        } else if ("DealerStaff".equals(roleName) || "DealerManager".equals(roleName)) {
+            // DealerStaff và DealerManager phải thuộc một dealer
             if (user.getDealer() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Dealer staff account is not associated with any dealer");
+                        "Dealer account is not associated with any dealer");
             }
             dealerName = user.getDealer().getDealerName();
         } else {

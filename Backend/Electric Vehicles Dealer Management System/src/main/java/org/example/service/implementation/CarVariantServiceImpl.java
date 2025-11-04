@@ -1,5 +1,6 @@
 package org.example.service.implementation;
 
+import org.example.dto.DealerVariantDetailResponse;
 import org.example.dto.VariantDetailResponse;
 import org.example.entity.CarVariant;
 import org.example.entity.Color;
@@ -11,6 +12,7 @@ import org.example.service.CarVariantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -483,5 +485,265 @@ public class CarVariantServiceImpl implements CarVariantService {
     @Override
     public List<String> getVariantNamesByModelName(String modelName) {
         return carVariantRepository.findVariantNamesByModelName(modelName);
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> getDealerVariantDetailsForManager(Integer dealerId) {
+        // Lấy tất cả xe của dealer (bao gồm cả pending và on sale) - cho dealer manager
+        List<CarVariant> carVariants = carVariantRepository.findVariantsByDealerIdWithConfiguration(dealerId);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, false))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> getDealerVariantDetailsForStaff(Integer dealerId) {
+        // Lấy chỉ xe có status "On Sale" - cho dealer staff
+        List<CarVariant> carVariants = carVariantRepository.findVariantsByDealerIdWithConfiguration(dealerId);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, true))
+                .toList();
+    }
+
+    private DealerVariantDetailResponse convertToDealerVariantDetailResponse(CarVariant carVariant, Integer dealerId, boolean onSaleOnly) {
+        // Lấy thông tin colorId, manufacturerPrice, dealerPrice, imagePath, quantity và status từ xe thuộc dealer hiện tại
+        List<Object[]> colorIdsAndData;
+        if (onSaleOnly) {
+            // Chỉ lấy xe có status "On Sale" cho dealer staff
+            colorIdsAndData = carVariantRepository.findColorIdsAndDataByVariantIdAndDealerIdOnSale(
+                carVariant.getVariantId(), dealerId);
+        } else {
+            // Lấy tất cả xe cho dealer manager
+            colorIdsAndData = carVariantRepository.findColorIdsAndDataByVariantIdAndDealerId(
+                carVariant.getVariantId(), dealerId);
+        }
+
+        // Tạo Map từ colorId -> (manufacturerPrice, dealerPrice, imagePath, quantity, status)
+        Map<Integer, Object[]> colorDataMap = colorIdsAndData.stream()
+                .collect(Collectors.toMap(
+                    row -> (Integer) row[0],  // colorId
+                    row -> new Object[]{row[1], row[2], row[3], row[4], row[5]}, // [manufacturerPrice, dealerPrice, imagePath, quantity, status]
+                    (existing, replacement) -> existing // Nếu có duplicate, giữ giá trị đầu tiên
+                ));
+
+        // Lấy thông tin màu sắc từ ColorRepository
+        List<Integer> colorIds = colorIdsAndData.stream()
+                .map(row -> (Integer) row[0])
+                .distinct()
+                .toList();
+
+        List<Color> colors = colorRepository.findByColorIds(colorIds);
+
+        // Tạo danh sách DealerColorPrice
+        List<DealerVariantDetailResponse.DealerColorPrice> colorPrices = colors.stream()
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
+                .map(color -> {
+                    Object[] data = colorDataMap.get(color.getColorId());
+                    String imageName = (String) data[2];
+                    // Xây dựng URL để truy cập ảnh qua HTTP
+                    String imageUrl = null;
+                    if (imageName != null && !imageName.isEmpty()) {
+                        imageUrl = "/api/images/" + imageName;
+                    }
+
+                    // Convert Long manufacturer price to BigDecimal
+                    BigDecimal manufacturerPrice = null;
+                    if (data[0] != null) {
+                        if (data[0] instanceof Long) {
+                            manufacturerPrice = BigDecimal.valueOf((Long) data[0]);
+                        } else if (data[0] instanceof BigDecimal) {
+                            manufacturerPrice = (BigDecimal) data[0];
+                        }
+                    }
+
+                    BigDecimal dealerPrice = (BigDecimal) data[1];
+                    Integer quantity = (Integer) data[3];
+                    String status = (String) data[4];
+
+                    // Phân biệt giữa Dealer Manager và Dealer Staff
+                    if (onSaleOnly) {
+                        // Dealer Staff - chỉ xem giá dealer, không xem giá niêm yết
+                        return DealerVariantDetailResponse.DealerColorPrice.forDealerStaff(
+                            color.getColorName(), dealerPrice, imageUrl, quantity, status);
+                    } else {
+                        // Dealer Manager - xem cả giá niêm yết và giá dealer
+                        return DealerVariantDetailResponse.DealerColorPrice.forDealerManager(
+                            color.getColorName(), manufacturerPrice, dealerPrice, imageUrl, quantity, status);
+                    }
+                })
+                .sorted(Comparator.comparing(DealerVariantDetailResponse.DealerColorPrice::getColorName))
+                .toList();
+
+        return DealerVariantDetailResponse.builder()
+                .variantId(carVariant.getVariantId())
+                .modelName(carVariant.getCarModel().getModelName())
+                .variantName(carVariant.getVariantName())
+                .colorPrices(colorPrices)
+                .build();
+    }
+
+    // Missing method implementations for dealer-specific searches
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsForManager(Integer dealerId, String searchTerm) {
+        String processedSearchTerm = processFlexibleSearchTerm(searchTerm);
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndTerm(dealerId, processedSearchTerm);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, false))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsForStaff(Integer dealerId, String searchTerm) {
+        String processedSearchTerm = processFlexibleSearchTerm(searchTerm);
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndTerm(dealerId, processedSearchTerm);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, true))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByVariantNameForManager(Integer dealerId, String variantName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndVariantName(dealerId, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, false))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByVariantNameForStaff(Integer dealerId, String variantName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndVariantName(dealerId, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, true))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByModelNameForManager(Integer dealerId, String modelName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndModelName(dealerId, modelName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, false))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByModelNameForStaff(Integer dealerId, String modelName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndModelName(dealerId, modelName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, true))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByModelAndVariantNameForManager(Integer dealerId, String modelName, String variantName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndModelAndVariantName(dealerId, modelName, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, false))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByModelAndVariantNameForStaff(Integer dealerId, String modelName, String variantName) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndModelAndVariantName(dealerId, modelName, variantName);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponse(cv, dealerId, true))
+                .toList();
+    }
+
+    @Override
+    public List<DealerVariantDetailResponse> searchDealerVariantsByStatusForManager(Integer dealerId, String status) {
+        List<CarVariant> carVariants = carVariantRepository.searchVariantsByDealerIdAndStatus(dealerId, status);
+
+        return carVariants.stream()
+                .map(cv -> convertToDealerVariantDetailResponseByStatus(cv, dealerId, status))
+                .toList();
+    }
+
+    // New method specifically for converting variants when searching by status
+    private DealerVariantDetailResponse convertToDealerVariantDetailResponseByStatus(CarVariant carVariant, Integer dealerId, String status) {
+        // Lấy thông tin màu chỉ với status cụ thể được yêu cầu
+        List<Object[]> colorIdsAndData = carVariantRepository.findColorIdsAndDataByVariantIdAndDealerIdAndStatus(
+                carVariant.getVariantId(), dealerId, status);
+
+        // Tạo Map từ colorId -> (manufacturerPrice, dealerPrice, imagePath, quantity, status)
+        Map<Integer, Object[]> colorDataMap = colorIdsAndData.stream()
+                .collect(Collectors.toMap(
+                    row -> (Integer) row[0],  // colorId
+                    row -> new Object[]{row[1], row[2], row[3], row[4], row[5]}, // [manufacturerPrice, dealerPrice, imagePath, quantity, status]
+                    (existing, replacement) -> existing // Nếu có duplicate, giữ giá trị đầu tiên
+                ));
+
+        // Lấy thông tin màu sắc từ ColorRepository
+        List<Integer> colorIds = colorIdsAndData.stream()
+                .map(row -> (Integer) row[0])
+                .distinct()
+                .toList();
+
+        List<Color> colors = colorRepository.findByColorIds(colorIds);
+
+        // Tạo danh sách DealerColorPrice chỉ với những màu có status được yêu cầu
+        List<DealerVariantDetailResponse.DealerColorPrice> colorPrices = colors.stream()
+                .filter(color -> colorDataMap.containsKey(color.getColorId()))
+                .map(color -> {
+                    Object[] data = colorDataMap.get(color.getColorId());
+                    String imageName = (String) data[2];
+                    // Xây dựng URL để truy cập ảnh qua HTTP
+                    String imageUrl = null;
+                    if (imageName != null && !imageName.isEmpty()) {
+                        imageUrl = "/api/images/" + imageName;
+                    }
+
+                    // Convert Long manufacturer price to BigDecimal
+                    BigDecimal manufacturerPrice = null;
+                    if (data[0] != null) {
+                        if (data[0] instanceof Long) {
+                            manufacturerPrice = BigDecimal.valueOf((Long) data[0]);
+                        } else if (data[0] instanceof BigDecimal) {
+                            manufacturerPrice = (BigDecimal) data[0];
+                        }
+                    }
+
+                    // Convert dealer price to BigDecimal with proper type checking
+                    BigDecimal dealerPrice = null;
+                    if (data[1] != null) {
+                        if (data[1] instanceof Long) {
+                            dealerPrice = BigDecimal.valueOf((Long) data[1]);
+                        } else if (data[1] instanceof BigDecimal) {
+                            dealerPrice = (BigDecimal) data[1];
+                        }
+                    }
+
+                    Integer quantity = (Integer) data[3];
+                    String colorStatus = (String) data[4];
+
+                    // For search by status, always return dealer manager format (both prices)
+                    return DealerVariantDetailResponse.DealerColorPrice.forDealerManager(
+                        color.getColorName(), manufacturerPrice, dealerPrice, imageUrl, quantity, colorStatus);
+                })
+                .sorted(Comparator.comparing(DealerVariantDetailResponse.DealerColorPrice::getColorName))
+                .toList();
+
+        return DealerVariantDetailResponse.builder()
+                .variantId(carVariant.getVariantId())
+                .modelName(carVariant.getCarModel().getModelName())
+                .variantName(carVariant.getVariantName())
+                .colorPrices(colorPrices)
+                .build();
+    }
+
+    @Override
+    public boolean updateDealerCarPriceAndStatus(Integer dealerId, String modelName, String variantName,
+                                               String colorName, java.math.BigDecimal dealerPrice, String status) {
+        return carVariantRepository.updateDealerCarPriceAndStatus(dealerId, modelName, variantName,
+                                                                 colorName, dealerPrice, status);
     }
 }
