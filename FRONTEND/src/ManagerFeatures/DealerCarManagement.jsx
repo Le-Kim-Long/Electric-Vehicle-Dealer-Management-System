@@ -549,10 +549,10 @@ const DealerCarManagement = () => {
                 <div className="modal-overlay" onClick={() => setUpdateModal({ open: false, vehicle: null, color: null })}>
                     <div className="modal-content update-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Cập nhật giá & trạng thái</h2>
+                            <h2>Cập nhật thông tin xe</h2>
                             <button className="close-btn" onClick={() => setUpdateModal({ open: false, vehicle: null, color: null })}>×</button>
                         </div>
-                        <div className="modal-body">
+                        <div className="update-modal-body">
                             <div className="update-form-row">
                                 <input
                                     type="number"

@@ -529,7 +529,9 @@ export const updateDealerCarPriceAndStatus = async ({ modelName, variantName, co
     }
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  return response.json();
+  // Backend returns plain text "Successful", not JSON
+  const textResponse = await response.text();
+  return { success: true, message: textResponse };
 };
 
 // Xóa xe theo modelName, variantName và colorName
