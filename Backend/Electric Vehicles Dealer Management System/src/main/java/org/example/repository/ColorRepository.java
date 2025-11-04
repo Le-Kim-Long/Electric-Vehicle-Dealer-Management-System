@@ -21,4 +21,14 @@ public interface ColorRepository extends JpaRepository<Color, Integer> {
 
     @Query("SELECT DISTINCT c.colorName FROM Color c ORDER BY c.colorName")
     List<String> findAllColorNames();
+
+    @Query("SELECT DISTINCT c.colorName FROM Color c " +
+           "JOIN Car car ON c.colorId = car.colorId " +
+           "JOIN CarVariant cv ON car.variantId = cv.variantId " +
+           "JOIN CarModel cm ON cv.modelId = cm.modelId " +
+           "WHERE LOWER(cm.modelName) = LOWER(:modelName) " +
+           "AND LOWER(cv.variantName) = LOWER(:variantName) " +
+           "ORDER BY c.colorName")
+    List<String> findColorNamesByModelNameAndVariantName(@Param("modelName") String modelName,
+                                                        @Param("variantName") String variantName);
 }

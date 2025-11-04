@@ -179,4 +179,117 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
            "WHERE cv.carModel.modelName = :modelName " +
            "ORDER BY cv.variantName")
     List<String> findVariantNamesByModelName(@Param("modelName") String modelName);
+
+    // New methods for dealer manager - lấy xe với cả manufacturer price và dealer price
+    @Query("SELECT c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status FROM Car c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE c.variantId = :variantId " +
+           "AND dc.dealer.dealerId = :dealerId " +
+           "GROUP BY c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status " +
+           "ORDER BY c.colorId")
+    List<Object[]> findColorIdsAndDataByVariantIdAndDealerId(@Param("variantId") Integer variantId,
+                                                            @Param("dealerId") Integer dealerId);
+
+    // New methods for dealer staff - chỉ lấy xe có status "On Sale" với cả manufacturer price và dealer price
+    @Query("SELECT c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status FROM Car c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE c.variantId = :variantId " +
+           "AND dc.dealer.dealerId = :dealerId " +
+           "AND dc.status = 'On Sale' " +
+           "GROUP BY c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status " +
+           "ORDER BY c.colorId")
+    List<Object[]> findColorIdsAndDataByVariantIdAndDealerIdOnSale(@Param("variantId") Integer variantId,
+                                                                  @Param("dealerId") Integer dealerId);
+
+    // Missing methods for dealer-specific searches by variant name
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByDealerIdAndVariantName(@Param("dealerId") Integer dealerId,
+                                                           @Param("variantName") String variantName);
+
+    // Missing methods for dealer-specific searches by model name
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByDealerIdAndModelName(@Param("dealerId") Integer dealerId,
+                                                         @Param("modelName") String modelName);
+
+    // Missing methods for dealer-specific searches by both model and variant name
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(cm.modelName) LIKE LOWER(CONCAT('%', :modelName, '%')) " +
+           "AND LOWER(cv.variantName) LIKE LOWER(CONCAT('%', :variantName, '%')) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByDealerIdAndModelAndVariantName(@Param("dealerId") Integer dealerId,
+                                                                   @Param("modelName") String modelName,
+                                                                   @Param("variantName") String variantName);
+
+    // New method for searching by status
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "JOIN cv.cars c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(dc.status) = LOWER(:status) " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> searchVariantsByDealerIdAndStatus(@Param("dealerId") Integer dealerId,
+                                                      @Param("status") String status);
+
+    // Method for updating dealer car price and status
+    @Query("UPDATE DealerCar dc SET dc.dealerPrice = :dealerPrice, dc.status = :status " +
+           "WHERE dc.dealerId = :dealerId " +
+           "AND dc.carId IN (" +
+           "SELECT c.carId FROM Car c " +
+           "JOIN c.carVariant cv " +
+           "JOIN cv.carModel cm " +
+           "JOIN c.color col " +
+           "WHERE LOWER(cm.modelName) = LOWER(:modelName) " +
+           "AND LOWER(cv.variantName) = LOWER(:variantName) " +
+           "AND LOWER(col.colorName) = LOWER(:colorName))")
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    int updateDealerCarPriceAndStatusByNames(@Param("dealerId") Integer dealerId,
+                                           @Param("modelName") String modelName,
+                                           @Param("variantName") String variantName,
+                                           @Param("colorName") String colorName,
+                                           @Param("dealerPrice") java.math.BigDecimal dealerPrice,
+                                           @Param("status") String status);
+
+    // Helper method to check if dealer has specific car
+    default boolean updateDealerCarPriceAndStatus(Integer dealerId, String modelName, String variantName,
+                                                 String colorName, java.math.BigDecimal dealerPrice, String status) {
+        int updatedRows = updateDealerCarPriceAndStatusByNames(dealerId, modelName, variantName, colorName, dealerPrice, status);
+        return updatedRows > 0;
+    }
+
+    // New method for filtering colors by specific status
+    @Query("SELECT c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status FROM Car c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE c.variantId = :variantId " +
+           "AND dc.dealer.dealerId = :dealerId " +
+           "AND LOWER(dc.status) = LOWER(:status) " +
+           "GROUP BY c.colorId, c.price, dc.dealerPrice, c.imagePath, dc.quantity, dc.status " +
+           "ORDER BY c.colorId")
+    List<Object[]> findColorIdsAndDataByVariantIdAndDealerIdAndStatus(@Param("variantId") Integer variantId,
+                                                                     @Param("dealerId") Integer dealerId,
+                                                                     @Param("status") String status);
+
+    @Query("SELECT cv FROM CarVariant cv WHERE cv.modelId = :modelId")
+    List<CarVariant> findByModelId(@Param("modelId") Integer modelId);
 }

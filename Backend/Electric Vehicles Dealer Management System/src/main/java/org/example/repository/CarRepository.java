@@ -75,4 +75,18 @@ public interface CarRepository extends JpaRepository<Car, Integer> {
            "AND col.colorName = :colorName")
     Optional<Car> findByVariantIdAndColorName(@Param("variantId") Integer variantId,
                                             @Param("colorName") String colorName);
+
+    @Query("SELECT c FROM Car c " +
+           "JOIN FETCH c.carVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "JOIN FETCH c.color col " +
+           "WHERE LOWER(cm.modelName) = LOWER(:modelName) " +
+           "AND LOWER(cv.variantName) = LOWER(:variantName) " +
+           "AND LOWER(col.colorName) = LOWER(:colorName)")
+    Optional<Car> findByModelNameAndVariantNameAndColorName(@Param("modelName") String modelName,
+                                                           @Param("variantName") String variantName,
+                                                           @Param("colorName") String colorName);
+
+    @Query("SELECT c FROM Car c WHERE c.variantId = :variantId")
+    List<Car> findByVariantId(@Param("variantId") Integer variantId);
 }

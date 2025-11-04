@@ -31,4 +31,43 @@ public interface DealerCarRepository extends JpaRepository<DealerCar, DealerCarI
     List<DealerCar> findDealerCarsByDealerName(@Param("dealerName") String dealerName);
 
     Optional<DealerCar> findByCarIdAndDealerId(Integer carId, Integer dealerId);
+
+    @Query("SELECT dc FROM DealerCar dc " +
+           "JOIN FETCH dc.car c " +
+           "JOIN FETCH c.carVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH c.color " +
+           "WHERE dc.dealerId = :dealerId AND dc.status = 'On Sale'")
+    List<DealerCar> findOnSaleDealerCarsByDealerId(@Param("dealerId") Integer dealerId);
+
+    @Query("SELECT dc FROM DealerCar dc " +
+           "JOIN FETCH dc.car c " +
+           "JOIN FETCH c.carVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH c.color " +
+           "JOIN dc.dealer d " +
+           "WHERE d.dealerName = :dealerName AND dc.status = 'On Sale'")
+    List<DealerCar> findOnSaleDealerCarsByDealerName(@Param("dealerName") String dealerName);
+
+    @Query("DELETE FROM DealerCar dc WHERE dc.carId = :carId")
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByCarId(@Param("carId") Integer carId);
+
+    @Query("SELECT dc FROM DealerCar dc " +
+           "JOIN FETCH dc.car c " +
+           "JOIN FETCH c.carVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH c.color col " +
+           "WHERE dc.dealerId = :dealerId " +
+           "AND LOWER(cm.modelName) = LOWER(:modelName) " +
+           "AND LOWER(cv.variantName) = LOWER(:variantName) " +
+           "AND LOWER(col.colorName) = LOWER(:colorName)")
+    Optional<DealerCar> findByModelVariantColorAndDealer(
+        @Param("dealerId") Integer dealerId,
+        @Param("modelName") String modelName,
+        @Param("variantName") String variantName,
+        @Param("colorName") String colorName
+    );
+
 }
