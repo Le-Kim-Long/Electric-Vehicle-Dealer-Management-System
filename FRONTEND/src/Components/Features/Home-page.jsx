@@ -16,12 +16,6 @@ const HomePage = ({ onMenuClick }) => {
       description: 'Lập đơn hàng mới, tính toán giá'
     },
     {
-      id: 'customer-management',
-      icon: '👥',
-      title: 'Quản lý khách hàng',
-      description: 'Quản lý thông tin khách hàng'
-    },
-    {
       id: 'payment',
       icon: '💳',
       title: 'Thanh toán',
