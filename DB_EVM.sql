@@ -197,7 +197,6 @@ CREATE TABLE CAR (
     ColorID INT NOT NULL,
     ProductionYear INT NOT NULL,
     Price DECIMAL(18,2) NOT NULL,
-    Status NVARCHAR(50) DEFAULT N'On Sale',
     ImagePath NVARCHAR(255),  -- cột lưu đường dẫn hoặc tên file ảnh
 
     CONSTRAINT FK_CAR_VERSION FOREIGN KEY (VariantId) REFERENCES CAR_VARIANT(VariantId),
@@ -300,20 +299,23 @@ CREATE TABLE DEALER_CAR (
     DealerID INT NOT NULL,
     CarID INT NOT NULL,
     Quantity INT NOT NULL DEFAULT 0,   -- Số lượng xe tại đại lý này
+	DealerPrice DECIMAL(18,2) NULL,       -- Giá bán do đại lý nhập
+    Status NVARCHAR(50) DEFAULT N'Pending', -- Trạng thái: Pending / On Sale / Sold
     
     CONSTRAINT PK_DEALER_CAR PRIMARY KEY (DealerID, CarID),
     CONSTRAINT FK_DEALER_CAR_DEALER FOREIGN KEY (DealerID) REFERENCES DEALER(DealerID),
     CONSTRAINT FK_DEALER_CAR_CAR FOREIGN KEY (CarID) REFERENCES CAR(CarID)
 );
 
--- Chèn dữ liệu với số lượng random 5-20
-INSERT INTO DEALER_CAR (DealerID, CarID, Quantity)
+INSERT INTO DEALER_CAR (DealerID, CarID, Quantity, DealerPrice, Status)
 SELECT 
-    d.DealerID, 
-    c.CarID, 
-    CAST((RAND(CHECKSUM(NEWID())) * (20 - 5 + 1) + 5) AS INT) AS Quantity
-FROM DEALER d
-CROSS JOIN CAR c;
+    D.DealerID,
+    C.CarID,
+    CAST(RAND(CHECKSUM(NEWID())) * 20 + 1 AS INT) AS Quantity, -- random 1-20
+    CAST(C.Price * 1.05 AS DECIMAL(18,2)) AS DealerPrice,      -- tăng 5%
+    N'On Sale' AS Status
+FROM DEALER D
+CROSS JOIN CAR C;
 
 --8. Tạo bảng vai trò người dùng
 CREATE TABLE ROLE (
@@ -382,63 +384,40 @@ CREATE TABLE CUSTOMER (
 -- Insert 10 Vietnamese customers
 INSERT INTO CUSTOMER (FullName, Email, PhoneNumber)
 VALUES 
-(N'Nguyễn Văn An', N'an.nguyen@example.com', N'0909001001'),
-(N'Trần Thị Bình', N'binh.tran@example.com', N'0909001002'),
-(N'Lê Hoàng Cường', N'cuong.le@example.com', N'0909001003'),
-(N'Phạm Thị Dung', N'dung.pham@example.com', N'0909001004'),
-(N'Võ Văn Hùng', N'hung.vo@example.com', N'0909001005'),
-(N'Đặng Thị Lan', N'lan.dang@example.com', N'0909001006'),
-(N'Huỳnh Văn Minh', N'minh.huynh@example.com', N'0909001007'),
-(N'Ngô Thị Oanh', N'oanh.ngo@example.com', N'0909001008'),
-(N'Bùi Văn Quang', N'quang.bui@example.com', N'0909001009'),
-(N'Phan Thị Thảo', N'thao.phan@example.com', N'0909001010');
-
---11. Tạo bảng lịch hẹn lái thử
-CREATE TABLE TESTDRIVE_APPOINTMENT (
-    AppointmentId INT PRIMARY KEY IDENTITY(1,1),   -- Mã lịch hẹn
-    CustomerId INT NOT NULL,                       -- Ai đặt (FK -> CUSTOMER)
-    CarId INT NOT NULL,                            -- Xe muốn lái thử (FK -> CAR)
-    DealerId INT NOT NULL,                         -- Đại lý tổ chức (FK -> DEALER)
-    
-    AppointmentDate DATE NOT NULL,                 -- Ngày hẹn
-    AppointmentTime TIME NOT NULL,                 -- Giờ hẹn
-    
-    Status NVARCHAR(50) DEFAULT N'Đang chờ',       -- Đang chờ, Xác nhận, Đã hủy, Hoàn thành
-    Notes NVARCHAR(255) NULL,                      -- Ghi chú
-    
-    CreatedDate DATETIME DEFAULT GETDATE(),        -- Ngày tạo
-
-    FOREIGN KEY (CustomerId) REFERENCES CUSTOMER(CustomerId),
-    FOREIGN KEY (CarId) REFERENCES CAR(CarId),
-    FOREIGN KEY (DealerId) REFERENCES DEALER(DealerId)
-);
-
--- Thêm 5 lịch hẹn lái thử (dữ liệu tiếng Việt)
-INSERT INTO TESTDRIVE_APPOINTMENT (CustomerId, CarId, DealerId, AppointmentDate, AppointmentTime, Status, Notes)
-VALUES
-(1, 2, 1, '2025-10-01', '09:00', N'Đang chờ', N'Khách muốn lái thử buổi sáng'),
-(2, 3, 1, '2025-10-02', '14:30', N'Xác nhận', N'Đại lý đã gọi xác nhận lịch hẹn'),
-(3, 1, 2, '2025-10-03', '10:00', N'Đang chờ', N'Khách muốn so sánh với mẫu VF 6'),
-(4, 5, 2, '2025-10-04', '15:00', N'Đã hủy', N'Khách hủy do bận công việc'),
-(5, 4, 1, '2025-10-05', '11:30', N'Hoàn thành', N'Lái thử diễn ra thành công, khách hài lòng');
+(N'Nguyễn Văn An', N'an.nguyen@gmail.com', N'0909001001'),
+(N'Trần Thị Bình', N'binh.tran@gmail.com', N'0909001002'),
+(N'Lê Hoàng Cường', N'cuong.le@gmail.com', N'0909001003'),
+(N'Phạm Thị Dung', N'dung.pham@gmail.com', N'0909001004'),
+(N'Võ Văn Hùng', N'hung.vo@gmail.com', N'0909001005'),
+(N'Đặng Thị Lan', N'lan.dang@gmail.com', N'0909001006'),
+(N'Huỳnh Văn Minh', N'minh.huynh@gmail.com', N'0909001007'),
+(N'Ngô Thị Oanh', N'oanh.ngo@gmail.com', N'0909001008'),
+(N'Bùi Văn Quang', N'quang.bui@gmail.com', N'0909001009'),
+(N'Phan Thị Thảo', N'thao.phan@gmail.com', N'0909001010');
 
 CREATE TABLE PROMOTION (
     PromotionId INT PRIMARY KEY IDENTITY(1,1),
-    PromotionName NVARCHAR(100) NOT NULL,       -- Tên chương trình
-    Description NVARCHAR(255) NULL,             -- Mô tả chi tiết
-    Value DECIMAL(18,2) NULL,                   -- Giá trị giảm (VNĐ hoặc %)
-    Type NVARCHAR(50) NOT NULL,                 -- 'VND', '%'
-    Scope NVARCHAR(20) NOT NULL,                -- 'ORDER' hoặc 'PRODUCT'
+    DealerId INT NOT NULL,                        
+    PromotionName NVARCHAR(100) NOT NULL,
+    Description NVARCHAR(255),
+    Value DECIMAL(18,2),
+    Type NVARCHAR(50) NOT NULL,                    -- 'VND', '%'
     StartDate DATE NOT NULL,
     EndDate DATE NOT NULL,
-    Status NVARCHAR(50) DEFAULT N'Đang hoạt động'
+    Status NVARCHAR(50) DEFAULT N'Đang hoạt động',
+    FOREIGN KEY (DealerId) REFERENCES DEALER(DealerId)
 );
-
-INSERT INTO PROMOTION (PromotionName, Description, Value, Type, Scope, StartDate, EndDate, Status)
-VALUES
-(N'Giảm 10 triệu cho VF3', N'Ưu đãi 10,000,000 VNĐ cho mỗi xe VF3', 10000000, N'VND', N'PRODUCT', '2025-01-01', '2025-06-30', N'Đang hoạt động'),
-(N'Giảm 5% toàn đơn hàng VF5', N'Giảm 5% cho các đơn hàng có VF5', 5, N'%', N'ORDER', '2025-02-01', '2025-07-31', N'Đang hoạt động'),
-(N'Giảm 20 triệu cho VF8', N'Ưu đãi đặc biệt 20,000,000 VNĐ cho VF8', 20000000, N'VND', N'PRODUCT', '2025-03-01', '2025-09-30', N'Đang hoạt động');
+INSERT INTO PROMOTION (DealerId,PromotionName,Description,Value,Type,StartDate,EndDate
+)
+VALUES (
+    1,                                     -- DealerId: đại lý áp dụng
+    N'Giảm 10 triệu cho sản phẩm',         -- PromotionName
+    N'Voucher giảm trực tiếp 10.000.000 VND cho các sản phẩm áp dụng',
+    10000000,                               -- 10.000.000 VND
+    N'VND',                                 -- Loại giảm theo tiền
+    '2025-01-01',                           -- Ngày bắt đầu
+    '2025-12-31'                            -- Ngày kết thúc
+);
 
 --12. Tạo bảng đơn hàng
 CREATE TABLE ORDERS (
@@ -447,11 +426,11 @@ CREATE TABLE ORDERS (
     DealerId INT NOT NULL,
 
     OrderDate DATETIME DEFAULT GETDATE(),
-    SubTotal DECIMAL(18,2) NOT NULL,             -- Tổng trước giảm giá
+    SubTotal DECIMAL(18,2) null,             -- Tổng trước giảm giá
     DiscountAmount DECIMAL(18,2) DEFAULT 0,      -- Giảm giá hóa đơn
     TotalAmount AS (SubTotal - DiscountAmount) PERSISTED,
 
-    PaymentMethod NVARCHAR(50) NOT NULL,
+    PaymentMethod NVARCHAR(50) null,
     Status NVARCHAR(50) DEFAULT N'Chờ xử lý',
 
     PromotionId INT NULL,                        -- Nếu khuyến mãi áp dụng toàn đơn
@@ -472,54 +451,22 @@ CREATE TABLE ORDER_DETAILS (
     CarId INT NOT NULL,
     Quantity INT NOT NULL DEFAULT 1,
     UnitPrice DECIMAL(18,2) NOT NULL,
-    DiscountAmount DECIMAL(18,2) DEFAULT 0,      -- Giảm giá theo sản phẩm
-    FinalPrice AS ((UnitPrice * Quantity) - DiscountAmount) PERSISTED,
+    FinalPrice AS (UnitPrice * Quantity) PERSISTED,
 
-    PromotionId INT NULL,                        -- Nếu khuyến mãi áp dụng riêng cho sản phẩm
-    FOREIGN KEY (PromotionId) REFERENCES PROMOTION(PromotionId),
     FOREIGN KEY (OrderId) REFERENCES ORDERS(OrderId),
     FOREIGN KEY (CarId) REFERENCES CAR(CarId)
 );
 
 -- VF3 Eco White (CarId = giả sử 1)
-INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice, DiscountAmount, PromotionId)
+INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice)
 VALUES
-(1, 1, 1, 240000000, 10000000, 1);  -- Áp dụng khuyến mãi giảm 10 triệu cho VF3
+(1, 1, 1, 240000000);  -- Áp dụng khuyến mãi giảm 10 triệu cho VF3
 
 -- VF9 Eco White (CarId = giả sử 21)
-INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice, DiscountAmount, PromotionId)
+INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice)
 VALUES
-(1, 21, 1, 1250000000, 0, NULL);    -- Không có khuyến mãi
+(1, 21, 1, 1250000000);    -- Không có khuyến mãi
 
- -- Bảng quan hệ nhiều nhiều 
-CREATE TABLE Promotion_Dealer (
-    PromotionId INT NOT NULL,
-    DealerId INT NOT NULL,
-    PRIMARY KEY (PromotionId, DealerId),
-    FOREIGN KEY (PromotionId) REFERENCES PROMOTION(PromotionId),
-    FOREIGN KEY (DealerId) REFERENCES DEALER(DealerId)
-);
-
--- PromotionId = 1 (Giảm 10 triệu VF3) áp dụng Quận 1, Quận 3
-INSERT INTO Promotion_Dealer (PromotionId, DealerId)
-VALUES
-(1, 1),
-(1, 2);
-
--- PromotionId = 2 (Giảm 5% VF5) áp dụng Quận 7, Bình Thạnh
-INSERT INTO Promotion_Dealer (PromotionId, DealerId)
-VALUES
-(2, 3),
-(2, 4);
-
--- PromotionId = 3 (Giảm 20 triệu VF8) áp dụng tất cả các đại lý
-INSERT INTO Promotion_Dealer (PromotionId, DealerId)
-VALUES
-(3, 1),
-(3, 2),
-(3, 3),
-(3, 4),
-(3, 5);
 
 --13. Tạo bảng lưu thông tin thanh toán
 CREATE TABLE Payment (
@@ -540,56 +487,16 @@ VALUES
 
 --14. Tạo bảng chi tiết trả góp 
 CREATE TABLE Installment (
-    InstallmentId INT PRIMARY KEY IDENTITY(1,1),   -- Installment ID
-    OrderId INT NOT NULL,                          -- FK -> Order
-    TermCount INT NOT NULL,                        -- Number of terms (e.g., 12 months, 24 months)
-    AmountPerTerm DECIMAL(18,2) NOT NULL,          -- Payment amount per term
-    InterestRate DECIMAL(5,2) NOT NULL,            -- Annual interest rate (% per year)
-    Note NVARCHAR(200) NULL,                       -- Additional information
-    
+    InstallmentId INT PRIMARY KEY IDENTITY(1,1),
+    OrderId INT NOT NULL,                          -- FK -> ORDERS
+    PrincipalAmount DECIMAL(18,2) NOT NULL,        -- Tiền gốc (tổng giá trị đơn hàng)
+    TermCount INT NOT NULL,                        -- Số kỳ trả góp (12, 18, 24...)
+    InterestRate DECIMAL(5,2) NOT NULL,            -- % lãi suất theo năm
+    TotalInterest DECIMAL(18,2) NOT NULL,          -- Tổng số tiền lãi phải trả
+    TotalPay DECIMAL(18,2) NOT NULL,               -- Tổng phải trả = gốc + lãi
+    AmountPerTerm DECIMAL(18,2) NOT NULL,          -- Mỗi kỳ trả bao nhiêu
+    Note NVARCHAR(200) NULL,
+
     FOREIGN KEY (OrderId) REFERENCES ORDERS(OrderId)
 );
 
-INSERT INTO Installment (OrderId, TermCount, AmountPerTerm, InterestRate, Note)
-VALUES
-(2, 12, 100000000, 8.00, N'Trả góp 12 tháng, lãi suất 8%/năm');
-
---12. Tạo bảng phản hồi để lưu thông tin phản hồi từ khách hàng
-CREATE TABLE Feedback (
-    FeedbackId INT PRIMARY KEY IDENTITY(1,1),         -- Feedback ID
-    OrderId INT NOT NULL,                             -- FK -> Orders
-    Content NVARCHAR(MAX) NOT NULL,                   -- Feedback content
-    SubmittedDate DATETIME NOT NULL DEFAULT GETDATE(),-- Date submitted
-    Status NVARCHAR(50) NOT NULL DEFAULT N'Pending',  -- Pending, In progress, Resolved
-    HandleID INT NULL,                               -- User who handles feedback
-    HandledDate DATETIME NULL,                        -- Date handled
-
-    -- Foreign key constraints
-    FOREIGN KEY (OrderId) REFERENCES Orders(OrderId),
-    FOREIGN KEY (HandleID) REFERENCES USER_ACCOUNT(UserId)
-);
-
-INSERT INTO Feedback (OrderId, Content, Status, HandleID, HandledDate)
-VALUES
-(1, N'Xe chạy êm nhưng giao xe hơi trễ.', N'Đã xử lý', 4, GETDATE()),
-(2, N'Thủ tục trả góp mất nhiều thời gian, mong hỗ trợ nhanh hơn.', N'Đang xử lý', 5, GETDATE());
-
--- Tạo bảng lưu lịch sử phản hồi
-CREATE TABLE FeedbackHistory (
-    HistoryId INT PRIMARY KEY IDENTITY(1,1),      -- History ID
-
-    FeedbackId INT NOT NULL,                      -- FK -> Feedback
-    EmployeeId INT NOT NULL,                      -- FK -> Users (staff who handled)
-    ProcessedDate DATETIME NOT NULL DEFAULT GETDATE(),  -- Date processed
-    HandlingNotes NVARCHAR(MAX) NULL,             -- Notes on handling
-    StatusAfterHandling NVARCHAR(50) NOT NULL,    -- Status after handling
-
-    -- Foreign key constraints
-    FOREIGN KEY (FeedbackId) REFERENCES Feedback(FeedbackId),
-    FOREIGN KEY (EmployeeId) REFERENCES USER_ACCOUNT(UserId)
-);
-
-INSERT INTO FeedbackHistory (FeedbackId, EmployeeId, HandlingNotes, StatusAfterHandling)
-VALUES
-(1, 4, N'Đã liên hệ khách hàng, giải thích lý do giao xe trễ và tặng voucher bảo dưỡng miễn phí.', N'Đã xử lý'),
-(2, 5, N'Đang hỗ trợ khách hàng bổ sung hồ sơ để hoàn tất thủ tục trả góp.', N'Đang xử lý');
