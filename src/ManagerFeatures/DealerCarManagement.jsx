@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { updateDealerCarPriceAndStatus } from '../services/carVariantApi';
+import { 
+    updateDealerCarPriceAndStatus,
+    getVehiclesNotAvailableAtDealer,
+    createDistributionRequest,
+    getDealerDistributionRequests,
+    getDealerDistributionRequestsByStatus,
+    confirmDelivery
+} from '../services/carVariantApi';
 import {
     getCarVariantDetails,
     searchCarVariants,
@@ -38,6 +45,20 @@ const DealerCarManagement = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [filterStatus, setFilterStatus] = useState('all');
 
+    // State cho Tab system
+    const [activeTab, setActiveTab] = useState('dealer'); // 'dealer' hoặc 'manufacturer'
+    const [manufacturerVehicles, setManufacturerVehicles] = useState([]);
+    const [loadingManufacturer, setLoadingManufacturer] = useState(false);
+
+    // State cho Request Modal (Dealer gửi yêu cầu)
+    const [requestModal, setRequestModal] = useState({ open: false, vehicle: null, color: null });
+    const [requestForm, setRequestForm] = useState({ quantity: 1, note: '', loading: false, error: '', success: false });
+
+    // State cho Notification Modal (Dealer xem thông báo)
+    const [notificationModal, setNotificationModal] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
+
     useEffect(() => {
         fetchAllModelNames()
             .then(models => setModelOptions(models))
@@ -58,7 +79,15 @@ const DealerCarManagement = () => {
     useEffect(() => {
         setCurrentUser(getCurrentUser());
         loadVehiclesFromAPI();
+        loadNotifications(); // Load notifications on mount
     }, []);
+
+    // Load manufacturer vehicles when switching to manufacturer tab
+    useEffect(() => {
+        if (activeTab === 'manufacturer' && manufacturerVehicles.length === 0) {
+            loadManufacturerVehicles();
+        }
+    }, [activeTab]);
 
     const loadVehiclesFromAPI = async () => {
         setIsLoading(true);
@@ -311,10 +340,20 @@ const DealerCarManagement = () => {
 
     const getCurrentPrice = (vehicle) => {
         const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
+        
+        // Try colorPricesRaw first (for dealer vehicles)
         if (vehicle.colorPricesRaw) {
             const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === currentColor);
-            if (colorObj && colorObj.dealerPrice != null) return colorObj.dealerPrice;
+            if (colorObj) {
+                return colorObj.dealerPrice || colorObj.manufacturerPrice || colorObj.price || 0;
+            }
         }
+        
+        // Try colorPrices array (for manufacturer vehicles from transformCarVariantData)
+        if (vehicle.colorPrices) {
+            return vehicle.colorPrices[currentColor] || 0;
+        }
+        
         return 0;
     };
 
@@ -322,6 +361,108 @@ const DealerCarManagement = () => {
         const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
         return vehicle.colorQuantities[currentColor] || 0;
     };
+
+    // Function load xe từ manufacturer (Tab 2)
+    const loadManufacturerVehicles = async () => {
+        setLoadingManufacturer(true);
+        try {
+            const response = await getVehiclesNotAvailableAtDealer();
+            const transformed = transformCarVariantData(response.data || response);
+            setManufacturerVehicles(transformed);
+        } catch (err) {
+            console.error('Error loading manufacturer vehicles:', err);
+            alert('❌ Không thể tải danh sách xe từ nhà máy: ' + err.message);
+        } finally {
+            setLoadingManufacturer(false);
+        }
+    };
+
+    // Function gửi request thêm xe
+    const handleSendRequest = async () => {
+        if (!requestForm.quantity || requestForm.quantity < 1) {
+            setRequestForm(f => ({ ...f, error: 'Số lượng phải lớn hơn 0' }));
+            return;
+        }
+
+        setRequestForm(f => ({ ...f, loading: true, error: '', success: false }));
+
+        try {
+            const requestData = {
+                modelName: requestModal.vehicle.modelName,
+                variantName: requestModal.vehicle.variantName,
+                colorName: requestModal.color,
+                quantity: parseInt(requestForm.quantity),
+                note: requestForm.note || ''
+            };
+            
+            await createDistributionRequest(requestData);
+            
+            setRequestForm(f => ({ ...f, success: true, loading: false }));
+            
+            alert('✅ Đã gửi yêu cầu thành công! Vui lòng chờ nhà máy phê duyệt.');
+            
+            // Đóng modal sau 1.5s
+            setTimeout(() => {
+                setRequestModal({ open: false, vehicle: null, color: null });
+                setRequestForm({ quantity: 1, note: '', loading: false, error: '', success: false });
+            }, 1500);
+        } catch (err) {
+            setRequestForm(f => ({ ...f, error: err.message || 'Có lỗi xảy ra khi gửi yêu cầu', loading: false }));
+        }
+    };
+
+    // Function load notifications
+    const loadNotifications = async () => {
+        setLoadingNotifications(true);
+        try {
+            const response = await getDealerDistributionRequests();
+            
+            // Transform API response
+            const transformedNotifications = (response.data || response).map(req => ({
+                id: req.requestId,
+                modelName: req.modelName,
+                variantName: req.variantName,
+                colorName: req.colorName,
+                quantity: req.quantity,
+                note: '',
+                status: req.status,
+                createdAt: req.requestDate,
+                approvedAt: req.approvedDate,
+                expectedDeliveryDate: req.expectedDeliveryDate,
+                actualDeliveryDate: req.actualDeliveryDate
+            }));
+            
+            setNotifications(transformedNotifications);
+        } catch (err) {
+            console.error('Error loading notifications:', err);
+            alert('❌ Không thể tải thông báo: ' + err.message);
+        } finally {
+            setLoadingNotifications(false);
+        }
+    };
+
+    // Function xác nhận request (Dealer confirms received vehicles)
+    const handleConfirmRequest = async (requestId) => {
+        if (!window.confirm('Xác nhận bạn đã nhận đủ số lượng xe?')) return;
+        
+        try {
+            await confirmDelivery(requestId);
+            
+            alert('✅ Đã xác nhận nhận xe thành công! Số lượng xe đã được cập nhật vào kho.');
+            await loadNotifications();
+            await loadVehiclesFromAPI(); // Reload vehicles to show updated inventory
+        } catch (err) {
+            console.error('Error confirming request:', err);
+            alert('❌ Có lỗi xảy ra: ' + err.message);
+        }
+    };
+
+    // Load manufacturer vehicles khi chuyển sang tab 2    // Load manufacturer vehicles khi chuyển sang tab 2
+    useEffect(() => {
+        if (activeTab === 'manufacturer' && manufacturerVehicles.length === 0) {
+            loadManufacturerVehicles();
+        }
+    }, [activeTab]);
 
     if (isLoading) {
         return (
@@ -374,14 +515,49 @@ const DealerCarManagement = () => {
                     <div className="vehicle-header-text">
                         <h2>Quản lý xe cho đại lý</h2>
                         <p>
-                            Xe có sẵn tại {currentUser?.dealerName || 'đại lý'}
-                            {' • '}{vehicles.length} mẫu xe
+                            {activeTab === 'dealer' 
+                                ? `Xe có sẵn tại ${currentUser?.dealerName || 'đại lý'} • ${vehicles.length} mẫu xe`
+                                : `Danh mục xe từ hãng • ${manufacturerVehicles.length} mẫu xe`
+                            }
                         </p>
                     </div>
                 </div>
+                <button 
+                    className="notification-btn"
+                    onClick={() => {
+                        setNotificationModal(true);
+                        loadNotifications();
+                    }}
+                    title="Xem thông báo yêu cầu thêm xe"
+                >
+                    🔔 Thông báo
+                    {notifications.filter(n => n.status === 'Đang giao' || n.status === 'Đã duyệt').length > 0 && (
+                        <span className="notification-badge">
+                            {notifications.filter(n => n.status === 'Đang giao' || n.status === 'Đã duyệt').length}
+                        </span>
+                    )}
+                </button>
             </div>
 
-            <div className="search-filters">
+            {/* Tab Navigation */}
+            <div className="tab-navigation">
+                <button 
+                    className={`tab-btn ${activeTab === 'dealer' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('dealer')}
+                >
+                    📦 Xe tại đại lý
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'manufacturer' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('manufacturer')}
+                >
+                    🏭 Danh mục xe từ hãng
+                </button>
+            </div>
+
+            {activeTab === 'dealer' && (
+                <>
+                    <div className="search-filters">
                 <div className="search-box">
                     <input
                         type="text"
@@ -522,6 +698,15 @@ const DealerCarManagement = () => {
                                     >
                                         Cập nhật
                                     </button>
+                                    <button
+                                        className="request-btn"
+                                        onClick={() => {
+                                            setRequestModal({ open: true, vehicle, color: currentColor });
+                                            setRequestForm({ quantity: 1, note: '', loading: false, error: '', success: false });
+                                        }}
+                                    >
+                                        📤 Gửi yêu cầu thêm xe
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -608,6 +793,204 @@ const DealerCarManagement = () => {
                     onClose={() => setSelectedVehicle(null)}
                 />
             )}
+                </>
+            )}
+
+            {/* Tab 2: Manufacturer Vehicles */}
+            {activeTab === 'manufacturer' && (
+                <div className="manufacturer-tab-content">
+                    {loadingManufacturer ? (
+                        <div className="loading-spinner-container">
+                            <div className="spinner"></div>
+                            <p>Đang tải danh mục xe...</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="vehicle-grid">
+                                {manufacturerVehicles.map(vehicle => {
+                                    const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
+                                    return (
+                                        <div key={vehicle.id} className="vehicle-card">
+                                            <div className="vehicle-image">
+                                                <img
+                                                    src={getCurrentImage(vehicle)}
+                                                    alt={`${vehicle.name} - ${currentColor}`}
+                                                    onError={(e) => {
+                                                        e.target.src = vehicle.defaultImage;
+                                                    }}
+                                                />
+                                                {getStatusBadge('available', vehicle.stock)}
+                                            </div>
+                                            <div className="vehicle-info">
+                                                <h3>{vehicle.name}</h3>
+                                                <div className="price-and-details">
+                                                    <div className="vehicle-price">
+                                                        {new Intl.NumberFormat('vi-VN', {
+                                                            style: 'currency',
+                                                            currency: 'VND'
+                                                        }).format(getCurrentPrice(vehicle))}
+                                                    </div>
+                                                    <button
+                                                        className="action-btn view-details-btn"
+                                                        onClick={() => handleViewDetail(vehicle)}
+                                                    >
+                                                        Chi tiết
+                                                    </button>
+                                                </div>
+                                                <div className="vehicle-colors">
+                                                    <span className="colors-label">Màu sắc:</span>
+                                                    <div className="colors-list">
+                                                        {vehicle.colors.map((color, index) => (
+                                                            <span
+                                                                key={index}
+                                                                className={`color-tag clickable ${currentColor === color ? 'active' : ''}`}
+                                                                onClick={() => handleColorChange(vehicle.id, color)}
+                                                            >
+                                                                {color}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="vehicle-stock-info">
+                                                    <div className="spec-item">
+                                                        <span className="spec-label">Tồn kho:</span>
+                                                        <span className="spec-value">{getCurrentQuantity(vehicle)} xe</span>
+                                                    </div>
+                                                </div>
+                                                <div className="update-btn-row">
+                                                    <button
+                                                        className="request-btn"
+                                                        onClick={() => {
+                                                            setRequestModal({ open: true, vehicle, color: currentColor });
+                                                            setRequestForm({ quantity: 1, note: '', loading: false, error: '', success: false });
+                                                        }}
+                                                    >
+                                                        📤 Gửi yêu cầu
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* Request Modal (Dealer gửi yêu cầu thêm xe) */}
+            {requestModal.open && (
+                <div className="modal-overlay" onClick={() => setRequestModal({ open: false, vehicle: null, color: null })}>
+                    <div className="modal-content update-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Gửi yêu cầu thêm xe</h2>
+                            <button className="close-btn" onClick={() => setRequestModal({ open: false, vehicle: null, color: null })}>×</button>
+                        </div>
+                        <div className="update-modal-body">
+                            <div className="request-info">
+                                <p><strong>Xe:</strong> {requestModal.vehicle?.name}</p>
+                                <p><strong>Dòng xe:</strong> {requestModal.vehicle?.modelName}</p>
+                                <p><strong>Phiên bản:</strong> {requestModal.vehicle?.variantName}</p>
+                                <p><strong>Màu:</strong> {requestModal.color}</p>
+                            </div>
+                            <div className="update-form-row">
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={requestForm.quantity}
+                                    onChange={e => setRequestForm(f => ({ ...f, quantity: e.target.value, success: false, error: '' }))}
+                                    placeholder="Số lượng"
+                                    className="update-form-input"
+                                />
+                                <textarea
+                                    value={requestForm.note}
+                                    onChange={e => setRequestForm(f => ({ ...f, note: e.target.value, success: false, error: '' }))}
+                                    placeholder="Ghi chú (tùy chọn)"
+                                    className="update-form-textarea"
+                                    rows={3}
+                                />
+                            </div>
+                            <button
+                                className="update-form-btn"
+                                disabled={requestForm.loading || !requestForm.quantity || requestForm.quantity < 1}
+                                onClick={handleSendRequest}
+                            >
+                                {requestForm.loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                            </button>
+                            {requestForm.error && <div className="update-form-error">{requestForm.error}</div>}
+                            {requestForm.success && <div className="update-form-success">✅ Đã gửi yêu cầu thành công!</div>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Notification Modal (Dealer xem thông báo) */}
+            {notificationModal && (
+                <div className="modal-overlay" onClick={() => setNotificationModal(false)}>
+                    <div className="modal-content notification-modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>🔔 Thông báo yêu cầu thêm xe</h2>
+                            <button className="close-btn" onClick={() => setNotificationModal(false)}>×</button>
+                        </div>
+                        <div className="notification-modal-body">
+                            {loadingNotifications ? (
+                                <div className="loading-notifications">⏳ Đang tải thông báo...</div>
+                            ) : notifications.length === 0 ? (
+                                <div className="no-notifications">
+                                    <p>📭 Chưa có thông báo nào</p>
+                                </div>
+                            ) : (
+                                <div className="notifications-list">
+                                    {notifications.map(notification => {
+                                        // Convert Vietnamese status to CSS class name
+                                        const statusClass = notification.status === 'Chờ duyệt' ? 'pending' :
+                                                           notification.status === 'Đã duyệt' ? 'approved' :
+                                                           notification.status === 'Đang giao' ? 'delivering' :
+                                                           notification.status === 'Đã giao' ? 'delivered' :
+                                                           notification.status === 'Từ chối' ? 'rejected' : 'pending';
+                                        
+                                        return (
+                                        <div key={notification.id} className={`notification-item notification-${statusClass}`}>
+                                            <div className="notification-header-item">
+                                                <h4>{notification.modelName} {notification.variantName} - {notification.colorName}</h4>
+                                                <span className={`status-badge-notification status-${statusClass}`}>
+                                                    {notification.status === 'Chờ duyệt' ? '⏳ Chờ duyệt' : 
+                                                     notification.status === 'Đã duyệt' ? '✅ Đã duyệt' : 
+                                                     notification.status === 'Đang giao' ? '🚚 Đang giao' :
+                                                     notification.status === 'Đã giao' ? '📦 Đã giao' :
+                                                     '❌ Từ chối'}
+                                                </span>
+                                            </div>
+                                            <div className="notification-details">
+                                                <p><strong>Số lượng:</strong> {notification.quantity} xe</p>
+                                                <p><strong>Ngày gửi:</strong> {new Date(notification.createdAt).toLocaleString('vi-VN')}</p>
+                                                {notification.approvedAt && (
+                                                    <p><strong>Ngày duyệt:</strong> {new Date(notification.approvedAt).toLocaleString('vi-VN')}</p>
+                                                )}
+                                                {notification.expectedDeliveryDate && (
+                                                    <p><strong>Ngày giao dự kiến:</strong> {new Date(notification.expectedDeliveryDate).toLocaleString('vi-VN')}</p>
+                                                )}
+                                                {notification.actualDeliveryDate && (
+                                                    <p><strong>Ngày giao thực tế:</strong> {new Date(notification.actualDeliveryDate).toLocaleString('vi-VN')}</p>
+                                                )}
+                                            </div>
+                                            {notification.status === 'Đang giao' && (
+                                                <button
+                                                    className="confirm-request-btn"
+                                                    onClick={() => handleConfirmRequest(notification.id)}
+                                                >
+                                                    ✓ Xác nhận đã nhận xe
+                                                </button>
+                                            )}
+                                        </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -623,9 +1006,16 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
     };
 
     const getCurrentModalPrice = () => {
+        // Try colorPricesRaw first (for dealer vehicles)
         if (vehicle.colorPricesRaw) {
             const found = vehicle.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
-            return found && found.dealerPrice ? found.dealerPrice : 0;
+            if (found) {
+                return found.dealerPrice || found.manufacturerPrice || found.price || 0;
+            }
+        }
+        // Try colorPrices for manufacturer vehicles
+        if (vehicle.colorPrices) {
+            return vehicle.colorPrices[selectedModalColor] || 0;
         }
         return 0;
     };
@@ -636,9 +1026,16 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
 
     // Lấy giá niêm yết (manufacturerPrice) cho màu đang chọn
     const getCurrentManufacturerPrice = () => {
+        // Try colorPricesRaw first (for dealer vehicles)
         if (vehicle.colorPricesRaw) {
             const found = vehicle.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
-            return found && found.manufacturerPrice ? found.manufacturerPrice : 0;
+            if (found) {
+                return found.manufacturerPrice || found.price || found.dealerPrice || 0;
+            }
+        }
+        // Try colorPrices for manufacturer vehicles
+        if (vehicle.colorPrices) {
+            return vehicle.colorPrices[selectedModalColor] || 0;
         }
         return 0;
     };
@@ -795,5 +1192,6 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
         </div>
     );
 };
+
 
 export default DealerCarManagement;

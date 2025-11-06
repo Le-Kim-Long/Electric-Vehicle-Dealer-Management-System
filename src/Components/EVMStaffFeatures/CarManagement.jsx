@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor, fetchManufacturerPriceByModelVariantColor, uploadImage, deleteCarByModelVariantColor} from '../../services/carVariantApi';
+import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor, fetchManufacturerPriceByModelVariantColor, uploadImage, deleteCarByModelVariantColor, getAllDistributionRequests, getAllDistributionRequestsByStatus, approveDistributionRequest, rejectDistributionRequest, setExpectedDeliveryDate} from '../../services/carVariantApi';
 import './CarManagement.css';
 // Modal hiển thị chi tiết xe (đồng bộ style user VehicleInfoFeature)
 const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, onClose }) => {
@@ -178,6 +178,18 @@ const CarManagement = () => {
 	const [customModelName, setCustomModelName] = useState("");
 	const [isCustomVariant, setIsCustomVariant] = useState(false);
 	const [customVariantName, setCustomVariantName] = useState("");
+
+	// Staff Notification States
+	const [showStaffNotificationModal, setShowStaffNotificationModal] = useState(false);
+	const [staffNotifications, setStaffNotifications] = useState([]);
+	const [loadingStaffNotifications, setLoadingStaffNotifications] = useState(false);
+	const [rejectModal, setRejectModal] = useState({ open: false, requestId: null });
+	const [rejectReason, setRejectReason] = useState('');
+	const [rejectLoading, setRejectLoading] = useState(false);
+	const [deliveryModal, setDeliveryModal] = useState({ open: false, requestId: null });
+	const [deliveryDate, setDeliveryDate] = useState('');
+	const [deliveryLoading, setDeliveryLoading] = useState(false);
+	const [statusFilter, setStatusFilter] = useState('all'); // Filter notifications by status
 
 	// 2. Các hàm xử lý logic
 
@@ -566,6 +578,115 @@ const CarManagement = () => {
 		}
 	};
 
+	// Load staff notifications (all dealer requests)
+	const loadStaffNotifications = async (status = null) => {
+		setLoadingStaffNotifications(true);
+		try {
+			let response;
+			if (status && status !== 'all') {
+				response = await getAllDistributionRequestsByStatus(status);
+			} else {
+				response = await getAllDistributionRequests();
+			}
+			
+			// Extract data array from response
+			const dataArray = response.data || response;
+			
+			// Transform API response to match our format
+			const transformedNotifications = (Array.isArray(dataArray) ? dataArray : []).map(req => ({
+				id: req.requestId,
+				dealerName: req.dealerName,
+				modelName: req.modelName,
+				variantName: req.variantName,
+				colorName: req.colorName,
+				quantity: req.quantity,
+				note: req.note || '', // API might have note field
+				status: req.status,
+				createdAt: req.requestDate,
+				approvedAt: req.approvedDate,
+				expectedDeliveryDate: req.expectedDeliveryDate,
+				actualDeliveryDate: req.actualDeliveryDate
+			}));
+			
+			setStaffNotifications(transformedNotifications);
+		} catch (error) {
+			console.error("Error loading staff notifications:", error);
+			alert("❌ Không thể tải danh sách yêu cầu: " + error.message);
+		} finally {
+			setLoadingStaffNotifications(false);
+		}
+	};
+
+	// Approve dealer request
+	const handleApproveRequest = async (requestId) => {
+		if (!window.confirm("Bạn có chắc chắn muốn duyệt yêu cầu này?")) return;
+		
+		try {
+			await approveDistributionRequest(requestId);
+			
+			// Reload notifications to get updated status
+			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
+			alert("✅ Đã duyệt yêu cầu thành công!");
+		} catch (error) {
+			console.error("Error approving request:", error);
+			alert("❌ Có lỗi xảy ra khi duyệt yêu cầu: " + error.message);
+		}
+	};
+
+	// Set delivery date and start delivery
+	const handleSetDeliveryDate = async () => {
+		if (!deliveryDate) {
+			alert("⚠️ Vui lòng chọn ngày giao dự kiến!");
+			return;
+		}
+
+		setDeliveryLoading(true);
+		try {
+			// Add 2 minutes buffer to ensure the date is in the future when backend validates
+			const selectedDate = new Date(deliveryDate);
+			selectedDate.setMinutes(selectedDate.getMinutes() + 2);
+			const isoDate = selectedDate.toISOString();
+			
+			await setExpectedDeliveryDate(deliveryModal.requestId, isoDate);
+			
+			setDeliveryModal({ open: false, requestId: null });
+			setDeliveryDate('');
+			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
+			alert("✅ Đã thiết lập ngày giao và bắt đầu giao xe thành công!");
+		} catch (error) {
+			console.error("Error setting delivery date:", error);
+			alert("❌ Có lỗi xảy ra: " + error.message);
+		} finally {
+			setDeliveryLoading(false);
+		}
+	};
+
+	// Reject dealer request
+	const handleRejectRequest = async (requestId, reason) => {
+		if (!reason || reason.trim() === '') {
+			alert("⚠️ Vui lòng nhập lý do từ chối");
+			return;
+		}
+		
+		setRejectLoading(true);
+		try {
+			await rejectDistributionRequest(requestId, reason);
+			
+			// Close reject modal
+			setRejectModal({ open: false, requestId: null });
+			setRejectReason('');
+			
+			// Reload notifications to get updated status
+			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
+			alert("✅ Đã từ chối yêu cầu thành công");
+		} catch (error) {
+			console.error("Error rejecting request:", error);
+			alert("❌ Có lỗi xảy ra khi từ chối yêu cầu: " + error.message);
+		} finally {
+			setRejectLoading(false);
+		}
+	};
+
 	const getCurrentImage = (vehicle) => {
 		const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
 		return vehicle.images[currentColor] || vehicle.defaultImage;
@@ -636,7 +757,24 @@ const CarManagement = () => {
 	return (
 		<div className="car-management">
 			<div className="car-management-container">
-				<h2 className="car-management-title">Quản lý xe</h2>
+				<div className="car-management-header-wrapper">
+					<h2 className="car-management-title">Quản lý xe</h2>
+					<button
+						className="notification-btn"
+						onClick={() => {
+							setShowStaffNotificationModal(true);
+							loadStaffNotifications();
+						}}
+						title="Xem yêu cầu từ đại lý"
+					>
+						🔔 Yêu cầu
+						{staffNotifications.filter(n => n.status === 'Chờ duyệt').length > 0 && (
+							<span className="notification-badge">
+								{staffNotifications.filter(n => n.status === 'Chờ duyệt').length}
+							</span>
+						)}
+					</button>
+				</div>
 				<div className="search-create-row">
 					<div className="search-form-container">
 						<form className="search-form" onSubmit={e => e.preventDefault()}>
@@ -1312,6 +1450,249 @@ const CarManagement = () => {
 							{deleteCarMessage && <div className="error-message">{deleteCarMessage}</div>}
 							<button className="create-user-submit-btn" type="submit" disabled={deleteCarLoading}>{deleteCarLoading ? 'Đang xóa...' : 'Xóa xe'}</button>
 						</form>
+					</div>
+				</div>
+			)}
+
+			{/* Staff Notification Modal */}
+			{showStaffNotificationModal && (
+				<div className="modal-overlay" onClick={(e) => {
+					if (e.target.classList.contains('modal-overlay')) {
+						setShowStaffNotificationModal(false);
+					}
+				}}>
+					<div className="modal-content notification-modal-content staff-notification-modal" onClick={e => e.stopPropagation()}>
+						<div className="modal-header">
+							<h2>📬 Yêu cầu từ đại lý</h2>
+							<button className="close-btn" onClick={() => setShowStaffNotificationModal(false)}>×</button>
+						</div>
+						
+						{/* Filter by Status */}
+						<div className="notification-filter">
+							<select 
+								value={statusFilter} 
+								onChange={(e) => {
+									setStatusFilter(e.target.value);
+									loadStaffNotifications(e.target.value !== 'all' ? e.target.value : null);
+								}}
+								className="filter-status-select"
+							>
+								<option value="all">Tất cả trạng thái</option>
+								<option value="Chờ duyệt">⏳ Chờ duyệt</option>
+								<option value="Đã duyệt">✅ Đã duyệt</option>
+								<option value="Đang giao">🚚 Đang giao</option>
+								<option value="Đã giao">📦 Đã giao</option>
+								<option value="Từ chối">❌ Từ chối</option>
+							</select>
+						</div>
+
+						<div className="modal-body notification-modal-body">
+							{loadingStaffNotifications ? (
+								<div className="loading-notifications">⏳ Đang tải...</div>
+							) : staffNotifications.length === 0 ? (
+								<div className="no-notifications">📭 Không có yêu cầu nào</div>
+							) : (
+								<div className="notifications-list">
+									{staffNotifications.map(notif => {
+										// Convert Vietnamese status to CSS class name
+										const statusClass = notif.status === 'Chờ duyệt' ? 'pending' :
+										                   notif.status === 'Đã duyệt' ? 'approved' :
+										                   notif.status === 'Đang giao' ? 'delivering' :
+										                   notif.status === 'Đã giao' ? 'delivered' :
+										                   notif.status === 'Từ chối' ? 'rejected' : 'pending';
+										
+										return (
+										<div 
+											key={notif.id} 
+											className={`notification-item notification-${statusClass}`}
+										>
+											<div className="notification-header-item">
+												<h4>🏢 {notif.dealerName}</h4>
+												<span className={`status-badge-notification status-${statusClass}`}>
+													{notif.status === 'Chờ duyệt' && '⏳ Chờ duyệt'}
+													{notif.status === 'Đã duyệt' && '✅ Đã duyệt'}
+													{notif.status === 'Đang giao' && '🚚 Đang giao'}
+													{notif.status === 'Đã giao' && '📦 Đã giao'}
+													{notif.status === 'Từ chối' && '❌ Từ chối'}
+												</span>
+											</div>
+											
+											<div className="notification-details">
+												<p>
+													<strong>🚗 Thông tin xe:</strong> 
+													<span>{notif.modelName} {notif.variantName} - {notif.colorName}</span>
+												</p>
+												<p>
+													<strong>📦 Số lượng:</strong> 
+													<span>{notif.quantity} xe</span>
+												</p>
+												<p>
+													<strong>📅 Ngày yêu cầu:</strong> 
+													<span>{new Date(notif.createdAt).toLocaleString('vi-VN', {
+														year: 'numeric',
+														month: '2-digit',
+														day: '2-digit',
+														hour: '2-digit',
+														minute: '2-digit'
+													})}</span>
+												</p>
+												{notif.approvedAt && (
+													<p>
+														<strong>✅ Ngày duyệt:</strong> 
+														<span>{new Date(notif.approvedAt).toLocaleString('vi-VN', {
+															year: 'numeric',
+															month: '2-digit',
+															day: '2-digit',
+															hour: '2-digit',
+															minute: '2-digit'
+														})}</span>
+													</p>
+												)}
+												{notif.expectedDeliveryDate && (
+													<p>
+														<strong>🚚 Ngày giao dự kiến:</strong> 
+														<span>{new Date(notif.expectedDeliveryDate).toLocaleString('vi-VN', {
+															year: 'numeric',
+															month: '2-digit',
+															day: '2-digit',
+															hour: '2-digit',
+															minute: '2-digit'
+														})}</span>
+													</p>
+												)}
+												{notif.actualDeliveryDate && (
+													<p>
+														<strong>📍 Ngày giao thực tế:</strong> 
+														<span>{new Date(notif.actualDeliveryDate).toLocaleString('vi-VN', {
+															year: 'numeric',
+															month: '2-digit',
+															day: '2-digit',
+															hour: '2-digit',
+															minute: '2-digit'
+														})}</span>
+													</p>
+												)}
+												{notif.note && (
+													<p>
+														<strong>📝 Ghi chú:</strong> 
+														<span>{notif.note}</span>
+													</p>
+												)}
+												{notif.rejectionReason && (
+													<p style={{ borderBottom: 'none', color: '#e74c3c' }}>
+														<strong style={{ color: '#c0392b' }}>❌ Lý do từ chối:</strong> 
+														<span style={{ color: '#e74c3c' }}>{notif.rejectionReason}</span>
+													</p>
+												)}
+											</div>
+
+											{notif.status === 'Chờ duyệt' && (
+												<div className="approve-reject-buttons">
+													<button
+														className="approve-request-btn"
+														onClick={() => handleApproveRequest(notif.id)}
+													>
+														✅ Duyệt
+													</button>
+													<button
+														className="reject-request-btn"
+														onClick={() => setRejectModal({ open: true, requestId: notif.id })}
+													>
+														❌ Từ chối
+													</button>
+												</div>
+											)}
+
+											{notif.status === 'Đã duyệt' && (
+												<div className="approve-reject-buttons">
+													<button
+														className="delivery-date-btn"
+														onClick={() => {
+															setDeliveryModal({ open: true, requestId: notif.id });
+															setDeliveryDate('');
+														}}
+													>
+														📅 Thiết lập ngày giao
+													</button>
+												</div>
+											)}
+										</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Reject Reason Modal */}
+			{rejectModal.open && (
+				<div className="modal-overlay" onClick={(e) => {
+					if (e.target.classList.contains('modal-overlay')) {
+						setRejectModal({ open: false, requestId: null });
+						setRejectReason('');
+					}
+				}}>
+					<div className="modal-content reject-modal-content" onClick={e => e.stopPropagation()}>
+						<div className="modal-header">
+							<h3>Lý do từ chối</h3>
+							<button className="close-btn" onClick={() => {
+								setRejectModal({ open: false, requestId: null });
+								setRejectReason('');
+							}}>×</button>
+						</div>
+						<div className="modal-body">
+							<textarea
+								className="update-form-textarea reject-reason-textarea"
+								placeholder="Nhập lý do từ chối yêu cầu..."
+								value={rejectReason}
+								onChange={(e) => setRejectReason(e.target.value)}
+								rows="4"
+							/>
+							<button
+								className="reject-submit-btn"
+								onClick={() => handleRejectRequest(rejectModal.requestId, rejectReason)}
+								disabled={rejectLoading}
+							>
+								{rejectLoading ? '⏳ Đang xử lý...' : '✓ Xác nhận từ chối'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Delivery Date Modal */}
+			{deliveryModal.open && (
+				<div className="modal-overlay" onClick={(e) => {
+					if (e.target.classList.contains('modal-overlay')) {
+						setDeliveryModal({ open: false, requestId: null });
+						setDeliveryDate('');
+					}
+				}}>
+					<div className="modal-content delivery-modal-content" onClick={e => e.stopPropagation()}>
+						<div className="modal-header">
+							<h3>📅 Thiết lập ngày giao dự kiến</h3>
+							<button className="close-btn" onClick={() => {
+								setDeliveryModal({ open: false, requestId: null });
+								setDeliveryDate('');
+							}}>×</button>
+						</div>
+						<div className="modal-body">
+							<input
+								type="datetime-local"
+								className="update-form-input delivery-date-input"
+								value={deliveryDate}
+								onChange={(e) => setDeliveryDate(e.target.value)}
+							/>
+							<button
+								className="delivery-submit-btn"
+								onClick={handleSetDeliveryDate}
+								disabled={deliveryLoading || !deliveryDate}
+							>
+								{deliveryLoading ? '⏳ Đang xử lý...' : '✓ Xác nhận và bắt đầu giao'}
+							</button>
+						</div>
 					</div>
 				</div>
 			)}

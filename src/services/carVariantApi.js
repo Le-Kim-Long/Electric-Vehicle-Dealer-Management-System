@@ -117,7 +117,7 @@ export const transformCarVariantData = (apiData) => {
 
     const colors = variant.colorPrices?.map(cp => ({
       name: cp.colorName || 'Unknown',
-      price: cp.price || 0,
+      price: cp.price || cp.manufacturerPrice || cp.dealerPrice || 0,
       image: cp.imagePath ? `http://localhost:8080${cp.imagePath}` : null,
       quantity: cp.quantity || 0
     })) || [];
@@ -1876,5 +1876,355 @@ export const updateInstallmentPlan = async (orderId, installmentData) => {
   
   return response.json();
 };
+// ==================== DISTRIBUTION REQUEST APIs ====================
+
+// Get list of car variants not available at dealer (for dealer to request from manufacturer)
+export const getVehiclesNotAvailableAtDealer = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  const response = await fetch(`${API_BASE_URL}/car-variants/not-available-at-dealer`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Create distribution request (dealer requests cars from manufacturer)
+export const createDistributionRequest = async (requestData) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  // Validate required fields
+  if (!requestData.modelName || !requestData.variantName || !requestData.colorName) {
+    throw new Error('Vui long dien day du thong tin xe: Dong xe, Phien ban, Mau sac');
+  }
+  if (!requestData.quantity || requestData.quantity < 1) {
+    throw new Error('So luong phai lon hon 0');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/create`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(requestData)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.message || errorData.error || responseText);
+      } catch (jsonError) {
+        throw new Error(responseText || `HTTP error! status: ${response.status}`);
+      }
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Get all distribution requests (for EVM staff to view all requests)
+export const getAllDistributionRequests = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/all`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Get distribution requests for current dealer (my requests)
+export const getDealerDistributionRequests = async () => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/my-requests`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Get dealer distribution requests by status (my requests by status)
+export const getDealerDistributionRequestsByStatus = async (status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!status) {
+    throw new Error('status la bat buoc de loc yeu cau');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/my-requests/status/${encodeURIComponent(status)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Get all distribution requests by status (for Admin/EVM Staff)
+export const getAllDistributionRequestsByStatus = async (status) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!status) {
+    throw new Error('status la bat buoc de loc yeu cau');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/all/status/${encodeURIComponent(status)}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return response.json();
+};
+
+// Approve distribution request (Admin/EVM Staff approves dealer request)
+export const approveDistributionRequest = async (requestId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!requestId) {
+    throw new Error('requestId la bat buoc de duyet yeu cau');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/${requestId}/approve`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      throw new Error(responseText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Reject distribution request (Admin/EVM Staff rejects dealer request)
+export const rejectDistributionRequest = async (requestId, reason) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!requestId) {
+    throw new Error('requestId la bat buoc de tu choi yeu cau');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/${requestId}/reject`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ rejectionReason: reason || '' })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      throw new Error(responseText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Confirm received distribution (dealer confirms received cars from manufacturer)
+export const confirmReceivedDistribution = async (requestId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!requestId) {
+    throw new Error('requestId la bat buoc de xac nhan nhan hang');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/${requestId}/confirm-received`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      throw new Error(responseText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Set expected delivery date and start delivery (EVM Staff)
+export const setExpectedDeliveryDate = async (requestId, expectedDeliveryDate) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!requestId) {
+    throw new Error('requestId la bat buoc de thiet lap ngay giao');
+  }
+  
+  if (!expectedDeliveryDate) {
+    throw new Error('expectedDeliveryDate la bat buoc');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/${requestId}/set-delivery`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ expectedDeliveryDate })
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      throw new Error(responseText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Confirm delivery - Dealer confirms received vehicles and updates inventory
+export const confirmDelivery = async (requestId) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Khong tim thay token. Vui long dang nhap lai.');
+  
+  if (!requestId) {
+    throw new Error('requestId la bat buoc de xac nhan giao hang');
+  }
+  
+  const response = await fetch(`${API_BASE_URL}/distribution-requests/${requestId}/confirm-delivery`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token khong hop le hoac da het han. Vui long dang nhap lai.');
+    }
+    
+    try {
+      const responseText = await response.text();
+      throw new Error(responseText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+
+
 
 

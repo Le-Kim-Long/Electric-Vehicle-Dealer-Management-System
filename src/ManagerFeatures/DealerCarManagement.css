@@ -137,6 +137,10 @@
 	box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
 	position: relative;
 	overflow: hidden;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 20px;
 }
 
 .vehicle-info-header::before {
@@ -422,24 +426,26 @@
 /* Update button and modal form for DealerCarManagement */
 .update-btn-row {
 	display: flex;
-	justify-content: center;
-	align-items: center;
+	flex-direction: column;
+	gap: 8px;
 	margin-top: 12px;
 }
 .update-btn {
-	min-width: 100px;
-	padding: 10px 20px;
+	width: 100%;
+	padding: 12px 20px;
 	font-size: 1rem;
 	font-weight: 600;
 	border: none;
-	border-radius: 8px;
+	border-radius: 10px;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: #fff;
 	cursor: pointer;
-	transition: background 0.2s, box-shadow 0.2s;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 .update-btn:hover {
-	background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 .update-modal-content {
 	max-width: 700px;
@@ -535,6 +541,287 @@
 	margin-top: 10px;
 	font-size: 0.95rem;
 }
+
+/* Tab Navigation Styles */
+.tab-navigation {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 30px;
+	border-bottom: 2px solid #e1e8ed;
+	padding-bottom: 5px;
+}
+
+.tab-btn {
+	padding: 12px 24px;
+	font-size: 1.05rem;
+	font-weight: 600;
+	background: transparent;
+	color: #666;
+	border: none;
+	border-bottom: 3px solid transparent;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	outline: none;
+	position: relative;
+	bottom: -7px;
+}
+
+.tab-btn:hover {
+	color: #667eea;
+	background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-btn.active {
+	color: #667eea;
+	border-bottom-color: #667eea;
+	font-weight: 700;
+}
+
+/* Notification Button in Header */
+.notification-btn {
+	padding: 12px 20px;
+	background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+	color: white;
+	border: none;
+	border-radius: 12px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	z-index: 10;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.notification-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+}
+
+.notification-badge {
+	background: #e74c3c;
+	color: white;
+	font-size: 0.75rem;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 12px;
+	min-width: 20px;
+	text-align: center;
+}
+
+/* Request Button (Green) */
+.request-btn {
+	width: 100%;
+	padding: 12px 20px;
+	font-size: 1rem;
+	font-weight: 600;
+	border: none;
+	border-radius: 10px;
+	background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+	color: #fff;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(67, 233, 123, 0.3);
+}
+
+.request-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(67, 233, 123, 0.4);
+}
+
+/* Request Info Box */
+.request-info {
+	background: #f5f6fa;
+	padding: 16px;
+	border-radius: 10px;
+	margin-bottom: 16px;
+	border-left: 4px solid #667eea;
+}
+
+.request-info p {
+	margin: 8px 0;
+	font-size: 1rem;
+	color: #2c3e50;
+}
+
+.request-info strong {
+	color: #667eea;
+}
+
+/* Textarea for notes */
+.update-form-textarea {
+	width: 100%;
+	padding: 14px 18px;
+	border-radius: 10px;
+	border: 2px solid #e1e8ed;
+	font-size: 1rem;
+	font-family: inherit;
+	outline: none;
+	transition: all 0.3s ease;
+	box-sizing: border-box;
+	resize: vertical;
+	min-height: 80px;
+}
+
+.update-form-textarea:focus {
+	border-color: #667eea;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Notification Modal Styles */
+.notification-modal-content {
+	max-width: 800px;
+	width: 90%;
+	max-height: 90vh;
+	overflow-y: auto;
+}
+
+.notification-modal-body {
+	padding: 20px;
+	max-height: 70vh;
+	overflow-y: auto;
+}
+
+.loading-notifications,
+.no-notifications {
+	text-align: center;
+	padding: 40px;
+	color: #666;
+	font-size: 1.1rem;
+}
+
+.notifications-list {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.notification-item {
+	background: white;
+	border: 2px solid #e1e8ed;
+	border-radius: 12px;
+	padding: 20px;
+	transition: all 0.3s ease;
+}
+
+.notification-item:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	border-color: #667eea;
+}
+
+.notification-pending {
+	border-left: 4px solid #f39c12;
+}
+
+.notification-approved {
+	border-left: 4px solid #27ae60;
+}
+
+.notification-delivering {
+	border-left: 4px solid #3498db;
+}
+
+.notification-delivered {
+	border-left: 4px solid #2ecc71;
+}
+
+.notification-rejected {
+	border-left: 4px solid #e74c3c;
+}
+
+.notification-header-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+	gap: 12px;
+}
+
+.notification-header-item h4 {
+	margin: 0;
+	color: #2c3e50;
+	font-size: 1.15rem;
+	font-weight: 700;
+}
+
+.status-badge-notification {
+	padding: 6px 12px;
+	border-radius: 20px;
+	font-size: 0.85rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.status-pending {
+	background: #fff3cd;
+	color: #856404;
+}
+
+.status-approved {
+	background: #d4edda;
+	color: #155724;
+}
+
+.status-delivering {
+	background: #d1ecf1;
+	color: #0c5460;
+}
+
+.status-delivered {
+	background: #d4edda;
+	color: #155724;
+}
+
+.status-rejected {
+	background: #f8d7da;
+	color: #721c24;
+}
+
+.notification-details {
+	background: #f8f9fa;
+	padding: 12px;
+	border-radius: 8px;
+	margin-bottom: 12px;
+}
+
+.notification-details p {
+	margin: 6px 0;
+	font-size: 0.95rem;
+	color: #555;
+}
+
+.notification-details strong {
+	color: #2c3e50;
+	font-weight: 600;
+}
+
+.confirm-request-btn {
+	width: 100%;
+	padding: 12px 20px;
+	background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+	color: white;
+	border: none;
+	border-radius: 8px;
+	font-size: 1rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.confirm-request-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(39, 174, 96, 0.4);
+}
+
+.manufacturer-tab-content {
+	margin-top: 20px;
+}
+
 
 
 
