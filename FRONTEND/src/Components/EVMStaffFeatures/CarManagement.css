@@ -796,51 +796,45 @@ vertical-align: middle;
 	flex: 1;
 }
 
-/* Notification Button - Enhanced */
+/* Notification Button - Enhanced (đồng bộ với DealerCarManagement) */
 .notification-btn {
-	padding: 14px 24px;
+	padding: 12px 20px;
 	background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
 	color: white;
 	border: none;
-	border-radius: 14px;
-	font-size: 1.1rem;
-	font-weight: 700;
+	border-radius: 12px;
+	font-size: 1rem;
+	font-weight: 600;
 	cursor: pointer;
 	transition: all 0.3s ease;
-	box-shadow: 0 4px 16px rgba(243, 156, 18, 0.35);
+	box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
 	display: flex;
 	align-items: center;
-	gap: 10px;
-	letter-spacing: 0.5px;
+	gap: 8px;
+	z-index: 10;
 	white-space: nowrap;
-	position: relative;
-	min-width: 140px;
-	justify-content: center;
+	flex-shrink: 0;
 }
 
 .notification-btn:hover {
-	background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-	transform: translateY(-3px);
-	box-shadow: 0 8px 24px rgba(243, 156, 18, 0.45);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
 }
 
 .notification-btn:active {
-	transform: translateY(-1px);
-	box-shadow: 0 4px 16px rgba(243, 156, 18, 0.35);
+	transform: translateY(0);
+	box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
 }
 
 .notification-badge {
-	background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+	background: #e74c3c;
 	color: white;
-	font-size: 0.85rem;
-	font-weight: 900;
-	padding: 4px 10px;
-	border-radius: 16px;
-	min-width: 24px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 12px;
+	min-width: 20px;
 	text-align: center;
-	box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
-	border: 2px solid white;
-	animation: pulse 2s infinite;
 }
 
 @keyframes pulse {

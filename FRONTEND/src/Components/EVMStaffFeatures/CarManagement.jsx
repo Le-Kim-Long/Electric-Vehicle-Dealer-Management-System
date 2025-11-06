@@ -601,12 +601,18 @@ const CarManagement = () => {
 				colorName: req.colorName,
 				quantity: req.quantity,
 				note: req.note || '', // API might have note field
+				rejectionReason: req.rejectionReason || '',
 				status: req.status,
 				createdAt: req.requestDate,
 				approvedAt: req.approvedDate,
 				expectedDeliveryDate: req.expectedDeliveryDate,
 				actualDeliveryDate: req.actualDeliveryDate
 			}));
+			
+			// Sắp xếp theo ngày tạo mới nhất lên trên
+			transformedNotifications.sort((a, b) => {
+				return new Date(b.createdAt) - new Date(a.createdAt);
+			});
 			
 			setStaffNotifications(transformedNotifications);
 		} catch (error) {
@@ -717,6 +723,8 @@ const CarManagement = () => {
 		loadVehicles();
 		fetchDealerNames().then(names => setDealerNames(names)).catch(() => setDealerNames([]));
 		fetchAllModelNames().then(models => setModelOptions(models)).catch(() => setModelOptions([]));
+		// Load notifications ngay khi component mount để hiển thị badge
+		loadStaffNotifications();
 	}, [])
 
 	useEffect(() => {

@@ -290,30 +290,17 @@ const DealerCarManagement = () => {
         }
     };
 
-    const handleViewDetail = async (vehicle) => {
-        setSelectedVehicle(vehicle);
-        if (!vehicle.configLoaded) {
-            try {
-                const configData = await getVariantConfiguration(vehicle.id);
-                if (configData) {
-                    const specs = transformConfigurationData(configData);
-                    const updatedVehicle = {
-                        ...vehicle,
-                        specs: specs,
-                        range: configData.rangeKm,
-                        charging: `${configData.fullChargeTime} phút (AC)`,
-                        power: configData.power,
-                        configLoaded: true
-                    };
-                    setSelectedVehicle(updatedVehicle);
-                    setVehicles(prevVehicles =>
-                        prevVehicles.map(v => v.id === vehicle.id ? updatedVehicle : v)
-                    );
-                }
-            } catch (err) {
-                // Silent fail
-            }
+    const handleViewDetail = (vehicle) => {
+        // Đảm bảo selectedColor có màu đầu tiên cho vehicle này
+        if (!selectedColor[vehicle.id]) {
+            setSelectedColor(prev => ({
+                ...prev,
+                [vehicle.id]: vehicle.colors[0]
+            }));
         }
+        
+        // MỞ MODAL NGAY LẬP TỨC - không đợi load config
+        setSelectedVehicle(vehicle);
     };
 
     const getStatusBadge = (status, stock) => {
@@ -341,15 +328,16 @@ const DealerCarManagement = () => {
     const getCurrentPrice = (vehicle) => {
         const currentColor = selectedColor[vehicle.id] || vehicle.colors[0];
         
-        // Try colorPricesRaw first (for dealer vehicles)
+        // Tab 1: Dealer vehicles (có colorPricesRaw)
         if (vehicle.colorPricesRaw) {
             const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === currentColor);
             if (colorObj) {
-                return colorObj.dealerPrice || colorObj.manufacturerPrice || colorObj.price || 0;
+                // CHỈ hiển thị dealerPrice (có thể = 0)
+                return colorObj.dealerPrice !== undefined ? colorObj.dealerPrice : 0;
             }
         }
         
-        // Try colorPrices array (for manufacturer vehicles from transformCarVariantData)
+        // Tab 2: Manufacturer vehicles (có colorPrices)
         if (vehicle.colorPrices) {
             return vehicle.colorPrices[currentColor] || 0;
         }
@@ -369,6 +357,18 @@ const DealerCarManagement = () => {
             const response = await getVehiclesNotAvailableAtDealer();
             const transformed = transformCarVariantData(response.data || response);
             setManufacturerVehicles(transformed);
+            
+            // Khởi tạo màu mặc định cho tất cả xe trong Tab 2
+            const newSelectedColors = {};
+            transformed.forEach(vehicle => {
+                if (vehicle.colors && vehicle.colors.length > 0) {
+                    newSelectedColors[vehicle.id] = vehicle.colors[0];
+                }
+            });
+            setSelectedColor(prev => ({
+                ...prev,
+                ...newSelectedColors
+            }));
         } catch (err) {
             console.error('Error loading manufacturer vehicles:', err);
             alert('❌ Không thể tải danh sách xe từ nhà máy: ' + err.message);
@@ -686,8 +686,10 @@ const DealerCarManagement = () => {
                                         className="update-btn"
                                         onClick={() => {
                                             const colorObj = vehicle.colorPricesRaw?.find(c => c.colorName === currentColor);
+                                            // ✅ Hiển thị dealerPrice (kể cả = 0)
+                                            const price = colorObj?.dealerPrice !== undefined ? colorObj.dealerPrice : '';
                                             setUpdateForm({
-                                                price: colorObj?.dealerPrice || '',
+                                                price: price,
                                                 status: colorObj?.status || '',
                                                 loading: false,
                                                 error: '',
@@ -785,13 +787,6 @@ const DealerCarManagement = () => {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {selectedVehicle && (
-                <VehicleDetailModal
-                    vehicle={selectedVehicle}
-                    onClose={() => setSelectedVehicle(null)}
-                />
             )}
                 </>
             )}
@@ -991,6 +986,15 @@ const DealerCarManagement = () => {
                     </div>
                 </div>
             )}
+            
+            {/* Vehicle Detail Modal - Dùng chung cho cả 2 tabs */}
+            {selectedVehicle && (
+                <VehicleDetailModal
+                    key={selectedVehicle.id}
+                    vehicle={selectedVehicle}
+                    onClose={() => setSelectedVehicle(null)}
+                />
+            )}
         </div>
     );
 };
@@ -1000,78 +1004,98 @@ const DealerCarManagement = () => {
 
 const VehicleDetailModal = ({ vehicle, onClose }) => {
     const [selectedModalColor, setSelectedModalColor] = useState(vehicle.colors[0]);
+    const [vehicleData, setVehicleData] = useState(vehicle);
+    const [loadingConfig, setLoadingConfig] = useState(!vehicle.configLoaded);
+
+    // Load config nếu chưa có
+    useEffect(() => {
+        if (!vehicle.configLoaded) {
+            setLoadingConfig(true);
+            (async () => {
+                try {
+                    const configData = await getVariantConfiguration(vehicle.id);
+                    if (configData) {
+                        const specs = transformConfigurationData(configData);
+                        const updatedVehicle = {
+                            ...vehicle,
+                            specs: specs,
+                            range: configData.rangeKm,
+                            charging: `${configData.fullChargeTime} phút (AC)`,
+                            power: configData.power,
+                            configLoaded: true
+                        };
+                        setVehicleData(updatedVehicle);
+                    }
+                } catch (err) {
+                    console.error('Error loading config:', err);
+                } finally {
+                    setLoadingConfig(false);
+                }
+            })();
+        }
+    }, [vehicle.id]);
 
     const getCurrentModalImage = () => {
-        return vehicle.images[selectedModalColor] || vehicle.defaultImage;
+        return vehicleData.images[selectedModalColor] || vehicleData.defaultImage;
     };
 
     const getCurrentModalPrice = () => {
-        // Try colorPricesRaw first (for dealer vehicles)
-        if (vehicle.colorPricesRaw) {
-            const found = vehicle.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
+        // Tab 1: Dealer vehicles (có colorPricesRaw)
+        if (vehicleData.colorPricesRaw) {
+            const found = vehicleData.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
             if (found) {
-                return found.dealerPrice || found.manufacturerPrice || found.price || 0;
+                // CHỈ hiển thị dealerPrice (có thể = 0)
+                return found.dealerPrice !== undefined ? found.dealerPrice : 0;
             }
         }
-        // Try colorPrices for manufacturer vehicles
-        if (vehicle.colorPrices) {
-            return vehicle.colorPrices[selectedModalColor] || 0;
+        
+        // Tab 2: Manufacturer vehicles (có colorPrices)
+        if (vehicleData.colorPrices) {
+            return vehicleData.colorPrices[selectedModalColor] || 0;
         }
+        
         return 0;
     };
 
     const getCurrentModalQuantity = () => {
-        return vehicle.colorQuantities[selectedModalColor] || 0;
+        return vehicleData.colorQuantities[selectedModalColor] || 0;
     };
 
     // Lấy giá niêm yết (manufacturerPrice) cho màu đang chọn
     const getCurrentManufacturerPrice = () => {
         // Try colorPricesRaw first (for dealer vehicles)
-        if (vehicle.colorPricesRaw) {
-            const found = vehicle.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
+        if (vehicleData.colorPricesRaw) {
+            const found = vehicleData.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
             if (found) {
                 return found.manufacturerPrice || found.price || found.dealerPrice || 0;
             }
         }
         // Try colorPrices for manufacturer vehicles
-        if (vehicle.colorPrices) {
-            return vehicle.colorPrices[selectedModalColor] || 0;
+        if (vehicleData.colorPrices) {
+            return vehicleData.colorPrices[selectedModalColor] || 0;
         }
         return 0;
     };
-
-    useEffect(() => {
-        if (!vehicle.configLoaded) {
-            (async () => {
-                try {
-                    const configData = await getVariantConfiguration(vehicle.id);
-                    if (configData) {
-                        // No-op: parent already loads config on open
-                    }
-                } catch (err) { }
-            })();
-        }
-    }, [vehicle]);
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>{vehicle.name}</h2>
+                    <h2>{vehicleData.name}</h2>
                     <button className="close-btn" onClick={onClose}>×</button>
                 </div>
                 <div className="modal-body">
                     <div className="vehicle-detail-image">
                         <img
                             src={getCurrentModalImage()}
-                            alt={`${vehicle.name} - ${selectedModalColor}`}
+                            alt={`${vehicleData.name} - ${selectedModalColor}`}
                             onError={(e) => {
-                                e.target.src = vehicle.defaultImage;
+                                e.target.src = vehicleData.defaultImage;
                             }}
                         />
                     </div>
                     <div className="vehicle-detail-info">
-                        {!vehicle.configLoaded && (
+                        {loadingConfig && (
                             <div className="modal-loading-detail">
                                 ⏳ Đang tải thông tin chi tiết...
                             </div>
@@ -1085,13 +1109,13 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
                                 </div>
                                 <div className="detail-item">
                                     <span>Tổng tồn kho:</span>
-                                    <span>{vehicle.stock} xe</span>
+                                    <span>{vehicleData.stock} xe</span>
                                 </div>
                                 <div className="detail-item">
                                     <span>Trạng thái xe:</span>
                                     <span>{(() => {
-                                        if (vehicle.colorPricesRaw) {
-                                            const found = vehicle.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
+                                        if (vehicleData.colorPricesRaw) {
+                                            const found = vehicleData.colorPricesRaw.find(cp => cp.colorName === selectedModalColor);
                                             return found && found.status ? found.status : 'Không rõ';
                                         }
                                         return 'Không rõ';
@@ -1102,12 +1126,21 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
                         <div className="detail-section">
                             <h3>Chọn màu sắc</h3>
                             <div className="color-price-grid">
-                                {vehicle.colors.map((color, index) => {
+                                {vehicleData.colors.map((color, index) => {
                                     let price = 0;
-                                    if (vehicle.colorPricesRaw) {
-                                        const found = vehicle.colorPricesRaw.find(cp => cp.colorName === color);
-                                        price = found && found.dealerPrice ? found.dealerPrice : 0;
+                                    
+                                    // Tab 1: Dealer vehicles (có colorPricesRaw)
+                                    if (vehicleData.colorPricesRaw) {
+                                        const found = vehicleData.colorPricesRaw.find(cp => cp.colorName === color);
+                                        if (found) {
+                                            price = found.dealerPrice !== undefined ? found.dealerPrice : 0;
+                                        }
+                                    } 
+                                    // Tab 2: Manufacturer vehicles (có colorPrices)
+                                    else if (vehicleData.colorPrices) {
+                                        price = vehicleData.colorPrices[color] || 0;
                                     }
+                                    
                                     return (
                                         <div
                                             key={index}
@@ -1117,7 +1150,7 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
                                             <div>
                                                 <div className="color-name">{color}</div>
                                                 <div className={`color-qty-info ${selectedModalColor === color ? 'active' : ''}`}>
-                                                    Tồn: {vehicle.colorQuantities[color]} xe
+                                                    Tồn: {vehicleData.colorQuantities[color]} xe
                                                 </div>
                                             </div>
                                             <div className="color-price">
@@ -1143,45 +1176,45 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
                                 </div>
                             </div>
                         </div>
-                        {vehicle.specs && (
+                        {vehicleData.specs && (
                             <div className="detail-section">
                                 <h3>Thông số kỹ thuật</h3>
                                 <div className="detail-grid">
                                     <div className="detail-item">
                                         <span>Pin:</span>
-                                        <span>{vehicle.specs.battery}</span>
+                                        <span>{vehicleData.specs.battery}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Phạm vi hoạt động:</span>
-                                        <span>{vehicle.range} km</span>
+                                        <span>{vehicleData.range} km</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Thời gian sạc:</span>
-                                        <span>{vehicle.charging}</span>
+                                        <span>{vehicleData.charging}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Công suất:</span>
-                                        <span>{vehicle.power} kW</span>
+                                        <span>{vehicleData.power} kW</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Mô-men xoắn:</span>
-                                        <span>{vehicle.specs.torque}</span>
+                                        <span>{vehicleData.specs.torque}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Số ghế:</span>
-                                        <span>{vehicle.specs.seats} ghế</span>
+                                        <span>{vehicleData.specs.seats} ghế</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Kích thước:</span>
-                                        <span>{vehicle.specs.dimensions}</span>
+                                        <span>{vehicleData.specs.dimensions}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Chiều dài cơ sở:</span>
-                                        <span>{vehicle.specs.wheelbase}</span>
+                                        <span>{vehicleData.specs.wheelbase}</span>
                                     </div>
                                     <div className="detail-item">
                                         <span>Trọng lượng:</span>
-                                        <span>{vehicle.specs.weight}</span>
+                                        <span>{vehicleData.specs.weight}</span>
                                     </div>
                                 </div>
                             </div>

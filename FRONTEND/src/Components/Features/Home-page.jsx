@@ -39,7 +39,6 @@ const HomePage = ({ onMenuClick }) => {
             controls={false}
             className="local-video"
             onError={(e) => {
-              console.log('Video load error:', e);
               e.target.style.display = 'none';
               e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
               e.target.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: white; font-size: 1.2rem;">Video không thể tải</div>';
