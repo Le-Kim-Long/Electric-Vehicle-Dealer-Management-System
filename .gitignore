@@ -1,0 +1,14 @@
+# Ignore everything at root
+/*
+
+# Except FRONTEND folder
+!/.gitignore
+!/FRONTEND/
+!/README.md
+
+# Ignore specific files
+Backend/
+*.sql
+*.docx
+.vscode/
+.idea/
