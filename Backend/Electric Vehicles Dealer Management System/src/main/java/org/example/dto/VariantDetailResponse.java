@@ -20,7 +20,7 @@ public class VariantDetailResponse {
     @AllArgsConstructor
     public static class ColorPrice {
         private String colorName;
-        private Long price;
+        private Long manufacturerPrice;
         private String imagePath;
         private Integer quantity;
     }
