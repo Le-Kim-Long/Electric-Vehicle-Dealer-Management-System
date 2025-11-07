@@ -322,7 +322,7 @@ public class CarVariantController {
 
             if (email == null || email.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid authentication. Please login again.");
+                    .body("Invalid authentication. Please login lại.");
             }
 
             // Lấy thông tin user để kiểm tra role
@@ -422,7 +422,7 @@ public class CarVariantController {
 
             if (email == null || email.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("Invalid authentication. Please login again.");
+                    .body("Invalid authentication. Please login lại.");
             }
 
             // Lấy thông tin user để kiểm tra role
@@ -835,6 +835,77 @@ public class CarVariantController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("An error occurred while updating dealer car price and status: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/not-available-at-dealer")
+    @Operation(
+        summary = "Get cars not available at dealer - Dealer Manager only",
+        description = "Retrieve all car variants that are not yet available at the current dealer manager's dealer. " +
+                     "This API is exclusively for Dealer Managers to see what cars they can potentially add to their inventory. " +
+                     "Returns detailed information including model name, variant name, available colors with manufacturer prices, " +
+                     "and complete configuration specifications. Quantity is set to 0 since these cars are not available at the dealer. " +
+                     "Only Dealer Manager role can access this API. " +
+                     "Requires JWT token in Authorization header."
+    )
+    @SecurityRequirement(name = "Bearer Authentication")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved cars not available at dealer"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or missing JWT token"),
+        @ApiResponse(responseCode = "403", description = "Forbidden - Insufficient permissions or not a Dealer Manager"),
+        @ApiResponse(responseCode = "404", description = "User not associated with any dealer"),
+        @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    public ResponseEntity<?> getCarsNotAvailableAtDealer() {
+        try {
+            // Lấy authentication từ SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authorization header is required. Please login first to get JWT token.");
+            }
+
+            // Lấy email từ authentication (JWT subject)
+            String email = authentication.getName();
+
+            if (email == null || email.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid authentication. Please login again.");
+            }
+
+            // Lấy thông tin user để kiểm tra role
+            UserAccount user = userAccountRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+            String roleName = user.getRoleId().getRoleName();
+
+            // Chỉ cho phép DealerManager sử dụng API này
+            if ("DealerManager".equals(roleName)) {
+                if (user.getDealer() == null) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not associated with any dealer");
+                }
+
+                Integer dealerId = user.getDealer().getDealerId();
+                List<VariantDetailResponse> carsNotAvailable = carVariantService.getCarsNotAvailableAtDealer(dealerId);
+
+                return ResponseEntity.ok(carsNotAvailable);
+
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("Access denied. This API is only available for Dealer Manager role. " +
+                          "Current role: " + roleName);
+            }
+
+        } catch (RuntimeException e) {
+            if (e.getMessage().contains("not found") || e.getMessage().contains("not associated")) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+            }
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("An error occurred while retrieving cars not available at dealer: " + e.getMessage());
         }
     }
 }
