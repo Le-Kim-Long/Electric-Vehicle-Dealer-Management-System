@@ -57,4 +57,7 @@ public interface CarVariantService {
     // New method for updating dealer car price and status - only for dealer manager
     boolean updateDealerCarPriceAndStatus(Integer dealerId, String modelName, String variantName,
                                          String colorName, java.math.BigDecimal dealerPrice, String status);
+
+    // New method for getting cars not available at dealer
+    List<VariantDetailResponse> getCarsNotAvailableAtDealer(Integer dealerId);
 }

@@ -2,11 +2,15 @@ package org.example.service.implementation;
 
 import org.example.dto.DealerVariantDetailResponse;
 import org.example.dto.VariantDetailResponse;
+import org.example.entity.Car;
 import org.example.entity.CarVariant;
 import org.example.entity.Color;
+import org.example.entity.DealerCar;
 import org.example.entity.UserAccount;
+import org.example.repository.CarRepository;
 import org.example.repository.CarVariantRepository;
 import org.example.repository.ColorRepository;
+import org.example.repository.DealerCarRepository;
 import org.example.repository.UserAccountRepository;
 import org.example.service.CarVariantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +34,12 @@ public class CarVariantServiceImpl implements CarVariantService {
 
     @Autowired
     private UserAccountRepository userAccountRepository;
+
+    @Autowired
+    private CarRepository carRepository;
+
+    @Autowired
+    private DealerCarRepository dealerCarRepository;
 
     private VariantDetailResponse convertToVariantDetailResponse(CarVariant carVariant, Integer dealerId) {
         // Lấy thông tin colorId, price, imagePath và quantity từ xe thuộc dealer hiện tại
@@ -64,7 +75,7 @@ public class CarVariantServiceImpl implements CarVariantService {
                     }
                     return VariantDetailResponse.ColorPrice.builder()
                             .colorName(color.getColorName())
-                            .price((Long) data[0])
+                            .manufacturerPrice((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity((Integer) data[2])
                             .build();
@@ -302,7 +313,7 @@ public class CarVariantServiceImpl implements CarVariantService {
                     }
                     return VariantDetailResponse.ColorPrice.builder()
                             .colorName(color.getColorName())
-                            .price((Long) data[0])
+                            .manufacturerPrice((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity((Integer) data[2])
                             .build();
@@ -353,7 +364,7 @@ public class CarVariantServiceImpl implements CarVariantService {
 
                     return VariantDetailResponse.ColorPrice.builder()
                             .colorName(color.getColorName())
-                            .price((Long) data[0])
+                            .manufacturerPrice((Long) data[0])
                             .imagePath(imageUrl)
                             .quantity(null) // Không trả về quantity cho EVMStaff và Admin
                             .build();
@@ -745,5 +756,55 @@ public class CarVariantServiceImpl implements CarVariantService {
                                                String colorName, java.math.BigDecimal dealerPrice, String status) {
         return carVariantRepository.updateDealerCarPriceAndStatus(dealerId, modelName, variantName,
                                                                  colorName, dealerPrice, status);
+    }
+
+    @Override
+    public List<VariantDetailResponse> getCarsNotAvailableAtDealer(Integer dealerId) {
+        // Lấy tất cả xe (Car) trong hệ thống
+        List<Car> allCars = carRepository.findAll();
+
+        // Lấy tất cả xe đã có tại đại lý
+        List<DealerCar> dealerCars = dealerCarRepository.findDealerCarsByDealerId(dealerId);
+        Set<Integer> availableCarIds = dealerCars.stream()
+                .map(dc -> dc.getCar().getCarId())
+                .collect(Collectors.toSet());
+
+        // Lọc ra những xe chưa có tại đại lý
+        List<Car> carsNotAvailable = allCars.stream()
+                .filter(car -> !availableCarIds.contains(car.getCarId()))
+                .toList();
+
+        // Nhóm xe theo variant và chuyển đổi thành VariantDetailResponse
+        Map<CarVariant, List<Car>> carsByVariant = carsNotAvailable.stream()
+                .collect(Collectors.groupingBy(Car::getCarVariant));
+
+        return carsByVariant.entrySet().stream()
+                .map(entry -> {
+                    CarVariant variant = entry.getKey();
+                    List<Car> cars = entry.getValue();
+
+                    // Tạo color prices cho những màu chưa có tại đại lý
+                    List<VariantDetailResponse.ColorPrice> colorPrices = cars.stream()
+                            .map(car -> VariantDetailResponse.ColorPrice.builder()
+                                    .colorName(car.getColor().getColorName())
+                                    .manufacturerPrice(car.getPrice()) // Sử dụng price thay vì getManufacturerPrice
+                                    .imagePath(car.getImagePath() != null ? "/api/images/" + car.getImagePath() : null)
+                                    .quantity(0) // Xe chưa có tại đại lý nên quantity = 0
+                                    .build())
+                            .toList();
+
+                    return VariantDetailResponse.builder()
+                            .variantId(variant.getVariantId())
+                            .modelName(variant.getCarModel().getModelName())
+                            .variantName(variant.getVariantName())
+                            .colorPrices(colorPrices)
+                            .build();
+                })
+                .sorted((VariantDetailResponse v1, VariantDetailResponse v2) -> {
+                    int modelCompare = v1.getModelName().compareTo(v2.getModelName());
+                    if (modelCompare != 0) return modelCompare;
+                    return v1.getVariantName().compareTo(v2.getVariantName());
+                })
+                .toList();
     }
 }
