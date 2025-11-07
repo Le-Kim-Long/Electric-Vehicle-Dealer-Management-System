@@ -42,4 +42,7 @@ public class Car {
 
     @Column(name = "ImagePath")
     private String imagePath;
+
+    @OneToMany(mappedBy = "car", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CarDistributionRequest> carDistributionRequests;
 }
