@@ -500,3 +500,26 @@ CREATE TABLE Installment (
     FOREIGN KEY (OrderId) REFERENCES ORDERS(OrderId)
 );
 
+--15. Tạo bảng gửi yêu cầu nhập xe cho đại lý
+CREATE TABLE CAR_DISTRIBUTION_REQUEST (
+    RequestID INT PRIMARY KEY IDENTITY(1,1),
+
+    DealerID INT NOT NULL,           -- Đại lý yêu cầu
+    CarID INT NOT NULL,              -- Xe yêu cầu phân phối
+    Quantity INT NOT NULL,           -- Số lượng xe yêu cầu
+
+    RequestDate DATETIME NOT NULL DEFAULT GETDATE(), -- Ngày tạo request
+    Status NVARCHAR(50) NOT NULL DEFAULT 'PENDING',  
+    -- Chờ duyệt
+    -- Đã duyệt
+    -- Từ chối
+    -- Đang giao
+    -- Đã giao (đại lý xác nhận)
+
+    ApprovedDate DATETIME NULL,          -- Ngày hãng duyệt
+    ExpectedDeliveryDate DATETIME NULL,  -- Hãng nhập ngày giao dự kiến
+    ActualDeliveryDate DATETIME NULL,    -- Khi đại lý xác nhận đã nhận
+
+    CONSTRAINT FK_REQ_DEALER FOREIGN KEY (DealerID) REFERENCES DEALER(DealerID),
+    CONSTRAINT FK_REQ_CAR FOREIGN KEY (CarID) REFERENCES CAR(CarID)
+);
