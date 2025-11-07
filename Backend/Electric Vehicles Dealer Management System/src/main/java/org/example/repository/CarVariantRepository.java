@@ -292,4 +292,16 @@ public interface CarVariantRepository extends JpaRepository<CarVariant, Integer>
 
     @Query("SELECT cv FROM CarVariant cv WHERE cv.modelId = :modelId")
     List<CarVariant> findByModelId(@Param("modelId") Integer modelId);
+
+    // Method to find car variants not available at specific dealer
+    @Query("SELECT DISTINCT cv FROM CarVariant cv " +
+           "JOIN FETCH cv.carModel cm " +
+           "LEFT JOIN FETCH cv.configuration " +
+           "WHERE cv.variantId NOT IN (" +
+           "SELECT DISTINCT c.variantId FROM Car c " +
+           "JOIN c.dealerCars dc " +
+           "WHERE dc.dealer.dealerId = :dealerId" +
+           ") " +
+           "ORDER BY cm.modelName, cv.variantName")
+    List<CarVariant> findVariantsNotAvailableAtDealer(@Param("dealerId") Integer dealerId);
 }

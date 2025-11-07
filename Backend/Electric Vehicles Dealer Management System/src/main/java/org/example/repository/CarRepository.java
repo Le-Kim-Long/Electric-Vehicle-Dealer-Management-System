@@ -89,4 +89,10 @@ public interface CarRepository extends JpaRepository<Car, Integer> {
 
     @Query("SELECT c FROM Car c WHERE c.variantId = :variantId")
     List<Car> findByVariantId(@Param("variantId") Integer variantId);
+
+    // Method to check if dealer already has this car
+    @Query("SELECT CASE WHEN COUNT(dc) > 0 THEN true ELSE false END " +
+           "FROM Car c JOIN c.dealerCars dc " +
+           "WHERE c.carId = :carId AND dc.dealer.dealerId = :dealerId")
+    boolean existsByCarIdAndDealerId(@Param("carId") Integer carId, @Param("dealerId") Integer dealerId);
 }

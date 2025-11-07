@@ -32,6 +32,9 @@ public interface DealerCarRepository extends JpaRepository<DealerCar, DealerCarI
 
     Optional<DealerCar> findByCarIdAndDealerId(Integer carId, Integer dealerId);
 
+    // Method để tìm DealerCar theo dealerId và carId (thứ tự tham số khớp với ServiceImpl)
+    Optional<DealerCar> findByDealerIdAndCarId(Integer dealerId, Integer carId);
+
     @Query("SELECT dc FROM DealerCar dc " +
            "JOIN FETCH dc.car c " +
            "JOIN FETCH c.carVariant cv " +
