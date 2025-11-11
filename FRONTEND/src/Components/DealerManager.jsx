@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import './DealerManager.css';
 import DealerCarManagement from '../ManagerFeatures/DealerCarManagement';
 import OrderManagement from '../ManagerFeatures/OrderManagement';
-import CustomerManagement from '../ManagerFeatures/CustomerManagement';
+import Dashboard from '../ManagerFeatures/Dashboard';
 import PromotionManagement from '../ManagerFeatures/PromotionManagement';
 import UserProfile from './UserProfile';
 import { fetchMyDealerInfo } from '../services/adminApi';
-import HomePage from './Features/Home-page';
+import HomePageManager from '../ManagerFeatures/HomePageManager';
 
 const DealerManager = ({ user, onLogout }) => {
   // Get initial route from URL hash
@@ -55,17 +55,17 @@ const DealerManager = ({ user, onLogout }) => {
   const renderMainContent = () => {
     switch (activeFeature) {
       case 'home':
-        return <HomePage onMenuClick={handleMenuClick} />;
+        return <HomePageManager onMenuClick={handleMenuClick} />;
       case 'car-management':
         return <DealerCarManagement />;
       case 'order-management':
         return <OrderManagement />;
-      case 'customer-management':
-        return <CustomerManagement />;
+      case 'dashboard':
+        return <Dashboard />;
       case 'promotion-management':
         return <PromotionManagement />;
       default:
-        return <HomePage onMenuClick={handleMenuClick} />;
+        return <HomePageManager onMenuClick={handleMenuClick} />;
     }
   };
 
@@ -104,11 +104,11 @@ const DealerManager = ({ user, onLogout }) => {
             <span className="menu-text">Quản lý đơn hàng</span>
           </div>
           <div
-            className={`menu-item ${activeFeature === 'customer-management' ? 'active' : ''}`}
-            onClick={() => handleMenuClick('customer-management')}
-            title="Quản lý khách hàng"
+            className={`menu-item ${activeFeature === 'dashboard' ? 'active' : ''}`}
+            onClick={() => handleMenuClick('dashboard')}
+            title="Dashboard"
           >
-            <span className="menu-text">Quản lý khách hàng</span>
+            <span className="menu-text">Dashboard</span>
           </div>
           <div
             className={`menu-item ${activeFeature === 'promotion-management' ? 'active' : ''}`}
