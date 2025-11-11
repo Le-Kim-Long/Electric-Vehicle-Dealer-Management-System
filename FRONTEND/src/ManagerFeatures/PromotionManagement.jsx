@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import {
 	fetchPromotionsByDealer,
 	createPromotion,
@@ -277,7 +277,7 @@ const PromotionManagement = () => {
 	};
 
 	const getTypeBadge = (type) => {
-		return type === 'VND' ? '💰 VND' : '📊 %';
+		return type === 'VND' ? ' VND' : ' %';
 	};
 
 	const formatDate = (dateString) => {
@@ -329,11 +329,10 @@ const PromotionManagement = () => {
 	if (error && promotions.length === 0) {
 		return (
 			<div className="promotion-error">
-				<div className="error-icon-promo">⚠️</div>
 				<h2>Không thể tải danh sách khuyến mãi</h2>
 				<p>{error}</p>
 				<button className="refresh-btn-promo" onClick={loadPromotionsFromAPI}>
-					🔄 Thử lại
+					 Thử lại
 				</button>
 			</div>
 		);
@@ -343,7 +342,6 @@ const PromotionManagement = () => {
 		<div className="promotion-management">
 			<div className="promotion-header">
 				<div className="promotion-header-content">
-					<div className="promotion-header-icon">🎁</div>
 					<div className="promotion-header-text">
 						<h2>Quản lý khuyến mãi</h2>
 						<p>
@@ -353,7 +351,7 @@ const PromotionManagement = () => {
 					</div>
 				</div>
 				<button className="create-promotion-btn" onClick={openCreateModal}>
-					➕ Tạo khuyến mãi mới
+					 Tạo khuyến mãi mới
 				</button>
 			</div>
 
@@ -386,7 +384,7 @@ const PromotionManagement = () => {
 						}}
 						title="Làm mới bộ lọc và dữ liệu"
 					>
-						🔄 Làm mới
+						 Làm mới
 					</button>
 				</div>
 			</div>
@@ -410,24 +408,24 @@ const PromotionManagement = () => {
 							</div>
 							<div className="promotion-dates">
 								<div className="date-item">
-									<span className="date-label">📅 Bắt đầu:</span>
+									<span className="date-label"> Bắt đầu:</span>
 									<span className="date-value">{formatDate(promotion.startDate)}</span>
 								</div>
 								<div className="date-item">
-									<span className="date-label">📅 Kết thúc:</span>
+									<span className="date-label"> Kết thúc:</span>
 									<span className="date-value">{formatDate(promotion.endDate)}</span>
 								</div>
 							</div>
 						</div>
 						<div className="promotion-card-actions">
 							<button className="btn-view" onClick={() => openDetailModal(promotion)}>
-								👁️ Chi tiết
+								 Chi tiết
 							</button>
 							<button className="btn-edit" onClick={() => openEditModal(promotion)}>
-								✏️ Sửa
+								 Sửa
 							</button>
 							<button className="btn-delete" onClick={() => setDeleteModal({ open: true, promotion })}>
-								🗑️ Xóa
+								 Xóa
 							</button>
 						</div>
 					</div>
@@ -436,7 +434,6 @@ const PromotionManagement = () => {
 
 			{filteredPromotions.length === 0 && !isSearching && !isLoading && (
 				<div className="no-results-promo">
-					<div className="no-results-icon-promo">🔍</div>
 					<p>Không tìm thấy khuyến mãi nào phù hợp với bộ lọc.</p>
 				</div>
 			)}
@@ -446,7 +443,7 @@ const PromotionManagement = () => {
 				<div className="modal-overlay-promo" onClick={() => setCreateModal({ open: false })}>
 					<div className="modal-content-promo" onClick={(e) => e.stopPropagation()}>
 						<div className="modal-header-promo">
-							<h2>➕ Tạo khuyến mãi mới</h2>
+							<h2> Tạo khuyến mãi mới</h2>
 							<button className="close-btn-promo" onClick={() => setCreateModal({ open: false })}>×</button>
 						</div>
 						<div className="modal-body-promo">
@@ -521,7 +518,7 @@ const PromotionManagement = () => {
 								</div>
 							</div>
 							{formError && <div className="form-error-promo">{formError}</div>}
-							{formSuccess && <div className="form-success-promo">✅ Tạo khuyến mãi thành công!</div>}
+							{formSuccess && <div className="form-success-promo"> Tạo khuyến mãi thành công!</div>}
 							<div className="form-actions-promo">
 								<button
 									className="btn-cancel-promo"
@@ -535,7 +532,7 @@ const PromotionManagement = () => {
 									onClick={handleCreatePromotion}
 									disabled={formLoading || !formData.promotionName || !formData.value || !formData.startDate || !formData.endDate}
 								>
-									{formLoading ? '⏳ Đang tạo...' : '✅ Tạo khuyến mãi'}
+									{formLoading ? ' Đang tạo...' : ' Tạo khuyến mãi'}
 								</button>
 							</div>
 						</div>
@@ -548,7 +545,7 @@ const PromotionManagement = () => {
 				<div className="modal-overlay-promo" onClick={() => setEditModal({ open: false, promotion: null })}>
 					<div className="modal-content-promo" onClick={(e) => e.stopPropagation()}>
 						<div className="modal-header-promo">
-							<h2>✏️ Cập nhật khuyến mãi</h2>
+							<h2> Cập nhật khuyến mãi</h2>
 							<button className="close-btn-promo" onClick={() => setEditModal({ open: false, promotion: null })}>×</button>
 						</div>
 						<div className="modal-body-promo">
@@ -623,7 +620,7 @@ const PromotionManagement = () => {
 								</div>
 							</div>
 							{formError && <div className="form-error-promo">{formError}</div>}
-							{formSuccess && <div className="form-success-promo">✅ Cập nhật thành công!</div>}
+							{formSuccess && <div className="form-success-promo"> Cập nhật thành công!</div>}
 							<div className="form-actions-promo">
 								<button
 									className="btn-cancel-promo"
@@ -637,7 +634,7 @@ const PromotionManagement = () => {
 									onClick={handleUpdatePromotion}
 									disabled={formLoading || !formData.promotionName || !formData.value || !formData.startDate || !formData.endDate}
 								>
-									{formLoading ? '⏳ Đang cập nhật...' : '✅ Lưu thay đổi'}
+									{formLoading ? ' Đang cập nhật...' : ' Lưu thay đổi'}
 								</button>
 							</div>
 						</div>
@@ -650,14 +647,14 @@ const PromotionManagement = () => {
 				<div className="modal-overlay-promo" onClick={() => setDeleteModal({ open: false, promotion: null })}>
 					<div className="modal-content-promo modal-small-promo" onClick={(e) => e.stopPropagation()}>
 						<div className="modal-header-promo">
-							<h2>🗑️ Xác nhận xóa</h2>
+							<h2> Xác nhận xóa</h2>
 							<button className="close-btn-promo" onClick={() => setDeleteModal({ open: false, promotion: null })}>×</button>
 						</div>
 						<div className="modal-body-promo">
 							<p className="delete-confirm-text">
 								Bạn có chắc chắn muốn xóa khuyến mãi <strong>"{deleteModal.promotion?.promotionName}"</strong>?
 							</p>
-							<p className="delete-warning">⚠️ Hành động này không thể hoàn tác!</p>
+							<p className="delete-warning"> Hành động này không thể hoàn tác!</p>
 							{formError && <div className="form-error-promo">{formError}</div>}
 							<div className="form-actions-promo">
 								<button
@@ -672,7 +669,7 @@ const PromotionManagement = () => {
 									onClick={handleDeletePromotion}
 									disabled={formLoading}
 								>
-									{formLoading ? '⏳ Đang xóa...' : '🗑️ Xóa khuyến mãi'}
+									{formLoading ? ' Đang xóa...' : ' Xóa khuyến mãi'}
 								</button>
 							</div>
 						</div>
@@ -685,7 +682,7 @@ const PromotionManagement = () => {
 				<div className="modal-overlay-promo" onClick={() => setDetailModal({ open: false, promotion: null })}>
 					<div className="modal-content-promo" onClick={(e) => e.stopPropagation()}>
 						<div className="modal-header-promo">
-							<h2>👁️ Chi tiết khuyến mãi</h2>
+							<h2> Chi tiết khuyến mãi</h2>
 							<button className="close-btn-promo" onClick={() => setDetailModal({ open: false, promotion: null })}>×</button>
 						</div>
 						<div className="modal-body-promo">
@@ -730,11 +727,11 @@ const PromotionManagement = () => {
 								<h3>Thời gian áp dụng</h3>
 								<div className="detail-dates-promo">
 									<div className="detail-date-item-promo">
-										<span className="detail-label-promo">📅 Ngày bắt đầu:</span>
+										<span className="detail-label-promo"> Ngày bắt đầu:</span>
 										<span className="detail-value-promo">{formatDate(detailModal.promotion?.startDate)}</span>
 									</div>
 									<div className="detail-date-item-promo">
-										<span className="detail-label-promo">📅 Ngày kết thúc:</span>
+										<span className="detail-label-promo"> Ngày kết thúc:</span>
 										<span className="detail-value-promo">{formatDate(detailModal.promotion?.endDate)}</span>
 									</div>
 								</div>

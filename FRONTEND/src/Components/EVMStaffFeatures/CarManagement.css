@@ -3,7 +3,7 @@
 }
 
 .create-car-success-message {
-	color: #667eea;
+	color: #2563EB;
 	margin-top: 8px;
 	text-align: center;
 }
@@ -21,7 +21,7 @@
 	height: 48px;
 	padding: 12px 18px;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: #fff;
 	border: none;
 	font-weight: 700;
@@ -105,7 +105,7 @@
 }
 
 .view-details-btn {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: #fff;
 	border: none;
 	cursor: pointer;
@@ -122,7 +122,7 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 24px 32px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	border-radius: 20px 20px 0 0;
 	border-bottom: 4px solid #5568d3;
 }
@@ -176,7 +176,7 @@
 	box-shadow: 0 2px 12px rgba(102,126,234,0.10);
 }
 .vehicle-detail-loading {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.2rem;
 	text-align: center;
 	margin-top: 32px;
@@ -185,12 +185,12 @@
 	margin-bottom: 30px;
 }
 .detail-section h3 {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.18rem;
 	font-weight: 700;
 	margin-bottom: 8px;
 	padding-bottom: 8px;
-	border-bottom: 2px solid #667eea;
+	border-bottom: 2px solid #2563EB;
 }
 .detail-grid {
 	display: grid;
@@ -221,7 +221,7 @@
 }
 .color-tag {
 	background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-	color: #667eea;
+	color: #2563EB;
 	font-size: 0.8rem;
 	padding: 6px 16px;
 	border-radius: 12px;
@@ -236,9 +236,9 @@
 	transform: translateY(-1px);
 }
 .color-tag.active {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: white;
-	border-color: #667eea;
+	border-color: #2563EB;
 	font-weight: 600;
 }
 /* Nút Chi tiết cho xe */
@@ -262,7 +262,7 @@
 .form-section-title {
 	font-size: 1.18rem;
 	font-weight: 700;
-	color: #667eea;
+	color: #2563EB;
 	margin-bottom: 8px;
 	margin-left: 4px;
 }
@@ -313,7 +313,7 @@
 	height: 48px;
 	padding: 12px 28px;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #2d3a4a 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #2d3a4a 100%);
 	color: #fff;
 	font-weight: 700;
 	font-size: 1.08rem;
@@ -352,11 +352,11 @@
 	vertical-align: middle;
 }
 .modal-model-variant-selects select:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 .modal-model-variant-selects select:hover {
-	border-color: #667eea;
+	border-color: #2563EB;
 }
 /* Button row for create car outside container */
 .create-car-btn-row {
@@ -376,7 +376,7 @@
 	height: 48px;
 	padding: 12px 18px;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: #fff;
 	border: none;
 	font-weight: 700;
@@ -436,11 +436,11 @@
 	margin-top: 0;
 }
 .car-search-dealer:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 	}
 	.car-search-dealer:hover {
-		border-color: #667eea;
+		border-color: #2563EB;
 	}
 	.car-search-dealer {
 		min-width: 260px;
@@ -488,12 +488,12 @@ vertical-align: middle;
 }
 .car-search-model:focus,
 .car-search-variant:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 .car-search-model:hover,
 .car-search-variant:hover {
-	border-color: #667eea;
+	border-color: #2563EB;
 }
 /* Container nền xám cho phần tiêu đề và search giống Admin */
 .car-management-container {
@@ -544,11 +544,11 @@ vertical-align: middle;
 	margin-right: 0;
 }
 .car-search-input:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
 .car-search-input:hover {
-	border-color: #667eea;
+	border-color: #2563EB;
 }
 
 /* Utility class for dropdown min-width */
@@ -592,7 +592,7 @@ vertical-align: middle;
 	border-bottom: 1px solid #f0f0f0;
 }
 .create-user-modal-header h3 {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 2.6rem;
 	font-weight: 800;
 	margin: 0;
@@ -602,7 +602,7 @@ vertical-align: middle;
 .create-user-modal-close {
 	/* Removed width and max-width to prevent collision */
 	font-size: 2rem;
-	color: #667eea;
+	color: #2563EB;
 	cursor: pointer;
 	padding: 0;
 	width: 40px;
@@ -654,7 +654,7 @@ vertical-align: middle;
 }
 .create-user-form input:focus,
 .create-user-form select:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	outline: none;
 	box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
@@ -662,7 +662,7 @@ vertical-align: middle;
 	margin-top: 18px;
 	padding: 14px 0;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: #fff;
 	border: none;
 	font-weight: 700;
@@ -713,7 +713,7 @@ vertical-align: middle;
 	min-width: 180px;
 }
 .search-role-select:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	outline: none;
 }
 .search-form input {
@@ -727,14 +727,14 @@ vertical-align: middle;
 	box-shadow: 0 2px 8px rgba(44,62,80,0.06);
 }
 .search-form input:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	outline: none;
 }
 .search-form button {
 	height: 48px;
 	padding: 12px 28px;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #2d3a4a 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #2d3a4a 100%);
 	color: #fff;
 	border: none;
 	font-weight: 700;
@@ -753,7 +753,7 @@ vertical-align: middle;
 	height: 48px;
 	padding: 12px 18px;
 	border-radius: 10px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: #fff;
 	border: none;
 	font-weight: 700;
@@ -876,12 +876,12 @@ vertical-align: middle;
 }
 
 .notification-filter .filter-status-select:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
 .notification-filter .filter-status-select:hover {
-	border-color: #667eea;
+	border-color: #2563EB;
 	transform: translateY(-1px);
 }
 
@@ -903,7 +903,7 @@ vertical-align: middle;
 .no-notifications {
 	text-align: center;
 	padding: 60px 40px;
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.3rem;
 	font-weight: 600;
 	background: white;
@@ -928,7 +928,7 @@ vertical-align: middle;
 
 .notification-item:hover {
 	box-shadow: 0 6px 20px rgba(102, 126, 234, 0.15);
-	border-color: #667eea;
+	border-color: #2563EB;
 	transform: translateY(-2px);
 }
 
@@ -1052,7 +1052,7 @@ vertical-align: middle;
 
 .notification-details p span:last-child {
 	font-weight: 600;
-	color: #667eea;
+	color: #2563EB;
 	text-align: right;
 	flex: 1;
 }
@@ -1146,7 +1146,7 @@ vertical-align: middle;
 }
 
 .reject-reason-textarea:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
@@ -1199,7 +1199,7 @@ vertical-align: middle;
 }
 
 .delivery-date-input:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
 }
 
@@ -1246,6 +1246,6 @@ vertical-align: middle;
 }
 
 .update-form-textarea:focus {
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }

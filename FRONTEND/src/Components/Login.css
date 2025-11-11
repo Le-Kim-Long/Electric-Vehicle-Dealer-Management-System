@@ -40,7 +40,7 @@
   font-size: 3rem; /* Tăng từ 2.5rem */
   font-weight: 700;
   margin: 0 0 15px 0; /* Tăng margin */
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -87,7 +87,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563EB;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
   transform: translateY(-2px);
 }
@@ -141,7 +141,7 @@
 .remember-me input[type="checkbox"] {
   width: 20px; /* Tăng từ 18px */
   height: 20px; /* Tăng từ 18px */
-  accent-color: #667eea;
+  accent-color: #2563EB;
   cursor: pointer;
 }
 
@@ -165,7 +165,7 @@
 }
 
 .forgot-password-btn:hover {
-  color: #764ba2;
+  color: #1D4ED8;
 }
 
 .forgot-password-btn:disabled {
@@ -178,7 +178,7 @@
   background: rgba(102, 126, 234, 0.05);
   padding: 24px; /* Tăng từ 20px */
   border-radius: 12px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #2563EB;
   margin-top: 15px; /* Tăng từ 10px */
 }
 
@@ -192,13 +192,13 @@
 .contact-info {
   margin: 0;
   font-weight: 600;
-  color: #667eea;
+  color: #2563EB;
   font-size: 0.95rem; /* Tăng từ 0.85rem */
 }
 
 /* Login Button - TĂNG KÍCH THƯỚC */
 .login-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: white;
   border: none;
   padding: 20px 32px; /* Tăng từ 16px 24px */
@@ -216,7 +216,7 @@
 }
 
 .login-button:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
 }

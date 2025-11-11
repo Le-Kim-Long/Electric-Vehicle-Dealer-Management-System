@@ -18,11 +18,18 @@ export const useTestDrive = () => {
 };
 
 const DealerStaff = ({ user, onLogout }) => {
-  const [activeFeature, setActiveFeature] = useState('dashboard');
+  // Get initial route from URL hash
+  const getInitialRoute = () => {
+    const hash = window.location.hash.slice(1); // Remove the '#'
+    return hash || 'home';
+  };
+
+  const [activeFeature, setActiveFeature] = useState(getInitialRoute());
   const [testDriveBookings, setTestDriveBookings] = useState([]);
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [dealerInfo, setDealerInfo] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     const loadDealerInfo = async () => {
@@ -74,11 +81,26 @@ const DealerStaff = ({ user, onLogout }) => {
 
   const handleMenuClick = (featureId) => {
     setActiveFeature(featureId);
+    // Update URL hash
+    window.location.hash = featureId;
   };
+
+  // Listen to hash changes (browser back/forward)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        setActiveFeature(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const renderMainContent = () => {
     switch (activeFeature) {
-      case 'dashboard':
+      case 'home':
         return <HomePage onMenuClick={handleMenuClick} />;
       case 'vehicle-info':
         return <VehicleInfoFeature />;
@@ -87,7 +109,7 @@ const DealerStaff = ({ user, onLogout }) => {
       case 'payment':
         return <OrderFeatureManagementPayment />;
       default:
-        return null;
+        return <HomePage onMenuClick={handleMenuClick} />;
     }
   };
 
@@ -102,45 +124,48 @@ const DealerStaff = ({ user, onLogout }) => {
     }}>
       <div className="new-dealer-staff-layout">
         {/* Sidebar bên trái */}
-        <div className="sidebar">
+        <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div className="sidebar-header">
-            <div className="logo">
-              <span className="logo-icon">🚗</span>
-              <span className="logo-text">Dealer Staff</span>
-            </div>
+            <button 
+              className="sidebar-toggle"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              aria-label={sidebarCollapsed ? 'Mở sidebar' : 'Đóng sidebar'}
+            >
+              ☰
+            </button>
           </div>
           
           <nav className="sidebar-menu">
             <div 
-              className={`menu-item ${activeFeature === 'dashboard' ? 'active' : ''}`}
-              onClick={() => handleMenuClick('dashboard')}
+              className={`menu-item ${activeFeature === 'home' ? 'active' : ''}`}
+              onClick={() => handleMenuClick('home')}
+              title="Trang chủ"
             >
-              <span className="menu-icon">🏠</span>
               <span className="menu-text">Trang chủ</span>
             </div>
             
             <div 
               className={`menu-item ${activeFeature === 'vehicle-info' ? 'active' : ''}`}
               onClick={() => handleMenuClick('vehicle-info')}
+              title="Truy vấn thông tin xe"
             >
-              <span className="menu-icon">🚗</span>
               <span className="menu-text">Truy vấn thông tin xe</span>
             </div>
             
             <div 
               className={`menu-item ${activeFeature === 'create-order' ? 'active' : ''}`}
               onClick={() => handleMenuClick('create-order')}
+              title="Tạo đơn hàng"
             >
-              <span className="menu-icon">📋</span>
               <span className="menu-text">Tạo đơn hàng</span>
             </div>
             
             <div 
               className={`menu-item ${activeFeature === 'payment' ? 'active' : ''}`}
               onClick={() => handleMenuClick('payment')}
+              title="Quản lý Đơn hàng & Thanh toán"
             >
-              <span className="menu-icon">💳</span>
-              <span className="menu-text">Quản lý Đơn hàng & Thanh toán</span>
+              <span className="menu-text">Đơn hàng & Thanh toán</span>
             </div>
           </nav>
         </div>
@@ -178,33 +203,21 @@ const DealerStaff = ({ user, onLogout }) => {
             {/* Footer */}
             <footer className="dealer-footer">
               <div className="footer-content">
-                <div className="footer-section">
-                  <div className="footer-icon">🏢</div>
-                  <div className="footer-info">
-                    <span className="footer-label">Đại lý</span>
-                    <span className="footer-value">{dealerInfo?.dealerName || 'Đang tải...'}</span>
-                  </div>
+                <div className="footer-column">
+                  <span className="footer-label">Đại lý:</span>
+                  <span className="footer-value">{dealerInfo?.dealerName || 'Đang tải...'}</span>
                 </div>
-                <div className="footer-section">
-                  <div className="footer-icon">📍</div>
-                  <div className="footer-info">
-                    <span className="footer-label">Địa chỉ</span>
-                    <span className="footer-value">{dealerInfo?.address || 'Đang tải...'}</span>
-                  </div>
+                <div className="footer-column">
+                  <span className="footer-label">Địa chỉ:</span>
+                  <span className="footer-value">{dealerInfo?.address || 'Đang tải...'}</span>
                 </div>
-                <div className="footer-section">
-                  <div className="footer-icon">📞</div>
-                  <div className="footer-info">
-                    <span className="footer-label">Điện thoại</span>
-                    <span className="footer-value">{dealerInfo?.phone || 'Đang tải...'}</span>
-                  </div>
+                <div className="footer-column">
+                  <span className="footer-label">Điện thoại:</span>
+                  <span className="footer-value">{dealerInfo?.phone || 'Đang tải...'}</span>
                 </div>
-                <div className="footer-section">
-                  <div className="footer-icon">✉️</div>
-                  <div className="footer-info">
-                    <span className="footer-label">Email</span>
-                    <span className="footer-value">{dealerInfo?.email || 'Đang tải...'}</span>
-                  </div>
+                <div className="footer-column">
+                  <span className="footer-label">Email:</span>
+                  <span className="footer-value">{dealerInfo?.email || 'Đang tải...'}</span>
                 </div>
               </div>
               <div className="footer-bottom">

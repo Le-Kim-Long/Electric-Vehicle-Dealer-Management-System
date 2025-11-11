@@ -1,31 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import './OrderManagement.css';
-import { getAllDealerOrders, updateOrderStatus } from '../services/carVariantApi';
+import { getAllDealerOrders, getDealerStaffNames, searchOrdersByCreator } from '../services/carVariantApi';
 
 const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterMethod, setFilterMethod] = useState('all');
+  const [selectedStaff, setSelectedStaff] = useState('all'); // Chọn nhân viên
+  const [staffNames, setStaffNames] = useState([]); // Danh sách nhân viên
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [updating, setUpdating] = useState(false);
 
-  // Load orders từ API khi component mount
+  // Load staff names khi component mount
+  useEffect(() => {
+    loadStaffNames();
+  }, []);
+
+  // Load orders khi component mount hoặc khi selectedStaff thay đổi
   useEffect(() => {
     loadOrders();
     
     // Refresh every 30 seconds
     const interval = setInterval(loadOrders, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedStaff]);
+
+  // Load danh sách nhân viên
+  const loadStaffNames = async () => {
+    try {
+      const response = await getDealerStaffNames();
+      setStaffNames(response.staffNames || []);
+    } catch (error) {
+      console.error('Error loading staff names:', error);
+    }
+  };
 
   const loadOrders = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getAllDealerOrders();
+      
+      // Nếu chọn nhân viên cụ thể, dùng API search by creator
+      // Nếu chọn "all", dùng API lấy tất cả đơn hàng
+      const response = selectedStaff === 'all' 
+        ? await getAllDealerOrders()
+        : await searchOrdersByCreator(selectedStaff);
       
       // Transform API data to match expected format
       const transformedOrders = response.map(order => {
@@ -41,6 +60,7 @@ const OrderManagement = () => {
           customerName: customer.customerName,
           customerEmail: customer.customerEmail,
           customerPhone: customer.customerPhone,
+          createdBy: orderInfo.createdBy || '', // Thêm tên người tạo
           dealerName: dealer.dealerName,
           dealerAddress: dealer.dealerAddress,
           dealerPhone: dealer.dealerPhone,
@@ -78,21 +98,20 @@ const OrderManagement = () => {
   // Sử dụng trực tiếp orders, không cần transform lại
   const payments = orders;
 
-  // Lọc đơn hàng
+  // Lọc đơn hàng - filter theo searchTerm (Order ID, khách hàng, nhân viên)
   const filteredPayments = payments.filter(payment => {
+    if (searchTerm === '') return true;
+    
     const searchLower = searchTerm.toLowerCase();
     const paymentIdStr = payment.paymentId ? payment.paymentId.toString() : '';
     const orderCodeStr = payment.orderCode ? payment.orderCode.toLowerCase() : '';
     const customerNameStr = payment.customerName ? payment.customerName.toLowerCase() : '';
+    const createdByStr = payment.createdBy ? payment.createdBy.toLowerCase() : '';
     
-    const matchesSearch = paymentIdStr.includes(searchTerm) ||
-                         orderCodeStr.includes(searchLower) ||
-                         customerNameStr.includes(searchLower);
-    
-    const matchesStatus = filterStatus === 'all' || payment.status === filterStatus;
-    const matchesMethod = filterMethod === 'all' || payment.paymentMethod === filterMethod;
-    
-    return matchesSearch && matchesStatus && matchesMethod;
+    return paymentIdStr.includes(searchTerm) ||
+           orderCodeStr.includes(searchLower) ||
+           customerNameStr.includes(searchLower) ||
+           createdByStr.includes(searchLower);
   });
 
   // Format tiền tệ
@@ -114,60 +133,15 @@ const OrderManagement = () => {
     });
   };
 
-  // Xác nhận đơn hàng
-  const handleConfirmOrder = async (orderId, paymentMethod) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xác nhận đơn hàng này?')) {
-      return;
-    }
-    
-    try {
-      setUpdating(true);
-      
-      // Kiểm tra phương thức thanh toán để quyết định status mới
-      let newStatus;
-      if (paymentMethod === 'Trả góp') {
-        newStatus = 'Đang trả góp';
-      } else {
-        newStatus = 'Chưa thanh toán';
-      }
-      
-      await updateOrderStatus(orderId, newStatus);
-      await loadOrders(); // Reload data
-      alert(`Xác nhận đơn hàng thành công! Trạng thái: ${newStatus}`);
-    } catch (error) {
-      alert('Lỗi khi xác nhận đơn hàng: ' + error.message);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  // Từ chối đơn hàng
-  const handleRejectOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn từ chối đơn hàng này?')) {
-      return;
-    }
-    
-    try {
-      setUpdating(true);
-      await updateOrderStatus(orderId, 'Đã hủy');
-      await loadOrders(); // Reload data
-      alert('Từ chối đơn hàng thành công!');
-    } catch (error) {
-      alert('Lỗi khi từ chối đơn hàng: ' + error.message);
-    } finally {
-      setUpdating(false);
-    }
-  };
+  // ĐÃ XÓA - Chức năng xác nhận/hủy đã chuyển sang Dealer Staff
 
   // Render status badge - CHỈ HIỂN THỊ ORDER STATUS (không còn payment status)
   const renderStatusBadge = (status) => {
     const statusConfig = {
       'Chưa xác nhận': { text: 'Chưa xác nhận', class: 'status-pending' },
-      'Đang xử lý': { text: 'Đang xử lý', class: 'status-processing' },
       'Chưa thanh toán': { text: 'Chưa thanh toán', class: 'status-unpaid' },
-      'Đang trả góp': { text: 'Đang trả góp', class: 'status-installment' },
-      'Đã thanh toán': { text: 'Đã thanh toán', class: 'status-success' },
-      'Đã hủy': { text: 'Đã hủy', class: 'status-failed' }
+      'Đã Thanh Toán': { text: 'Đã Thanh Toán', class: 'status-success' },
+      'Đã Hủy': { text: 'Đã Hủy', class: 'status-failed' }
     };
     
     const config = statusConfig[status] || { text: status, class: 'status-pending' };
@@ -177,18 +151,14 @@ const OrderManagement = () => {
   // Render method badge
   const renderMethodBadge = (method) => {
     const methodConfig = {
-      'Tiền mặt': { icon: '💵', class: 'method-cash' },
-      'Chuyển khoản': { icon: '🏦', class: 'method-bank' },
-      'Thẻ tín dụng': { icon: '💳', class: 'method-card' },
-      'Trả thẳng': { icon: '💰', class: 'method-cash' },
-      'Trả góp': { icon: '📅', class: 'method-ewallet' },
-      'Thanh toán trả góp': { icon: '📅', class: 'method-ewallet' }
+      'Tiền mặt': { class: 'method-cash' },
+      'Trả thẳng': { class: 'method-cash' }
     };
     
-    const config = methodConfig[method] || { icon: '💰', class: 'method-other' };
+    const config = methodConfig[method] || { class: 'method-other' };
     return (
       <span className={`method-badge ${config.class}`}>
-        {config.icon} {method || 'Chưa xác định'}
+        {method || 'Chưa xác định'}
       </span>
     );
   };
@@ -198,7 +168,6 @@ const OrderManagement = () => {
       {/* Header Section */}
       <div className="order-management-payment-header">
         <div className="order-management-header-content">
-          <div className="order-management-header-icon">📋</div>
           <div className="order-management-header-text">
             <h2>Quản lý Đơn hàng (Manager)</h2>
             <p>Xác nhận và quản lý các đơn hàng của đại lý ({orders.length} đơn hàng)</p>
@@ -209,7 +178,7 @@ const OrderManagement = () => {
             disabled={loading}
             title="Làm mới dữ liệu"
           >
-            🔄 Làm mới
+            Làm mới
           </button>
         </div>
       </div>
@@ -217,7 +186,6 @@ const OrderManagement = () => {
       {/* Loading State */}
       {loading && (
         <div className="no-orders">
-          <div className="no-orders-icon">⏳</div>
           <h3>Đang tải dữ liệu...</h3>
           <p>Vui lòng chờ trong giây lát</p>
         </div>
@@ -226,7 +194,6 @@ const OrderManagement = () => {
       {/* Error State */}
       {error && !loading && (
         <div className="no-orders">
-          <div className="no-orders-icon">⚠️</div>
           <h3>Có lỗi xảy ra</h3>
           <p>{error}</p>
         </div>
@@ -241,7 +208,7 @@ const OrderManagement = () => {
               <div className="search-box">
                 <input
                   type="text"
-                  placeholder="Tìm kiếm theo Order ID, khách hàng..."
+                  placeholder="Tìm kiếm theo Order ID, khách hàng, nhân viên..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -250,36 +217,18 @@ const OrderManagement = () => {
             </div>
             
             <div className="filter-section">
-              <label className="filter-label">Trạng thái:</label>
+              <label className="filter-label">👤 Nhân viên:</label>
               <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                value={selectedStaff}
+                onChange={(e) => setSelectedStaff(e.target.value)}
                 className="filter-select"
               >
-                <option value="all">Tất cả</option>
-                <option value="Chưa xác nhận">Chưa xác nhận</option>
-                <option value="Đang xử lý">Đang xử lý</option>
-                <option value="Chưa thanh toán">Chưa thanh toán</option>
-                <option value="Đang trả góp">Đang trả góp</option>
-                <option value="Đã thanh toán">Đã thanh toán</option>
-                <option value="Đã hủy">Đã hủy</option>
-              </select>
-            </div>
-
-            <div className="filter-section">
-              <label className="filter-label">Phương thức:</label>
-              <select
-                value={filterMethod}
-                onChange={(e) => setFilterMethod(e.target.value)}
-                className="filter-select"
-              >
-                <option value="all">Tất cả</option>
-                <option value="Tiền mặt">Tiền mặt</option>
-                <option value="Chuyển khoản">Chuyển khoản</option>
-                <option value="Thẻ tín dụng">Thẻ tín dụng</option>
-                <option value="Trả thẳng">Trả thẳng</option>
-                <option value="Trả góp">Trả góp</option>
-                <option value="Thanh toán trả góp">Thanh toán trả góp</option>
+                <option value="all">Tất cả nhân viên</option>
+                {staffNames.map((staffName, index) => (
+                  <option key={index} value={staffName}>
+                    {staffName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -301,7 +250,6 @@ const OrderManagement = () => {
 
               {/* Customer Info Section */}
               <div className="order-card-section customer-section">
-                <div className="section-icon">👤</div>
                 <div className="section-content">
                   <h4>Khách hàng</h4>
                   <div className="info-row">
@@ -317,7 +265,6 @@ const OrderManagement = () => {
 
               {/* Vehicles Section */}
               <div className="order-card-section vehicles-section">
-                <div className="section-icon">🚗</div>
                 <div className="section-content">
                   <h4>Xe đã đặt</h4>
                   <div className="vehicles-list">
@@ -326,7 +273,7 @@ const OrderManagement = () => {
                         {payment.vehicles.slice(0, 1).map((vehicle, index) => (
                           <div key={index} className="vehicle-item">
                             <span className="vehicle-name">
-                              {vehicle.name} {vehicle.variant}
+                              {vehicle.name}
                             </span>
                             <span className="vehicle-details">
                               ({vehicle.color}) x{vehicle.quantity}
@@ -376,7 +323,7 @@ const OrderManagement = () => {
                 )}
               </div>
 
-                  {/* Actions - Manager có quyền xác nhận/từ chối */}
+                  {/* Actions - Manager chỉ xem chi tiết */}
                   <div className="order-card-actions">
                     <button
                       className="btn-view"
@@ -384,24 +331,6 @@ const OrderManagement = () => {
                     >
                       📋 Chi tiết
                     </button>
-                    {(payment.status === 'Chưa xác nhận' || payment.status === 'Đang xử lý') && (
-                      <>
-                        <button
-                          className="btn-success"
-                          onClick={() => handleConfirmOrder(payment.orderId, payment.paymentMethod)}
-                          disabled={updating}
-                        >
-                          ✓ Xác nhận
-                        </button>
-                        <button
-                          className="btn-failed"
-                          onClick={() => handleRejectOrder(payment.orderId)}
-                          disabled={updating}
-                        >
-                          ✕ Từ chối
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               ))}
@@ -409,7 +338,6 @@ const OrderManagement = () => {
 
             {filteredPayments.length === 0 && (
               <div className="no-orders">
-                <div className="no-orders-icon">📄</div>
                 <h3>
                   {orders.length === 0 ? 
                     'Chưa có đơn hàng nào' : 

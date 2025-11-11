@@ -176,14 +176,12 @@ const UserProfile = ({ onClose }) => {
 
         {error && (
           <div className="profile-alert profile-alert-error">
-            <span className="alert-icon">⚠️</span>
             {error}
           </div>
         )}
 
         {success && (
           <div className="profile-alert profile-alert-success">
-            <span className="alert-icon">✓</span>
             {success}
           </div>
         )}
@@ -195,7 +193,6 @@ const UserProfile = ({ onClose }) => {
                 <h3>Thông tin cá nhân</h3>
                 <div className="profile-info-grid">
                   <div className="profile-info-item">
-                    <span className="info-icon">👤</span>
                     <div className="info-content">
                       <label>Tên đăng nhập</label>
                       <p>{profile?.username}</p>
@@ -203,7 +200,6 @@ const UserProfile = ({ onClose }) => {
                   </div>
                   
                   <div className="profile-info-item">
-                    <span className="info-icon">✉️</span>
                     <div className="info-content">
                       <label>Email</label>
                       <p>{profile?.email}</p>
@@ -211,7 +207,6 @@ const UserProfile = ({ onClose }) => {
                   </div>
                   
                   <div className="profile-info-item">
-                    <span className="info-icon">📞</span>
                     <div className="info-content">
                       <label>Số điện thoại</label>
                       <p>{profile?.phoneNumber || 'Chưa cập nhật'}</p>
@@ -219,7 +214,6 @@ const UserProfile = ({ onClose }) => {
                   </div>
                   
                   <div className="profile-info-item">
-                    <span className="info-icon">�</span>
                     <div className="info-content">
                       <label>Mật khẩu</label>
                       <div className="password-display">
@@ -242,7 +236,6 @@ const UserProfile = ({ onClose }) => {
                   <h3>Thông tin đại lý</h3>
                   <div className="profile-info-grid">
                     <div className="profile-info-item">
-                      <span className="info-icon">🏢</span>
                       <div className="info-content">
                         <label>Đại lý</label>
                         <p>{profile?.dealerName}</p>
@@ -256,7 +249,6 @@ const UserProfile = ({ onClose }) => {
                 <h3>Thông tin hệ thống</h3>
                 <div className="profile-info-grid">
                   <div className="profile-info-item">
-                    <span className="info-icon">📅</span>
                     <div className="info-content">
                       <label>Ngày tạo</label>
                       <p>{new Date(profile?.createdDate).toLocaleDateString('vi-VN')}</p>
@@ -270,7 +262,6 @@ const UserProfile = ({ onClose }) => {
                   className="btn-edit-profile"
                   onClick={() => setIsEditing(true)}
                 >
-                  <span className="btn-icon">✏️</span>
                   Chỉnh sửa thông tin
                 </button>
               </div>
@@ -282,7 +273,6 @@ const UserProfile = ({ onClose }) => {
                 
                 <div className="form-group">
                   <label htmlFor="username">
-                    <span className="label-icon">👤</span>
                     Tên đăng nhập
                   </label>
                   <input
@@ -298,7 +288,6 @@ const UserProfile = ({ onClose }) => {
 
                 <div className="form-group">
                   <label htmlFor="email">
-                    <span className="label-icon">✉️</span>
                     Email
                   </label>
                   <input
@@ -314,7 +303,6 @@ const UserProfile = ({ onClose }) => {
 
                 <div className="form-group">
                   <label htmlFor="phoneNumber">
-                    <span className="label-icon">📞</span>
                     Số điện thoại
                   </label>
                   <input
@@ -334,7 +322,6 @@ const UserProfile = ({ onClose }) => {
 
                 <div className="form-group">
                   <label htmlFor="password">
-                    <span className="label-icon">🔒</span>
                     Mật khẩu mới
                   </label>
                   <input
@@ -351,7 +338,6 @@ const UserProfile = ({ onClose }) => {
 
                 <div className="form-group">
                   <label htmlFor="confirmPassword">
-                    <span className="label-icon">🔒</span>
                     Xác nhận mật khẩu
                   </label>
                   <input
@@ -392,3 +378,4 @@ const UserProfile = ({ onClose }) => {
 };
 
 export default UserProfile;
+

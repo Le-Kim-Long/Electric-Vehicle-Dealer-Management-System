@@ -53,9 +53,13 @@ function App() {
     try {
       clearStoredAuth();
       setUser(null);
+      // Clear URL hash when logging out
+      window.location.hash = '';
     } catch (error) {
       clearStoredAuth();
       setUser(null);
+      // Clear URL hash when logging out
+      window.location.hash = '';
     }
   };
 

@@ -13,11 +13,10 @@ import {
   fetchPromotionsByDealer,
   updateOrderPromotion,
   updateOrderPaymentMethod,
-  createInstallmentPlan,
-  updateInstallmentPlan,
-  getOrderInstallment,
   getOrderSummaryForConfirmation,
-  updateOrderStatus
+  updateOrderStatus,
+  getAllCustomers,
+  searchCustomerByPhone
 } from '../../services/carVariantApi';
 
 const CreateOrderFeature = () => {
@@ -35,56 +34,23 @@ const CreateOrderFeature = () => {
   const [isLoadingPromotions, setIsLoadingPromotions] = useState(false);
   const [promotionsError, setPromotionsError] = useState('');
   const customizationRef = useRef(null); // Ref cho phần cấu hình xe
-  const [installmentPlanResult, setInstallmentPlanResult] = useState(null); // Lưu kết quả từ API trả góp
   const [orderSummary, setOrderSummary] = useState(null); // Lưu order summary cho Step 5
   const [isLoadingOrderSummary, setIsLoadingOrderSummary] = useState(false);
+  const [showCustomerListModal, setShowCustomerListModal] = useState(false); // Modal danh sách khách hàng
+  const [allCustomers, setAllCustomers] = useState([]); // Danh sách tất cả khách hàng
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false); // Loading danh sách khách hàng
+  const [customerListError, setCustomerListError] = useState('');
   const [orderData, setOrderData] = useState({
     customer: { name: '', phone: '', email: '' },
     selectedVehicles: [], // Mỗi item sẽ có thêm orderDetailId
     promotion: null,
-    financing: { phuongThucThanhToan: 'Trả thẳng', loanTerm: 12, laiSuat: 8.5, note: '' },
+    financing: { phuongThucThanhToan: 'Trả thẳng', note: '' },
     payment: { phuongThuc: 'Tiền mặt', ghiChu: '' }
   });
 
   // Load customer data khi quay lại Step 1
-  useEffect(() => {
-    const loadCustomerData = async () => {
-      if (currentStep === 1) {
-        const savedCustomerId = sessionStorage.getItem('currentCustomerId');
-        const savedOrderId = sessionStorage.getItem('currentOrderId');
-        
-        // Load orderId nếu có
-        if (savedOrderId && !orderId) {
-          setOrderId(parseInt(savedOrderId));
-        }
-        
-        if (savedCustomerId && !customerId) {
-          setIsLoadingCustomer(true);
-          setCustomerError('');
-          try {
-            const customer = await getCustomerById(parseInt(savedCustomerId));
-            setOrderData(prev => ({
-              ...prev,
-              customer: {
-                name: customer.fullName,
-                phone: customer.phoneNumber,
-                email: customer.email
-              }
-            }));
-            setCustomerId(customer.customerId);
-          } catch (error) {
-            setCustomerError('Không thể tải thông tin khách hàng');
-            // Xóa customerId nếu không tải được
-            sessionStorage.removeItem('currentCustomerId');
-          } finally {
-            setIsLoadingCustomer(false);
-          }
-        }
-      }
-    };
-
-    loadCustomerData();
-  }, [currentStep, customerId, orderId]);
+  // Đã xóa useEffect load customer từ sessionStorage
+  // Bây giờ thông tin sẽ tự động mất khi F5 hoặc chuyển trang
 
   // Load vehicles từ API khi vào Step 2
   useEffect(() => {
@@ -202,42 +168,20 @@ const CreateOrderFeature = () => {
     loadPromotions();
   }, [currentStep]);
 
-  // Load installment plan khi vào Step 4 (nếu đã có)
+  // Cập nhật payment method khi vào Step 4
   useEffect(() => {
-    const loadInstallmentPlan = async () => {
+    const updatePaymentMethodOnStep4 = async () => {
       if (currentStep === 4 && orderId) {
-        // Cập nhật payment method ngay khi vào Step 4 để đảm bảo giá trị được lưu
+        // Đảm bảo payment method luôn là "Trả thẳng"
         try {
-          await updateOrderPaymentMethod(orderId, orderData.financing.phuongThucThanhToan);
+          await updateOrderPaymentMethod(orderId, 'Trả thẳng');
         } catch (error) {
           console.error('Error updating payment method:', error);
-        }
-        
-        // Load installment plan nếu là Trả góp
-        if (orderData.financing.phuongThucThanhToan === 'Trả góp' && !installmentPlanResult) {
-          try {
-            const existingPlan = await getOrderInstallment(orderId);
-            if (existingPlan) {
-              setInstallmentPlanResult(existingPlan);
-              // Cập nhật financing data từ plan
-              setOrderData(prev => ({
-                ...prev,
-                financing: {
-                  ...prev.financing,
-                  loanTerm: existingPlan.termCount,
-                  laiSuat: existingPlan.interestRate,
-                  note: existingPlan.note || ''
-                }
-              }));
-            }
-          } catch (error) {
-            // 404 là bình thường - chưa có plan
-          }
         }
       }
     };
 
-    loadInstallmentPlan();
+    updatePaymentMethodOnStep4();
   }, [currentStep, orderId]);
 
   // Load order summary khi vào Step 5
@@ -375,7 +319,7 @@ const CreateOrderFeature = () => {
     }));
   };
 
-  const handleCustomerChange = (field, value) => {
+  const handleCustomerChange = async (field, value) => {
     // Clear error khi người dùng bắt đầu nhập lại
     if (customerError) {
       setCustomerError('');
@@ -385,6 +329,57 @@ const CreateOrderFeature = () => {
       ...prev,
       customer: { ...prev.customer, [field]: value }
     }));
+
+    // Tự động tìm kiếm khách hàng khi nhập số điện thoại
+    if (field === 'phone' && value.length >= 10) {
+      try {
+        const customer = await searchCustomerByPhone(value);
+        if (customer) {
+          setOrderData(prev => ({
+            ...prev,
+            customer: {
+              name: customer.fullName,
+              phone: customer.phoneNumber,
+              email: customer.email
+            }
+          }));
+          setCustomerId(customer.customerId);
+          setCustomerError('');
+        }
+      } catch (error) {
+        // Không hiển thị lỗi, chỉ không tự động điền
+        console.log('Customer not found:', error);
+      }
+    }
+  };
+
+  // Load danh sách khách hàng
+  const loadCustomerList = async () => {
+    setIsLoadingCustomers(true);
+    setCustomerListError('');
+    try {
+      const data = await getAllCustomers();
+      setAllCustomers(data.customers || []);
+    } catch (error) {
+      setCustomerListError(error.message || 'Không thể tải danh sách khách hàng');
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  // Chọn khách hàng từ danh sách
+  const selectCustomerFromList = (customer) => {
+    setOrderData(prev => ({
+      ...prev,
+      customer: {
+        name: customer.fullName,
+        phone: customer.phoneNumber,
+        email: customer.email
+      }
+    }));
+    setCustomerId(customer.customerId);
+    setShowCustomerListModal(false);
+    setCustomerError('');
   };
 
   // Xử lý chọn khuyến mãi với API
@@ -428,13 +423,7 @@ const CreateOrderFeature = () => {
       case 1: return orderData.customer.name && orderData.customer.phone && orderData.customer.email;
       case 2: return orderData.selectedVehicles.length > 0;
       case 3: return true; // Khuyến mãi là tùy chọn
-      case 4: 
-        // Nếu chọn Trả góp thì phải tính toán trả góp trước
-        if (orderData.financing.phuongThucThanhToan === 'Trả góp') {
-          return installmentPlanResult !== null;
-        }
-        // Trả thẳng không cần tính toán
-        return orderData.financing.phuongThucThanhToan === 'Trả thẳng';
+      case 4: return true; // Chỉ còn Trả thẳng nên luôn OK
       default: return true;
     }
   };
@@ -460,18 +449,18 @@ const CreateOrderFeature = () => {
             if (!orderId) {
               const orderResult = await createDraftOrder(customerId);
               setOrderId(orderResult.orderId);
-              sessionStorage.setItem('currentOrderId', orderResult.orderId);
+              // Đã xóa sessionStorage.setItem
             }
           } else {
             // Tạo khách hàng mới
             const result = await createCustomer(customerData);
             setCustomerId(result.customerId);
-            sessionStorage.setItem('currentCustomerId', result.customerId);
+            // Đã xóa sessionStorage.setItem
             
             // Tạo draft order ngay sau khi tạo customer
             const orderResult = await createDraftOrder(result.customerId);
             setOrderId(orderResult.orderId);
-            sessionStorage.setItem('currentOrderId', orderResult.orderId);
+            // Đã xóa sessionStorage.setItem
           }
         } catch (error) {
           // Xử lý và hiển thị lỗi theo định dạng cụ thể
@@ -577,22 +566,19 @@ const CreateOrderFeature = () => {
 ✅ Đơn hàng đã được xác nhận với trạng thái "Đang xử lý".
 Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
       
-      // Reset form và xóa dữ liệu session
+      // Reset form
       setOrderData({
         customer: { name: '', phone: '', email: '' },
         selectedVehicles: [],
         promotion: null,
-        financing: { phuongThucThanhToan: 'Trả thẳng', loanTerm: 12, laiSuat: 8.5, note: '' },
+        financing: { phuongThucThanhToan: 'Trả thẳng', note: '' },
         payment: { phuongThuc: 'Tiền mặt', ghiChu: '' }
       });
-      setInstallmentPlanResult(null); // Reset kết quả trả góp
       setOrderId(null); // Reset orderId
       setCustomerId(null); // Reset customerId
       setOrderSummary(null); // Reset order summary
       
-      // Xóa dữ liệu khỏi sessionStorage
-      sessionStorage.removeItem('currentOrderId');
-      sessionStorage.removeItem('currentCustomerId');
+      // Đã xóa sessionStorage - không cần lưu dữ liệu nữa
       
       setCurrentStep(1);
       
@@ -633,7 +619,16 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
       </div>
 
       <div className="order-content">
-        {currentStep === 1 && <CustomerInfoStep orderData={orderData} handleChange={handleCustomerChange} isLoadingCustomer={isLoadingCustomer} customerError={customerError} />}
+        {currentStep === 1 && <CustomerInfoStep 
+          orderData={orderData} 
+          handleChange={handleCustomerChange} 
+          isLoadingCustomer={isLoadingCustomer} 
+          customerError={customerError}
+          onShowCustomerList={() => {
+            setShowCustomerListModal(true);
+            loadCustomerList();
+          }}
+        />}
         {currentStep === 2 && <VehicleSelectionStep 
           vehicles={filteredVehicles} 
           selectedVehicles={orderData.selectedVehicles}
@@ -660,15 +655,11 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
           orderData={orderData} 
           setOrderData={setOrderData} 
           total={calculateTotal()} 
-          orderId={orderId}
-          installmentPlanResult={installmentPlanResult}
-          setInstallmentPlanResult={setInstallmentPlanResult}
         />}
         {currentStep === 5 && <OrderSummary 
           orderSummary={orderSummary}
           isLoading={isLoadingOrderSummary}
           formatPrice={formatPrice}
-          installmentPlanResult={installmentPlanResult}
         />}
       </div>
 
@@ -688,91 +679,70 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
           </button>
         )}
       </div>
+
+      {/* Modal danh sách khách hàng */}
+      {showCustomerListModal && (
+        <div className="modal-overlay-customer" onClick={() => setShowCustomerListModal(false)}>
+          <div className="modal-content-customer" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-customer">
+              <h3>Danh sách khách hàng</h3>
+              <button className="close-modal-btn" onClick={() => setShowCustomerListModal(false)}>×</button>
+            </div>
+            <div className="modal-body-customer">
+              {isLoadingCustomers ? (
+                <div className="loading-spinner-container">
+                  <div className="spinner"></div>
+                  <p>Đang tải danh sách khách hàng...</p>
+                </div>
+              ) : customerListError ? (
+                <div className="error-message-customer">{customerListError}</div>
+              ) : allCustomers.length === 0 ? (
+                <div className="empty-customer-list">
+                  <p>Chưa có khách hàng nào trong hệ thống</p>
+                </div>
+              ) : (
+                <div className="customer-list-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Họ và tên</th>
+                        <th>Số điện thoại</th>
+                        <th>Email</th>
+                        <th>Hành động</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allCustomers.map(customer => (
+                        <tr key={customer.customerId}>
+                          <td>{customer.customerId}</td>
+                          <td>{customer.fullName}</td>
+                          <td>{customer.phoneNumber}</td>
+                          <td>{customer.email}</td>
+                          <td>
+                            <button 
+                              className="btn-select-customer"
+                              onClick={() => selectCustomerFromList(customer)}
+                            >
+                              Lấy thông tin
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// SỬA LẠI PaymentStep - thêm tính năng tính toán trả góp với API
-const PaymentStep = ({ orderData, setOrderData, total, orderId, installmentPlanResult, setInstallmentPlanResult }) => {
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationError, setCalculationError] = useState('');
-
-  const handleCalculateInstallment = async () => {
-    if (!orderId) {
-      alert('⚠️ Chưa có đơn hàng. Vui lòng quay lại bước đầu.');
-      return;
-    }
-
-    setIsCalculating(true);
-    setCalculationError('');
-
-    try {
-      // Kiểm tra xem đơn hàng đã có installment plan chưa
-      let shouldUpdate = false;
-      let existingPlanId = null;
-      
-      // Luôn kiểm tra từ API để đảm bảo chính xác
-      try {
-        const existingPlan = await getOrderInstallment(orderId);
-        shouldUpdate = true;
-        existingPlanId = existingPlan.installmentId;
-        // Nếu có plan rồi, hiển thị ngay
-        if (!installmentPlanResult || installmentPlanResult.installmentId !== existingPlanId) {
-          setInstallmentPlanResult(existingPlan);
-        }
-      } catch (err) {
-        // Bất kỳ lỗi nào từ GET API (404, network, etc.) → giả định chưa có plan
-        shouldUpdate = false;
-      }
-
-      const installmentData = {
-        termCount: orderData.financing.loanTerm,
-        interestRate: orderData.financing.laiSuat,
-        note: orderData.financing.note || ''
-      };
-
-      let result;
-      if (shouldUpdate) {
-        // Đã có plan → dùng UPDATE
-        result = await updateInstallmentPlan(orderId, installmentData);
-        alert(`✅ Cập nhật kế hoạch trả góp thành công!`);
-      } else {
-        // Chưa có plan → dùng CREATE
-        result = await createInstallmentPlan({
-          orderId: orderId,
-          ...installmentData
-        });
-        alert(`✅ ${result.message || 'Tính toán trả góp thành công!'}`);
-      }
-      
-      setInstallmentPlanResult(result);
-    } catch (error) {
-      setCalculationError(error.message);
-      
-      // Xử lý lỗi 409 Conflict - plan đã tồn tại, fetch và hiển thị
-      if (error.message.includes('409') || error.message.includes('Conflict')) {
-        try {
-          // Fetch existing plan để hiển thị
-          const existingPlan = await getOrderInstallment(orderId);
-          setInstallmentPlanResult(existingPlan);
-          setCalculationError('');
-          
-          // Nếu user muốn thay đổi params, giờ có thể click lại để UPDATE
-          alert(`ℹ️ Kế hoạch trả góp đã tồn tại. Đang hiển thị thông tin hiện tại.\nNếu muốn thay đổi, hãy điều chỉnh thông tin và nhấn "Tính toán" lại.`);
-          return; // Exit successfully
-        } catch (fetchError) {
-          alert(`❌ Không thể tải kế hoạch trả góp hiện tại: ${fetchError.message}`);
-          return;
-        }
-      }
-      
-      // Các lỗi khác
-      alert(`❌ Lỗi khi tính toán trả góp: ${error.message}`);
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
+// ĐÃ XÓA TRẢ GÓP - Chỉ còn Trả thẳng
+const PaymentStep = ({ orderData, setOrderData, total }) => {
   const formatPrice = (price) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
   return (
@@ -782,193 +752,33 @@ const PaymentStep = ({ orderData, setOrderData, total, orderId, installmentPlanR
       {/* Phương thức tài chính */}
       <div className="payment-options">
         <h4>Hình thức tài chính</h4>
-        {[
-          { value: 'Trả thẳng', label: 'Trả thẳng (Thanh toán toàn bộ)', desc: 'Thanh toán 100% giá trị xe ngay khi ký hợp đồng' },
-          { value: 'Trả góp', label: 'Trả góp', desc: 'Trả trước một phần, phần còn lại trả theo tháng' }
-        ].map(({ value, label, desc }) => (
-          <div key={value} className="payment-method">
-            <label>
-              <input
-                type="radio"
-                name="financingMethod"
-                value={value}
-                checked={orderData.financing.phuongThucThanhToan === value}
-                onChange={async (e) => {
-                  const newPaymentMethod = e.target.value;
-                  setOrderData(prev => ({
-                    ...prev,
-                    financing: { ...prev.financing, phuongThucThanhToan: newPaymentMethod }
-                  }));
-                  
-                  // Reset installment result khi chuyển phương thức
-                  if (newPaymentMethod === 'Trả thẳng') {
-                    setInstallmentPlanResult(null);
-                  }
-                  
-                  // Cập nhật payment method trong order ngay lập tức
-                  if (orderId) {
-                    try {
-                      await updateOrderPaymentMethod(orderId, newPaymentMethod);
-                    } catch (error) {
-                      alert(`⚠️ Không thể cập nhật phương thức thanh toán: ${error.message}`);
-                    }
-                  }
-                }}
-              />
-              {label}
-            </label>
-            <p>{desc}</p>
-            
-            {value === 'Trả góp' && orderData.financing.phuongThucThanhToan === 'Trả góp' && (
-              <div className="installment-details">
-                <div className="form-group">
-                  <label>Số kỳ hạn (tháng) *</label>
-                  <select
-                    value={orderData.financing.loanTerm}
-                    onChange={(e) => {
-                      setOrderData(prev => ({
-                        ...prev,
-                        financing: { ...prev.financing, loanTerm: parseInt(e.target.value) }
-                      }));
-                      // Reset result khi thay đổi
-                      setInstallmentPlanResult(null);
-                    }}
-                  >
-                    {[12, 24, 36, 48, 60].map(term => (
-                      <option key={term} value={term}>{term} tháng</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Lãi suất (%/năm) *</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={orderData.financing.laiSuat}
-                    onChange={(e) => {
-                      setOrderData(prev => ({
-                        ...prev,
-                        financing: { ...prev.financing, laiSuat: parseFloat(e.target.value) || 0 }
-                      }));
-                      // Reset result khi thay đổi
-                      setInstallmentPlanResult(null);
-                    }}
-                    min="0"
-                    max="25"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ghi chú (tùy chọn)</label>
-                  <textarea
-                    value={orderData.financing.note}
-                    onChange={(e) => setOrderData(prev => ({
-                      ...prev,
-                      financing: { ...prev.financing, note: e.target.value }
-                    }))}
-                    placeholder="Ví dụ: Khuyến mãi đặc biệt cho khách hàng mua lần đầu..."
-                    rows="3"
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      borderRadius: '4px',
-                      border: '1px solid #ddd',
-                      fontFamily: 'inherit',
-                      fontSize: '14px'
-                    }}
-                  />
-                </div>
-
-                <button 
-                  className="btn-primary"
-                  onClick={handleCalculateInstallment}
-                  disabled={isCalculating}
-                  style={{
-                    marginTop: '10px',
-                    width: '100%',
-                    padding: '12px',
-                    fontSize: '15px',
-                    fontWeight: '600'
-                  }}
-                >
-                  {isCalculating ? '⏳ Đang tính toán...' : '🧮 Tính toán kế hoạch trả góp'}
-                </button>
-
-                {calculationError && (
-                  <div style={{
-                    marginTop: '10px',
-                    padding: '12px',
-                    background: '#ffebee',
-                    borderRadius: '8px',
-                    border: '1px solid #ef5350',
-                    color: '#c62828',
-                    fontSize: '14px'
-                  }}>
-                    ⚠️ {calculationError}
-                  </div>
-                )}
-
-                {installmentPlanResult && (
-                  <div style={{
-                    marginTop: '15px',
-                    padding: '15px',
-                    background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
-                    borderRadius: '12px',
-                    border: '2px solid #4caf50',
-                    boxShadow: '0 2px 8px rgba(76, 175, 80, 0.2)'
-                  }}>
-                    <h4 className="installment-plan-title">
-                      ✅ Kết quả tính toán trả góp
-                    </h4>
-                    <div style={{ 
-                      display: 'grid', 
-                      gap: '8px',
-                      fontSize: '14px',
-                      color: '#1b5e20'
-                    }}>
-                      <p className="installment-plan-info">
-                        <strong>Mã kế hoạch:</strong> 
-                        <span>#{installmentPlanResult.installmentId}</span>
-                      </p>
-                      <p className="installment-plan-info">
-                        <strong>Số tiền gốc:</strong> 
-                        <span>{formatPrice(installmentPlanResult.principalAmount)}</span>
-                      </p>
-                      <p className="installment-plan-info">
-                        <strong>Số kỳ:</strong> 
-                        <span>{installmentPlanResult.termCount} tháng</span>
-                      </p>
-                      <p className="installment-plan-info">
-                        <strong>Lãi suất:</strong> 
-                        <span>{installmentPlanResult.interestRate}%/năm</span>
-                      </p>
-                      <p className="installment-plan-info">
-                        <strong>Tổng lãi:</strong> 
-                        <span className="installment-plan-interest">{formatPrice(installmentPlanResult.totalInterest)}</span>
-                      </p>
-                      <hr className="installment-plan-divider" />
-                      <p className="installment-plan-info installment-plan-summary">
-                        <strong>Tổng thanh toán:</strong> 
-                        <strong className="installment-plan-total-pay">{formatPrice(installmentPlanResult.totalPay)}</strong>
-                      </p>
-                      <p className="installment-plan-info installment-plan-summary">
-                        <strong>Trả mỗi kỳ:</strong> 
-                        <strong className="installment-plan-amount-per-term">{formatPrice(installmentPlanResult.amountPerTerm)}</strong>
-                      </p>
-                      {installmentPlanResult.note && (
-                        <>
-                          <hr className="installment-plan-divider" />
-                          <p className="installment-plan-note">
-                            <strong>Ghi chú:</strong> {installmentPlanResult.note}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        <div className="payment-method">
+          <label>
+            <input
+              type="radio"
+              name="financingMethod"
+              value="Trả thẳng"
+              checked={true}
+              readOnly
+            />
+            Trả thẳng (Thanh toán toàn bộ)
+          </label>
+          <p>Thanh toán 100% giá trị xe ngay khi ký hợp đồng</p>
+        </div>
+      </div>
+      
+      {/* Ghi chú */}
+      <div className="form-group full-width">
+        <label>Ghi chú (tùy chọn)</label>
+        <textarea
+          value={orderData.financing.note}
+          onChange={(e) => setOrderData(prev => ({
+            ...prev,
+            financing: { ...prev.financing, note: e.target.value }
+          }))}
+          placeholder="Nhập ghi chú cho thanh toán..."
+          rows={3}
+        />
       </div>
       
       <div className="total-summary">
@@ -979,9 +789,18 @@ const PaymentStep = ({ orderData, setOrderData, total, orderId, installmentPlanR
 };
 
 // Các components còn lại giữ nguyên
-const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customerError }) => (
+const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customerError, onShowCustomerList }) => (
   <div className="step-content">
-    <h3>Thông tin khách hàng</h3>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <h3 style={{ margin: 0 }}>Thông tin khách hàng</h3>
+      <button 
+        className="btn-show-customer-list"
+        onClick={onShowCustomerList}
+        type="button"
+      >
+        📋 Danh sách khách hàng
+      </button>
+    </div>
     {isLoadingCustomer && (
       <div style={{ 
         padding: '12px 16px', 
@@ -1048,8 +867,9 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
         <p className="customer-note-title">💡 <strong>Lưu ý:</strong></p>
         <ul className="customer-note-list">
           <li>Họ tên: Chỉ chứa chữ cái và khoảng trắng</li>
-          <li>Số điện thoại: Phải có 10 hoặc 11 chữ số</li>
+          <li>Số điện thoại: Phải có 10 hoặc 11 chữ số (tự động tìm khách hàng cũ)</li>
           <li>Email: Phải đúng định dạng và chưa được sử dụng</li>
+          <li><strong>Hoặc bấm "Danh sách khách hàng" để chọn từ khách hàng có sẵn</strong></li>
         </ul>
       </div>
     )}
@@ -1461,7 +1281,7 @@ const PromotionStep = ({ promotions, selectedPromotion, onSelect, isLoading, err
   </div>
 );
 
-const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanResult }) => {
+const OrderSummary = ({ orderSummary, isLoading, formatPrice }) => {
   if (isLoading) {
     return (
       <div className="step-content">
@@ -1530,30 +1350,6 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice, installmentPlanRes
             color: orderSummary.orderInfo.status === 'Chưa xác nhận' ? '#ffc107' : '#28a745',
             fontWeight: 'bold'
           }}>{orderSummary.orderInfo.status}</span></p>
-          
-          {orderSummary.orderInfo.paymentMethod === 'Trả góp' && installmentPlanResult && (
-            <div style={{
-              marginTop: '15px',
-              padding: '15px',
-              background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-              borderRadius: '8px',
-              border: '2px solid #2196f3'
-            }}>
-              <h5 className="installment-detail-title">
-                📊 Chi tiết kế hoạch trả góp
-              </h5>
-              <p><strong>Mã kế hoạch:</strong> #{installmentPlanResult.installmentId}</p>
-              <p><strong>Số tiền gốc:</strong> {formatPrice(installmentPlanResult.principalAmount)}</p>
-              <p><strong>Số kỳ:</strong> {installmentPlanResult.termCount} tháng</p>
-              <p><strong>Lãi suất:</strong> {installmentPlanResult.interestRate}%/năm</p>
-              <p><strong>Tổng lãi:</strong> <span className="installment-detail-interest">{formatPrice(installmentPlanResult.totalInterest)}</span></p>
-              <p><strong>Tổng thanh toán:</strong> <span className="installment-detail-total">{formatPrice(installmentPlanResult.totalPay)}</span></p>
-              <p><strong>Trả mỗi kỳ:</strong> <span className="installment-detail-per-term">{formatPrice(installmentPlanResult.amountPerTerm)}</span></p>
-              {installmentPlanResult.note && (
-                <p><strong>Ghi chú:</strong> {installmentPlanResult.note}</p>
-              )}
-            </div>
-          )}
         </div>
         
         <div className="summary-section" style={{

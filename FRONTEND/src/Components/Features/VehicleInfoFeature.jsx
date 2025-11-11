@@ -280,7 +280,6 @@ const VehicleInfoFeature = () => {
       <div className="vehicle-info-feature">
         <div className="vehicle-info-header">
           <div className="vehicle-header-content">
-            <div className="vehicle-header-icon">🚗</div>
             <div className="vehicle-header-text">
               <h2>Đang tải dữ liệu xe...</h2>
               <p>Vui lòng chờ trong giây lát</p>
@@ -300,7 +299,6 @@ const VehicleInfoFeature = () => {
       <div className="vehicle-info-feature">
         <div className="vehicle-info-header">
           <div className="vehicle-header-content">
-            <div className="vehicle-header-icon">⚠️</div>
             <div className="vehicle-header-text">
               <h2>Lỗi tải dữ liệu</h2>
               <p>{error}</p>
@@ -312,7 +310,7 @@ const VehicleInfoFeature = () => {
             className="refresh-btn"
             onClick={loadVehiclesFromAPI}
           >
-            🔄 Thử lại
+            Thử lại
           </button>
         </div>
       </div>
@@ -324,7 +322,6 @@ const VehicleInfoFeature = () => {
       {/* Header Section */}
       <div className="vehicle-info-header">
         <div className="vehicle-header-content">
-          <div className="vehicle-header-icon">🚗</div>
           <div className="vehicle-header-text">
             <h2>Truy vấn thông tin xe</h2>
             <p>
@@ -339,12 +336,12 @@ const VehicleInfoFeature = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="🔍 Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
+            placeholder="Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           {isSearching && (
-            <span className="searching-status">⏳ Đang tìm...</span>
+            <span className="searching-status">Đang tìm...</span>
           )}
         </div>
 
@@ -385,14 +382,14 @@ const VehicleInfoFeature = () => {
             }}
             title="Làm mới bộ lọc và dữ liệu xe"
           >
-            🔄 Làm mới
+            Làm mới
           </button>
         </div>
       </div>
 
       {searchTerm && (
         <div className="search-result-info">
-          🔍 Tìm thấy <strong>{filteredVehicles.length}</strong> xe với từ khóa "<strong>{searchTerm}</strong>"
+          Tìm thấy <strong>{filteredVehicles.length}</strong> xe với từ khóa "<strong>{searchTerm}</strong>"
         </div>
       )}
 

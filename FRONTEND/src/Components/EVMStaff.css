@@ -54,14 +54,14 @@
 
 .user-info:hover {
   background: white;
-  border-color: #667eea;
+  border-color: #2563EB;
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .user-avatar {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -146,7 +146,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #2563EB 0%, #1D4ED8 100%);
 }
 
 .dashboard-overview {
@@ -170,7 +170,7 @@
   transform: translateY(-50%);
   width: 4px;
   height: 20px;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
   border-radius: 2px;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .stat-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: white;
   padding: 25px;
   border-radius: 12px;
@@ -238,7 +238,7 @@
   transform: translateY(-50%);
   width: 4px;
   height: 16px;
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(180deg, #2563EB 0%, #1D4ED8 100%);
   border-radius: 2px;
 }
 
@@ -327,7 +327,7 @@
 }
 
 .quick-feature-card:hover {
-  border-color: #667eea;
+  border-color: #2563EB;
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
   background: white;

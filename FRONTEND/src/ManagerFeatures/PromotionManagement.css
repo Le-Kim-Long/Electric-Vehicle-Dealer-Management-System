@@ -8,7 +8,7 @@
 /* Header Section */
 .promotion-header {
 	margin-bottom: 30px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	border-radius: 20px;
 	padding: 30px;
 	box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
@@ -71,7 +71,7 @@
 .create-promotion-btn {
 	padding: 15px 30px;
 	background: white;
-	color: #667eea;
+	color: #2563EB;
 	border: none;
 	border-radius: 12px;
 	font-size: 1.1rem;
@@ -117,7 +117,7 @@
 
 .search-box-promo input:focus {
 	outline: none;
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -126,7 +126,7 @@
 	right: 15px;
 	top: 50%;
 	transform: translateY(-50%);
-	color: #667eea;
+	color: #2563EB;
 	font-size: 0.9rem;
 }
 
@@ -149,7 +149,7 @@
 
 .filters-promo select:focus {
 	outline: none;
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -160,7 +160,7 @@
 
 .refresh-btn-promo {
 	padding: 15px 25px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: white;
 	border: none;
 	border-radius: 12px;
@@ -172,7 +172,7 @@
 }
 
 .refresh-btn-promo:hover {
-	background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+	background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
 	box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 	transform: translateY(-2px);
 }
@@ -182,7 +182,7 @@
 	padding: 12px 20px;
 	border-radius: 10px;
 	margin-bottom: 20px;
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1rem;
 	border: 1px solid rgba(102, 126, 234, 0.2);
 }
@@ -248,7 +248,7 @@
 	border-radius: 20px;
 	font-size: 0.9rem;
 	font-weight: 600;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: white;
 }
 
@@ -276,7 +276,7 @@
 .promotion-value {
 	font-size: 2rem;
 	font-weight: 700;
-	color: #667eea;
+	color: #2563EB;
 	margin-bottom: 15px;
 	padding: 15px;
 	background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
@@ -331,12 +331,12 @@
 }
 
 .btn-view {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: white;
 }
 
 .btn-view:hover {
-	background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+	background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
 	transform: translateY(-2px);
 	box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 }
@@ -381,7 +381,7 @@
 .spinner-circle-promo {
 	width: 15px;
 	height: 15px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	border-radius: 50%;
 	animation: bounce-promo 1.4s infinite ease-in-out both;
 }
@@ -404,7 +404,7 @@
 }
 
 .loading-text-promo {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.1rem;
 	font-weight: 500;
 }
@@ -517,7 +517,7 @@
 	background: none;
 	border: none;
 	font-size: 2rem;
-	color: #667eea;
+	color: #2563EB;
 	cursor: pointer;
 	transition: color 0.2s;
 	line-height: 1;
@@ -564,7 +564,7 @@
 .form-group-promo textarea:focus,
 .form-group-promo select:focus {
 	outline: none;
-	border-color: #667eea;
+	border-color: #2563EB;
 	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -618,12 +618,12 @@
 }
 
 .btn-submit-promo {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 	color: white;
 }
 
 .btn-submit-promo:hover:not(:disabled) {
-	background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+	background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
 	box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 	transform: translateY(-2px);
 }
@@ -687,7 +687,7 @@
 }
 
 .detail-section-promo h3 {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.3rem;
 	margin-bottom: 15px;
 	font-weight: 700;
@@ -723,7 +723,7 @@
 }
 
 .detail-value-highlight {
-	color: #667eea;
+	color: #2563EB;
 	font-size: 1.3rem;
 }
 
@@ -791,3 +791,7 @@
 		flex-direction: column;
 	}
 }
+
+
+/* Hide all icons */
+.promotion-header-icon, .error-icon-promo, .no-results-icon-promo, .date-label, .detail-label-promo { display: none; }

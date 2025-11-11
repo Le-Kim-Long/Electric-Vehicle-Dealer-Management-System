@@ -3,7 +3,7 @@
 
 /* Customize header gradient for Manager - same color scheme as other pages */
 .order-management-payment-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
 }
 
 /* Manager Action Buttons */
@@ -114,3 +114,7 @@
   color: #999;
   padding: 10px;
 }
+
+
+/* Hide all icons */
+.order-management-header-icon, .no-orders-icon, .section-icon { display: none; }

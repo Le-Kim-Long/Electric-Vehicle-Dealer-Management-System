@@ -32,7 +32,7 @@
   margin-left: 12px;
   padding: 12px 28px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -85,7 +85,7 @@
   border-bottom: 1px solid #f0f0f0;
 }
 .create-user-modal-header h3 {
-  color: #667eea;
+  color: #2563EB;
   font-size: 1.6rem;
   font-weight: 700;
   margin: 0;
@@ -94,7 +94,7 @@
   background: none;
   border: none;
   font-size: 2rem;
-  color: #667eea;
+  color: #2563EB;
   cursor: pointer;
   padding: 0;
   width: 40px;
@@ -125,7 +125,7 @@
 .create-user-form h3 {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #667eea;
+  color: #2563EB;
   margin-bottom: 24px;
   text-align: left;
   padding-bottom: 10px;
@@ -154,7 +154,7 @@
 }
 .create-user-form input:focus,
 .create-user-form select:focus {
-  border-color: #667eea;
+  border-color: #2563EB;
   outline: none;
   box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
@@ -162,7 +162,7 @@
   margin-top: 18px;
   padding: 14px 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -274,7 +274,7 @@
 }
 .search-role-select:focus,
 .search-dealer-select:focus {
-  border-color: #667eea;
+  border-color: #2563EB;
   outline: none;
 }
 .search-form input {
@@ -290,13 +290,13 @@
   box-shadow: 0 2px 8px rgba(44,62,80,0.06);
 }
 .search-form input:focus {
-  border-color: #667eea;
+  border-color: #2563EB;
   outline: none;
 }
 .search-form button {
   padding: 12px 28px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #2d3a4a 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #2d3a4a 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -313,7 +313,7 @@
   padding: 12px 0;
   width: 200px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #2d3a4a 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #2d3a4a 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -358,7 +358,7 @@
   background: none;
   border: none;
   font-size: 2rem;
-  color: #667eea;
+  color: #2563EB;
   cursor: pointer;
   z-index: 10;
   transition: color 0.2s, background 0.2s;
@@ -393,7 +393,7 @@
 .create-user-form h3 {
   font-size: 1.6rem;
   font-weight: 700;
-  color: #667eea;
+  color: #2563EB;
   margin-bottom: 24px;
   text-align: left;
   padding-bottom: 10px;
@@ -422,7 +422,7 @@
 }
 .create-user-form input:focus,
 .create-user-form select:focus {
-  border-color: #667eea;
+  border-color: #2563EB;
   outline: none;
   box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
 }
@@ -430,7 +430,7 @@
   margin-top: 18px;
   padding: 14px 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -501,7 +501,7 @@
   border-radius: 8px;
   border: none;
   background: #eaf0fb;
-  color: #667eea;
+  color: #2563EB;
   cursor: pointer;
   font-weight: 600;
   font-size: 0.98rem;
@@ -515,7 +515,7 @@
 .update-user-btn {
   padding: 12px 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: #fff;
   border: none;
   font-weight: 700;
@@ -568,7 +568,7 @@
 }
 
 .update-user-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 }
 .update-user-btn:hover {
   background: #4b5fc1;

@@ -6,7 +6,8 @@ import {
   deletePayment,
   getPaymentsByOrderId,
   updatePaymentStatus,
-  updatePaymentMethod
+  updatePaymentMethod,
+  updateOrderStatus
 } from '../../services/carVariantApi';
 
 const OrderFeatureManagementPayment = () => {
@@ -18,6 +19,7 @@ const OrderFeatureManagementPayment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(null); // Track which order is being processed
+  const [updating, setUpdating] = useState(false); // Track order status updates
   
   // Payment form modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -184,11 +186,9 @@ const OrderFeatureManagementPayment = () => {
   const renderStatusBadge = (status) => {
     const statusConfig = {
       'Chưa xác nhận': { text: 'Chưa xác nhận', class: 'status-pending' },
-      'Đang xử lý': { text: 'Đang xử lý', class: 'status-processing' },
       'Chưa thanh toán': { text: 'Chưa thanh toán', class: 'status-unpaid' },
-      'Đang trả góp': { text: 'Đang trả góp', class: 'status-installment' },
-      'Đã thanh toán': { text: 'Đã thanh toán', class: 'status-success' },
-      'Đã hủy': { text: 'Đã hủy', class: 'status-failed' }
+      'Đã Thanh Toán': { text: 'Đã Thanh Toán', class: 'status-success' },
+      'Đã Hủy': { text: 'Đã Hủy', class: 'status-failed' }
     };
     
     const config = statusConfig[status] || { text: status, class: 'status-pending' };
@@ -199,10 +199,7 @@ const OrderFeatureManagementPayment = () => {
   const renderMethodBadge = (method) => {
     const methodConfig = {
       'Tiền mặt': { icon: '💵', class: 'method-cash' },
-      'Chuyển khoản': { icon: '🏦', class: 'method-bank' },
-      'Thẻ tín dụng': { icon: '💳', class: 'method-card' },
       'Trả thẳng': { icon: '💰', class: 'method-cash' },
-      'Trả góp': { icon: '📅', class: 'method-ewallet' },
       'Thanh toán trà góp': { icon: '📅', class: 'method-ewallet' }
     };
     
@@ -491,6 +488,44 @@ const OrderFeatureManagementPayment = () => {
     }
   };
 
+  // Xác nhận đơn hàng
+  const handleConfirmOrder = async (orderId, paymentMethod) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xác nhận đơn hàng này?')) {
+      return;
+    }
+    
+    try {
+      setUpdating(true);
+      
+      // Chỉ chuyển sang "Chưa thanh toán" vì không còn trả góp
+      await updateOrderStatus(orderId, 'Chưa thanh toán');
+      await loadOrders(); // Reload data
+      alert('Xác nhận đơn hàng thành công! Trạng thái: Chưa thanh toán');
+    } catch (error) {
+      alert('Lỗi khi xác nhận đơn hàng: ' + error.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Hủy đơn hàng
+  const handleRejectOrder = async (orderId) => {
+    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+      return;
+    }
+    
+    try {
+      setUpdating(true);
+      await updateOrderStatus(orderId, 'Đã Hủy');
+      await loadOrders(); // Reload data
+      alert('Hủy đơn hàng thành công!');
+    } catch (error) {
+      alert('Lỗi khi hủy đơn hàng: ' + error.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   return (
     <div className="order-management-payment-feature">
       {/* Header Section */}
@@ -556,11 +591,9 @@ const OrderFeatureManagementPayment = () => {
           >
             <option value="all">Tất cả</option>
             <option value="Chưa xác nhận">Chưa xác nhận</option>
-            <option value="Đang xử lý">Đang xử lý</option>
             <option value="Chưa thanh toán">Chưa thanh toán</option>
-            <option value="Đang trả góp">Đang trả góp</option>
-            <option value="Đã thanh toán">Đã thanh toán</option>
-            <option value="Đã hủy">Đã hủy</option>
+            <option value="Đã Thanh Toán">Đã Thanh Toán</option>
+            <option value="Đã Hủy">Đã Hủy</option>
           </select>
         </div>
 
@@ -572,12 +605,7 @@ const OrderFeatureManagementPayment = () => {
             className="filter-select"
           >
             <option value="all">Tất cả</option>
-            <option value="Tiền mặt">Tiền mặt</option>
-            <option value="Chuyển khoản">Chuyển khoản</option>
-            <option value="Thẻ tín dụng">Thẻ tín dụng</option>
             <option value="Trả thẳng">Trả thẳng</option>
-            <option value="Trả góp">Trả góp</option>
-            <option value="Thanh toán trả góp">Thanh toán trả góp</option>
           </select>
         </div>
       </div>
@@ -624,7 +652,7 @@ const OrderFeatureManagementPayment = () => {
                         {payment.vehicles.slice(0, 1).map((vehicle, index) => (
                           <div key={index} className="vehicle-item">
                             <span className="vehicle-name">
-                              {vehicle.name} {vehicle.variant}
+                              {vehicle.name}
                             </span>
                             <span className="vehicle-details">
                               ({vehicle.color}) x{vehicle.quantity}
@@ -707,8 +735,26 @@ const OrderFeatureManagementPayment = () => {
                 })()}
               </div>
 
-              {/* Actions - Nút chi tiết luôn ở cuối card */}
+              {/* Actions - Nút chi tiết và xác nhận/hủy */}
               <div className="order-card-actions">
+                {payment.status === 'Chưa xác nhận' && (
+                  <>
+                    <button
+                      className="btn-success"
+                      onClick={() => handleConfirmOrder(payment.orderId, payment.paymentMethod)}
+                      disabled={updating}
+                    >
+                      ✅ Xác nhận
+                    </button>
+                    <button
+                      className="btn-failed"
+                      onClick={() => handleRejectOrder(payment.orderId)}
+                      disabled={updating}
+                    >
+                      ❌ Hủy
+                    </button>
+                  </>
+                )}
                 <button
                   className="btn-view-full"
                   onClick={() => setSelectedPayment(payment)}
@@ -1004,11 +1050,6 @@ const OrderFeatureManagementPayment = () => {
                       disabled={paymentFormLoading}
                     >
                       <option value="Tiền mặt">💵 Tiền mặt</option>
-                      <option value="Chuyển khoản">🏦 Chuyển khoản</option>
-                      {/* Thẻ tín dụng chỉ cho đơn "Chưa thanh toán" (Trả thẳng) */}
-                      {currentOrderStatus === 'Chưa thanh toán' && (
-                        <option value="Thẻ tín dụng">💳 Thẻ tín dụng</option>
-                      )}
                     </select>
                   </div>
 
@@ -1029,11 +1070,7 @@ const OrderFeatureManagementPayment = () => {
                     <div className="info-text">
                       Thanh toán sẽ được tạo với trạng thái <strong>"Chờ xử lý"</strong>.
                       <br />
-                      {currentOrderStatus === 'Chưa thanh toán' ? (
-                        <>Đơn hàng <strong>Trả thẳng</strong>: Chỉ được tạo 1 thanh toán duy nhất với số tiền = Tổng đơn hàng.</>
-                      ) : (
-                        <>Đơn hàng <strong>Trả góp</strong>: Có thể tạo nhiều thanh toán với số tiền = Số tiền mỗi kỳ.</>
-                      )}
+                      Chỉ được tạo 1 thanh toán duy nhất với số tiền = Tổng đơn hàng (Phương thức thanh toán: <strong>Tiền mặt</strong>).
                     </div>
                   </div>
                 </div>

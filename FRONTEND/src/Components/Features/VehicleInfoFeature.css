@@ -5,7 +5,7 @@
 
 .feature-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
@@ -29,7 +29,7 @@
   font-size: 2.2rem;
   font-weight: 700;
   margin: 0 0 10px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -64,7 +64,7 @@
 
 .search-box input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563EB;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -87,14 +87,14 @@
 
 .filters select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563EB;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .refresh-btn {
   padding: 15px 24px;
   min-width: 150px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
   color: white !important;
   border: none;
   border-radius: 12px;
@@ -107,7 +107,7 @@
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%) !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
 }
@@ -207,7 +207,7 @@
 }
 
 .vehicle-price {
-  color: #667eea;
+  color: #2563EB;
   font-size: 1.4rem;
   font-weight: 700;
   margin: 0;
@@ -244,7 +244,7 @@
 }
 
 .view-details-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: white;
   padding: 10px 16px;
   border: none;
@@ -306,7 +306,7 @@
 
 .color-tag {
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  color: #667eea;
+  color: #2563EB;
   font-size: 0.8rem;
   padding: 4px 8px;
   border-radius: 12px;
@@ -323,9 +323,9 @@
 }
 
 .color-tag.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: white;
-  border-color: #667eea;
+  border-color: #2563EB;
   font-weight: 600;
 }
 
@@ -449,7 +449,7 @@
   font-weight: 600;
   margin-bottom: 15px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #2563EB;
 }
 
 .detail-grid {
@@ -499,7 +499,7 @@
 }
 
 .color-price {
-  color: #667eea;
+  color: #2563EB;
   font-weight: 700;
   font-size: 0.95rem;
 }
@@ -548,7 +548,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #2563EB;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -610,7 +610,7 @@
 /* Vehicle Info Header - THÊM MỚI */
 .vehicle-info-header {
   margin-bottom: 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   border-radius: 20px;
   padding: 30px;
   box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
@@ -764,9 +764,9 @@
 }
 
 .color-price-item.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
   color: white;
-  border: 2px solid #667eea;
+  border: 2px solid #2563EB;
 }
 
 .color-price-item.active .color-name {
@@ -796,7 +796,10 @@
 }
 
 .vehicle-stock-info .spec-value {
-  color: #667eea;
+  color: #2563EB;
   font-weight: 600;
   font-size: 1rem;
 }
+
+/* Hide all icons */
+.vehicle-header-icon, .searching-status, .no-results-icon, .error-icon { display: none; }
