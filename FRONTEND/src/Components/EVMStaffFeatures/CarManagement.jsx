@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { addCarToDealer, getVariantConfiguration, transformConfigurationData, getCarVariantDetails, transformCarVariantData, searchCarVariantsByModelAndVariant, getCarVariantsByDealerName, fetchDealerNames, addCompleteCar, fetchAllModelNames, fetchSegmentByModelName, fetchDescriptionByModelAndVariant, fetchConfigurationByModelAndVariant, fetchVariantNamesByModel, updateConfigurationByModelAndVariant, fetchColorsByModelAndVariant, updateManufacturerPriceByModelVariantColor, fetchManufacturerPriceByModelVariantColor, uploadImage, deleteCarByModelVariantColor, getAllDistributionRequests, getAllDistributionRequestsByStatus, approveDistributionRequest, rejectDistributionRequest, setExpectedDeliveryDate} from '../../services/carVariantApi';
 import './CarManagement.css';
+import { showNotification } from '../Notification';
 // Modal hiển thị chi tiết xe (đồng bộ style user VehicleInfoFeature)
 const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, onClose }) => {
 	const [selectedModalColor, setSelectedModalColor] = useState(selectedColor || (vehicle.colors && vehicle.colors[0]));
@@ -617,7 +618,7 @@ const CarManagement = () => {
 			setStaffNotifications(transformedNotifications);
 		} catch (error) {
 			console.error("Error loading staff notifications:", error);
-			alert("❌ Không thể tải danh sách yêu cầu: " + error.message);
+			showNotification("Không thể tải danh sách yêu cầu: " + error.message, "error");
 		} finally {
 			setLoadingStaffNotifications(false);
 		}
@@ -632,17 +633,17 @@ const CarManagement = () => {
 			
 			// Reload notifications to get updated status
 			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
-			alert("✅ Đã duyệt yêu cầu thành công!");
+			showNotification("Đã duyệt yêu cầu thành công!", "success");
 		} catch (error) {
 			console.error("Error approving request:", error);
-			alert("❌ Có lỗi xảy ra khi duyệt yêu cầu: " + error.message);
+			showNotification("Có lỗi xảy ra khi duyệt yêu cầu: " + error.message, "error");
 		}
 	};
 
 	// Set delivery date and start delivery
 	const handleSetDeliveryDate = async () => {
 		if (!deliveryDate) {
-			alert("⚠️ Vui lòng chọn ngày giao dự kiến!");
+			showNotification("Vui lòng chọn ngày giao dự kiến!", "warning");
 			return;
 		}
 
@@ -658,10 +659,10 @@ const CarManagement = () => {
 			setDeliveryModal({ open: false, requestId: null });
 			setDeliveryDate('');
 			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
-			alert("✅ Đã thiết lập ngày giao và bắt đầu giao xe thành công!");
+			showNotification("Đã thiết lập ngày giao và bắt đầu giao xe thành công!", "success");
 		} catch (error) {
 			console.error("Error setting delivery date:", error);
-			alert("❌ Có lỗi xảy ra: " + error.message);
+			showNotification("Có lỗi xảy ra: " + error.message, "error");
 		} finally {
 			setDeliveryLoading(false);
 		}
@@ -670,7 +671,7 @@ const CarManagement = () => {
 	// Reject dealer request
 	const handleRejectRequest = async (requestId, reason) => {
 		if (!reason || reason.trim() === '') {
-			alert("⚠️ Vui lòng nhập lý do từ chối");
+			showNotification("Vui lòng nhập lý do từ chối", "warning");
 			return;
 		}
 		
@@ -684,10 +685,10 @@ const CarManagement = () => {
 			
 			// Reload notifications to get updated status
 			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
-			alert("✅ Đã từ chối yêu cầu thành công");
+			showNotification("Đã từ chối yêu cầu thành công", "success");
 		} catch (error) {
 			console.error("Error rejecting request:", error);
-			alert("❌ Có lỗi xảy ra khi từ chối yêu cầu: " + error.message);
+			showNotification("Có lỗi xảy ra khi từ chối yêu cầu: " + error.message, "error");
 		} finally {
 			setRejectLoading(false);
 		}
@@ -1361,7 +1362,7 @@ const CarManagement = () => {
 														setCreateCarData(d => ({ ...d, car: { ...d.car, imagePath: fileName } }));
 													} catch (err) {
 														setCreateCarData(d => ({ ...d, car: { ...d.car, imagePath: '' } }));
-														alert('Upload ảnh thất bại: ' + (err.message || 'Lỗi không xác định'));
+														showNotification('Upload ảnh thất bại: ' + (err.message || 'Lỗi không xác định'), 'error');
 													}
 												}
 											}}

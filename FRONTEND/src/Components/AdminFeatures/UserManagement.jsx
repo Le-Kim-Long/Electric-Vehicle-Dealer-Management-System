@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./UserManagement.css";
 import { fetchAllUsers, searchUsers, searchUsersByRole, searchUsersByDealer, searchUsersByRoleAndDealer, deleteUserAccount } from "../../services/adminApi";
 import { createUserAccount, fetchDealerNames, fetchRoleNames, updateUserAccount } from "../../services/adminApi";
+import { showNotification } from '../Notification';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -35,11 +36,11 @@ const UserManagement = () => {
 
     try {
       await deleteUserAccount(userId);
-      alert("Xóa tài khoản thành công!");
+      showNotification("Xóa tài khoản thành công!", "success");
       const updatedUsers = await fetchAllUsers();
       setUsers(updatedUsers);
     } catch (err) {
-      alert("Xóa tài khoản thất bại!");
+      showNotification("Xóa tài khoản thất bại!", "error");
     }
   };
 
@@ -137,7 +138,7 @@ const UserManagement = () => {
         roleName: "DealerStaff",
         dealerName: ""
       });
-      alert("Tạo tài khoản thành công!");
+      showNotification("Tạo tài khoản thành công!", "success");
       setShowCreateForm(false);
     } catch (err) {
       const errorMessage = err.message || err.toString();
@@ -207,7 +208,7 @@ const UserManagement = () => {
       const updatedUsers = await fetchAllUsers();
       setUsers(updatedUsers);
       setShowUpdateForm(false);
-      alert("Cập nhật tài khoản thành công!");
+      showNotification("Cập nhật tài khoản thành công!", "success");
     } catch (err) {
       const errorMessage = err.message || err.toString();
       const lowerErrorMessage = errorMessage.toLowerCase();

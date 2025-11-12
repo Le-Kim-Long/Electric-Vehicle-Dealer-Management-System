@@ -9,6 +9,7 @@ import {
   updatePaymentMethod,
   updateOrderStatus
 } from '../../services/carVariantApi';
+import { showNotification } from '../Notification';
 
 const OrderFeatureManagementPayment = () => {
   const [orders, setOrders] = useState([]);
@@ -19,7 +20,6 @@ const OrderFeatureManagementPayment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(null); // Track which order is being processed
-  const [updating, setUpdating] = useState(false); // Track order status updates
   
   // Payment form modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -188,7 +188,9 @@ const OrderFeatureManagementPayment = () => {
       'Chưa xác nhận': { text: 'Chưa xác nhận', class: 'status-pending' },
       'Chưa thanh toán': { text: 'Chưa thanh toán', class: 'status-unpaid' },
       'Đã Thanh Toán': { text: 'Đã Thanh Toán', class: 'status-success' },
-      'Đã Hủy': { text: 'Đã Hủy', class: 'status-failed' }
+      'Đã thanh toán': { text: 'Đã thanh toán', class: 'status-success' },
+      'Đã Hủy': { text: 'Đã Hủy', class: 'status-failed' },
+      'Đã hủy': { text: 'Đã hủy', class: 'status-failed' }
     };
     
     const config = statusConfig[status] || { text: status, class: 'status-pending' };
@@ -236,7 +238,7 @@ const OrderFeatureManagementPayment = () => {
       }
     } catch (error) {
       setCurrentPayments([]);
-      alert(`❌ Lỗi: ${error.message}`);
+      showNotification(`Lỗi: ${error.message}`, 'error');
     } finally {
       setPaymentListLoading(false);
     }
@@ -301,17 +303,17 @@ const OrderFeatureManagementPayment = () => {
 
       const result = await createPayment(paymentData);
       
-      alert(
-        `✅ Thanh toán thành công!\n\n` +
-        `Payment ID: ${result.paymentId}\n` +
-        `Order ID: ${result.orderId}\n` +
-        `Số tiền: ${formatCurrency(result.amount)}\n` +
-        `Ngày thanh toán: ${formatDateTime(result.paymentDate)}\n` +
-        `Phương thức: ${result.method}\n` +
-        `Trạng thái: ${result.status}\n` +
-        `Ghi chú: ${result.note}\n\n` +
-        `${result.message}`
-      );
+      const paymentInfo = `Payment ID: ${result.paymentId}
+Order ID: ${result.orderId}
+Số tiền: ${formatCurrency(result.amount)}
+Ngày thanh toán: ${formatDateTime(result.paymentDate)}
+Phương thức: ${result.method}
+Trạng thái: ${result.status}
+Ghi chú: ${result.note}
+
+${result.message}`;
+
+      showNotification(paymentInfo, 'success', 5000);
       
       // Reload orders
       await loadOrders();
@@ -327,7 +329,7 @@ const OrderFeatureManagementPayment = () => {
       await handleOpenPaymentList(currentOrderId);
       
     } catch (error) {
-      alert(`❌ Lỗi tạo thanh toán: ${error.message}`);
+      showNotification(`Lỗi tạo thanh toán: ${error.message}`, 'error');
     } finally {
       setPaymentFormLoading(false);
     }
@@ -346,7 +348,7 @@ const OrderFeatureManagementPayment = () => {
 
       const result = await deletePayment(paymentId);
       
-      alert(`✅ ${result.message || 'Xóa thanh toán thành công!'}`);
+      showNotification(result.message || 'Xóa thanh toán thành công!', 'success');
       
       // Cập nhật cache và state - xóa payment khỏi array
       const updatedPayments = currentPayments.filter(p => p.paymentId !== paymentId);
@@ -364,7 +366,7 @@ const OrderFeatureManagementPayment = () => {
       await loadOrders();
       
     } catch (error) {
-      alert(`❌ Lỗi xóa thanh toán: ${error.message}`);
+      showNotification(`Lỗi xóa thanh toán: ${error.message}`, 'error');
     } finally {
       setPaymentListLoading(false);
     }
@@ -376,7 +378,7 @@ const OrderFeatureManagementPayment = () => {
 
     // Chỉ cho phép cập nhật từ "Chờ xử lý" -> "Hoàn thành"
     if (currentStatus === 'Hoàn thành') {
-      alert('ℹ️ Thanh toán này đã được hoàn thành!');
+      showNotification('Thanh toán này đã được hoàn thành!', 'info');
       return;
     }
 
@@ -392,13 +394,13 @@ const OrderFeatureManagementPayment = () => {
         note: 'Khách hàng đã thanh toán'
       });
       
-      alert(
-        `✅ Cập nhật trạng thái thành công!\n\n` +
-        `Payment ID: ${result.paymentId}\n` +
-        `Trạng thái: ${result.status}\n` +
-        `Order Status: ${result.orderStatus}\n\n` +
-        `${result.message}`
-      );
+      const statusInfo = `Payment ID: ${result.paymentId}
+Trạng thái: ${result.status}
+Order Status: ${result.orderStatus}
+
+${result.message}`;
+
+      showNotification(statusInfo, 'success', 4000);
       
       // Cập nhật cache và state
       const updatedPayments = currentPayments.map(p => 
@@ -416,7 +418,7 @@ const OrderFeatureManagementPayment = () => {
       await loadOrders();
       
     } catch (error) {
-      alert(`❌ Lỗi cập nhật trạng thái: ${error.message}`);
+      showNotification(`Lỗi cập nhật trạng thái: ${error.message}`, 'error');
     } finally {
       setPaymentListLoading(false);
     }
@@ -458,12 +460,11 @@ const OrderFeatureManagementPayment = () => {
         note: updatePaymentData.note
       });
       
-      alert(
-        `✅ Cập nhật thanh toán thành công!\n\n` +
-        `Payment ID: ${result.paymentId}\n` +
-        `Phương thức: ${result.method}\n` +
-        `Số tiền: ${formatCurrency(result.amount)}`
-      );
+      const updateInfo = `Payment ID: ${result.paymentId}
+Phương thức: ${result.method}
+Số tiền: ${formatCurrency(result.amount)}`;
+
+      showNotification(updateInfo, 'success');
       
       // Cập nhật cache và state
       const updatedPayments = currentPayments.map(p => 
@@ -482,47 +483,25 @@ const OrderFeatureManagementPayment = () => {
       await loadOrders();
       
     } catch (error) {
-      alert(`❌ Lỗi cập nhật thanh toán: ${error.message}`);
+      showNotification(`Lỗi cập nhật thanh toán: ${error.message}`, 'error');
     } finally {
       setUpdatePaymentLoading(false);
     }
   };
 
-  // Xác nhận đơn hàng
-  const handleConfirmOrder = async (orderId, paymentMethod) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xác nhận đơn hàng này?')) {
-      return;
-    }
-    
-    try {
-      setUpdating(true);
-      
-      // Chỉ chuyển sang "Chưa thanh toán" vì không còn trả góp
-      await updateOrderStatus(orderId, 'Chưa thanh toán');
-      await loadOrders(); // Reload data
-      alert('Xác nhận đơn hàng thành công! Trạng thái: Chưa thanh toán');
-    } catch (error) {
-      alert('Lỗi khi xác nhận đơn hàng: ' + error.message);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   // Hủy đơn hàng
   const handleRejectOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+    if (!window.confirm('⚠️ Bạn có chắc chắn muốn hủy đơn hàng này?\n\nSố lượng xe trong đơn hàng sẽ được hoàn trả về kho.')) {
       return;
     }
     
     try {
-      setUpdating(true);
-      await updateOrderStatus(orderId, 'Đã Hủy');
-      await loadOrders(); // Reload data
-      alert('Hủy đơn hàng thành công!');
+      // API sẽ tự động cập nhật lại số lượng xe khi chuyển trạng thái sang "Đã hủy"
+      await updateOrderStatus(orderId, 'Đã hủy');
+      await loadOrders(); // Reload data để hiển thị trạng thái mới
+      showNotification('Hủy đơn hàng thành công!\n\n📦 Số lượng xe đã được hoàn trả về kho.', 'success');
     } catch (error) {
-      alert('Lỗi khi hủy đơn hàng: ' + error.message);
-    } finally {
-      setUpdating(false);
+      showNotification('Lỗi khi hủy đơn hàng: ' + error.message, 'error');
     }
   };
 
@@ -590,10 +569,11 @@ const OrderFeatureManagementPayment = () => {
             className="filter-select"
           >
             <option value="all">Tất cả</option>
-            <option value="Chưa xác nhận">Chưa xác nhận</option>
             <option value="Chưa thanh toán">Chưa thanh toán</option>
             <option value="Đã Thanh Toán">Đã Thanh Toán</option>
+            <option value="Đã thanh toán">Đã thanh toán</option>
             <option value="Đã Hủy">Đã Hủy</option>
+            <option value="Đã hủy">Đã hủy</option>
           </select>
         </div>
 
@@ -735,25 +715,15 @@ const OrderFeatureManagementPayment = () => {
                 })()}
               </div>
 
-              {/* Actions - Nút chi tiết và xác nhận/hủy */}
+              {/* Actions - Nút chi tiết và hủy */}
               <div className="order-card-actions">
-                {payment.status === 'Chưa xác nhận' && (
-                  <>
-                    <button
-                      className="btn-success"
-                      onClick={() => handleConfirmOrder(payment.orderId, payment.paymentMethod)}
-                      disabled={updating}
-                    >
-                      ✅ Xác nhận
-                    </button>
-                    <button
-                      className="btn-failed"
-                      onClick={() => handleRejectOrder(payment.orderId)}
-                      disabled={updating}
-                    >
-                      ❌ Hủy
-                    </button>
-                  </>
+                {payment.status === 'Chưa thanh toán' && (
+                  <button
+                    className="btn-failed"
+                    onClick={() => handleRejectOrder(payment.orderId)}
+                  >
+                    ❌ Hủy
+                  </button>
                 )}
                 <button
                   className="btn-view-full"

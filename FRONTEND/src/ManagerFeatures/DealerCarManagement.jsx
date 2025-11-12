@@ -16,6 +16,7 @@ import {
     getCurrentUser,
     searchCarVariantsByStatus
 } from '../services/carVariantApi';
+import { showNotification } from '../Components/Notification';
 import {
     searchCarVariantsByVariantName,
     searchCarVariantsByModelName,
@@ -371,7 +372,7 @@ const DealerCarManagement = () => {
             }));
         } catch (err) {
             console.error('Error loading manufacturer vehicles:', err);
-            alert('❌ Không thể tải danh sách xe từ nhà máy: ' + err.message);
+            showNotification('Không thể tải danh sách xe từ nhà máy: ' + err.message, 'error');
         } finally {
             setLoadingManufacturer(false);
         }
@@ -399,7 +400,7 @@ const DealerCarManagement = () => {
             
             setRequestForm(f => ({ ...f, success: true, loading: false }));
             
-            alert('✅ Đã gửi yêu cầu thành công! Vui lòng chờ nhà máy phê duyệt.');
+            showNotification('Đã gửi yêu cầu thành công! Vui lòng chờ nhà máy phê duyệt.', 'success');
             
             // Đóng modal sau 1.5s
             setTimeout(() => {
@@ -435,7 +436,7 @@ const DealerCarManagement = () => {
             setNotifications(transformedNotifications);
         } catch (err) {
             console.error('Error loading notifications:', err);
-            alert('❌ Không thể tải thông báo: ' + err.message);
+            showNotification('Không thể tải thông báo: ' + err.message, 'error');
         } finally {
             setLoadingNotifications(false);
         }
@@ -448,12 +449,12 @@ const DealerCarManagement = () => {
         try {
             await confirmDelivery(requestId);
             
-            alert('✅ Đã xác nhận nhận xe thành công! Số lượng xe đã được cập nhật vào kho.');
+            showNotification('Đã xác nhận nhận xe thành công! Số lượng xe đã được cập nhật vào kho.', 'success');
             await loadNotifications();
             await loadVehiclesFromAPI(); // Reload vehicles to show updated inventory
         } catch (err) {
             console.error('Error confirming request:', err);
-            alert('❌ Có lỗi xảy ra: ' + err.message);
+            showNotification('Có lỗi xảy ra: ' + err.message, 'error');
         }
     };
 

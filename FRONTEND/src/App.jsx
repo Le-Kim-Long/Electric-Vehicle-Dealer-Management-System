@@ -5,6 +5,7 @@ import DealerStaff from './Components/DealerStaff';
 import DealerManager from './Components/DealerManager';
 import Admin from './Components/Admin';
 import EVMStaff from './Components/EVMStaff';
+import NotificationContainer from './Components/Notification';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -102,6 +103,7 @@ function App() {
 
   return (
     <div className="App">
+      <NotificationContainer />
       {renderUserInterface()}
     </div>
   );

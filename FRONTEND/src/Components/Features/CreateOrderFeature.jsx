@@ -18,6 +18,7 @@ import {
   getAllCustomers,
   searchCustomerByPhone
 } from '../../services/carVariantApi';
+import { showNotification } from '../Notification';
 
 const CreateOrderFeature = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -40,6 +41,7 @@ const CreateOrderFeature = () => {
   const [allCustomers, setAllCustomers] = useState([]); // Danh sách tất cả khách hàng
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false); // Loading danh sách khách hàng
   const [customerListError, setCustomerListError] = useState('');
+  const [customerSearchPhone, setCustomerSearchPhone] = useState(''); // Search phone trong modal
   const [orderData, setOrderData] = useState({
     customer: { name: '', phone: '', email: '' },
     selectedVehicles: [], // Mỗi item sẽ có thêm orderDetailId
@@ -193,7 +195,7 @@ const CreateOrderFeature = () => {
           const summary = await getOrderSummaryForConfirmation(orderId);
           setOrderSummary(summary);
         } catch (error) {
-          alert(`Không thể tải thông tin đơn hàng: ${error.message}`);
+          showNotification(`Không thể tải thông tin đơn hàng: ${error.message}`, 'error');
         } finally {
           setIsLoadingOrderSummary(false);
         }
@@ -232,7 +234,7 @@ const CreateOrderFeature = () => {
   const addVehicleToCart = async (vehicle, color, quantity) => {
     // Kiểm tra orderId
     if (!orderId) {
-      alert('⚠️ Chưa có đơn hàng. Vui lòng quay lại Step 1 để tạo khách hàng.');
+      showNotification('Chưa có đơn hàng. Vui lòng quay lại Step 1 để tạo khách hàng.', 'warning');
       return;
     }
 
@@ -275,9 +277,9 @@ const CreateOrderFeature = () => {
       }));
 
       // Hiển thị thông báo thành công
-      alert(`✅ Đã thêm ${vehicle.name} (${color}) vào giỏ hàng!`);
+      showNotification(`Đã thêm ${vehicle.name} (${color}) vào giỏ hàng!`, 'success');
     } catch (error) {
-      alert(`❌ Lỗi khi thêm xe vào giỏ hàng: ${error.message}`);
+      showNotification(`Lỗi khi thêm xe vào giỏ hàng: ${error.message}`, 'error');
     }
   };
 
@@ -304,9 +306,9 @@ const CreateOrderFeature = () => {
       }));
 
       // Hiển thị thông báo thành công
-      alert(`✅ ${result.message || 'Order detail deleted successfully. Inventory quantity restored and order subTotal updated.'}`);
+      showNotification('Đã xóa xe khỏi giỏ hàng. Số lượng xe đã được hoàn trả về kho.', 'success');
     } catch (error) {
-      alert(`❌ Lỗi khi xóa xe khỏi giỏ hàng: ${error.message}`);
+      showNotification(`Lỗi khi xóa xe khỏi giỏ hàng: ${error.message}`, 'error');
     }
   };
 
@@ -385,7 +387,7 @@ const CreateOrderFeature = () => {
   // Xử lý chọn khuyến mãi với API
   const handlePromotionSelect = async (promotion) => {
     if (!orderId) {
-      alert('⚠️ Chưa có đơn hàng. Vui lòng quay lại bước đầu.');
+      showNotification('Chưa có đơn hàng. Vui lòng quay lại bước đầu.', 'warning');
       return;
     }
 
@@ -398,12 +400,12 @@ const CreateOrderFeature = () => {
       
       // Thông báo thành công
       if (promotion) {
-        alert(`✅ Đã áp dụng khuyến mãi: ${promotion.promotionName}`);
+        showNotification(`Đã áp dụng khuyến mãi: ${promotion.promotionName}`, 'success');
       } else {
-        alert('✅ Đã bỏ chọn khuyến mãi');
+        showNotification('Đã bỏ chọn khuyến mãi', 'info');
       }
     } catch (error) {
-      alert(`❌ Lỗi khi cập nhật khuyến mãi: ${error.message}`);
+      showNotification(`Lỗi khi cập nhật khuyến mãi: ${error.message}`, 'error');
     }
   };
 
@@ -498,7 +500,7 @@ const CreateOrderFeature = () => {
         try {
           await updateOrderPaymentMethod(orderId, orderData.financing.phuongThucThanhToan);
         } catch (error) {
-          alert(`⚠️ Không thể cập nhật phương thức thanh toán: ${error.message}`);
+          showNotification(`Không thể cập nhật phương thức thanh toán: ${error.message}`, 'error');
           return; // Không chuyển bước nếu có lỗi
         }
       }
@@ -518,32 +520,32 @@ const CreateOrderFeature = () => {
     try {
       // Validation cơ bản
       if (!orderData.customer.name || !orderData.customer.phone || !orderData.customer.email) {
-        alert('Vui lòng nhập đầy đủ thông tin khách hàng!');
+        showNotification('Vui lòng nhập đầy đủ thông tin khách hàng!', 'warning');
         setCurrentStep(1);
         return;
       }
 
       if (orderData.selectedVehicles.length === 0) {
-        alert('Vui lòng chọn ít nhất một xe!');
+        showNotification('Vui lòng chọn ít nhất một xe!', 'warning');
         setCurrentStep(2);
         return;
       }
 
       if (!orderData.financing.phuongThucThanhToan) {
-        alert('Vui lòng chọn phương thức tài chính!');
+        showNotification('Vui lòng chọn phương thức tài chính!', 'warning');
         setCurrentStep(4);
         return;
       }
 
       if (!orderId) {
-        alert('⚠️ Không tìm thấy mã đơn hàng! Vui lòng thử lại từ đầu.');
+        showNotification('Không tìm thấy mã đơn hàng! Vui lòng thử lại từ đầu.', 'error');
         setCurrentStep(1);
         return;
       }
 
-      // Cập nhật trạng thái đơn hàng từ "Chưa xác nhận" sang "Đang xử lý"
+      // Cập nhật trạng thái đơn hàng từ "Chưa xác nhận" sang "Chưa thanh toán"
       try {
-        await updateOrderStatus(orderId, 'Đang xử lý');
+        await updateOrderStatus(orderId, 'Chưa thanh toán');
       } catch (statusError) {
         console.error('Error updating order status:', statusError);
         // Tiếp tục thông báo thành công vì đơn hàng đã được tạo
@@ -552,10 +554,8 @@ const CreateOrderFeature = () => {
       // Tính toán tổng tiền
       const total = calculateTotal();
 
-      // Alert thành công
-      alert(`🎉 ĐƠN HÀNG ĐÃ ĐƯỢC TẠO THÀNH CÔNG!
-      
-📋 Mã đơn hàng: ORD-${String(orderId).padStart(6, '0')}
+      // Notification thành công với thông tin chi tiết
+      const orderInfo = `📋 Mã đơn hàng: ORD-${String(orderId).padStart(6, '0')}
 👤 Khách hàng: ${orderData.customer.name}
 📧 Email: ${orderData.customer.email}
 📱 SĐT: ${orderData.customer.phone}
@@ -563,8 +563,10 @@ const CreateOrderFeature = () => {
 💰 Tổng tiền: ${formatPrice(total)}
 💳 Phương thức: ${orderData.financing.phuongThucThanhToan}
 
-✅ Đơn hàng đã được xác nhận với trạng thái "Đang xử lý".
-Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
+Đơn hàng đã được tạo với trạng thái "Chưa thanh toán".
+Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
+
+      showNotification(orderInfo, 'success', 6000);
       
       // Reset form
       setOrderData({
@@ -583,7 +585,7 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
       setCurrentStep(1);
       
     } catch (error) {
-      alert('⚠️ Có lỗi xảy ra khi xác nhận đơn hàng. Vui lòng thử lại!');
+      showNotification('Có lỗi xảy ra khi xác nhận đơn hàng. Vui lòng thử lại!', 'error');
       console.error('Submit order error:', error);
     }
   };
@@ -593,7 +595,6 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
       {/* Header Section */}
       <div className="create-order-header">
         <div className="create-order-header-content">
-          <div className="create-order-header-icon">📋</div>
           <div className="create-order-header-text">
             <h2>Tạo đơn hàng</h2>
             <p>Tạo đơn hàng mới cho khách hàng và quản lý thông tin</p>
@@ -625,6 +626,7 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
           isLoadingCustomer={isLoadingCustomer} 
           customerError={customerError}
           onShowCustomerList={() => {
+            setCustomerSearchPhone(''); // Reset search khi mở modal
             setShowCustomerListModal(true);
             loadCustomerList();
           }}
@@ -701,37 +703,100 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng!`);
                   <p>Chưa có khách hàng nào trong hệ thống</p>
                 </div>
               ) : (
-                <div className="customer-list-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Họ và tên</th>
-                        <th>Số điện thoại</th>
-                        <th>Email</th>
-                        <th>Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {allCustomers.map(customer => (
-                        <tr key={customer.customerId}>
-                          <td>{customer.customerId}</td>
-                          <td>{customer.fullName}</td>
-                          <td>{customer.phoneNumber}</td>
-                          <td>{customer.email}</td>
-                          <td>
-                            <button 
-                              className="btn-select-customer"
-                              onClick={() => selectCustomerFromList(customer)}
-                            >
-                              Lấy thông tin
-                            </button>
-                          </td>
+                <>
+                  <div className="customer-search-box" style={{
+                    marginBottom: '20px',
+                    padding: '10px',
+                    background: '#f8f9fa',
+                    borderRadius: '8px'
+                  }}>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '8px', 
+                      fontWeight: '600',
+                      color: '#333'
+                    }}>
+                      🔍 Tìm kiếm theo số điện thoại:
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nhập số điện thoại để tìm kiếm..."
+                      value={customerSearchPhone}
+                      onChange={(e) => setCustomerSearchPhone(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 15px',
+                        border: '2px solid #dee2e6',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        transition: 'border-color 0.3s'
+                      }}
+                      onFocus={(e) => e.target.style.borderColor = '#007bff'}
+                      onBlur={(e) => e.target.style.borderColor = '#dee2e6'}
+                    />
+                    {customerSearchPhone && (
+                      <div style={{
+                        marginTop: '8px',
+                        fontSize: '13px',
+                        color: '#666'
+                      }}>
+                        Tìm thấy: <strong>{allCustomers.filter(c => 
+                          c.phoneNumber.includes(customerSearchPhone)
+                        ).length}</strong> khách hàng
+                      </div>
+                    )}
+                  </div>
+                  <div className="customer-list-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>Họ và tên</th>
+                          <th>Số điện thoại</th>
+                          <th>Email</th>
+                          <th>Hành động</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {allCustomers
+                          .filter(customer => 
+                            customerSearchPhone === '' || 
+                            customer.phoneNumber.includes(customerSearchPhone)
+                          )
+                          .map(customer => (
+                            <tr key={customer.customerId}>
+                              <td>{customer.customerId}</td>
+                              <td>{customer.fullName}</td>
+                              <td>{customer.phoneNumber}</td>
+                              <td>{customer.email}</td>
+                              <td>
+                                <button 
+                                  className="btn-select-customer"
+                                  onClick={() => selectCustomerFromList(customer)}
+                                >
+                                  Lấy thông tin
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                    {allCustomers.filter(c => 
+                      customerSearchPhone === '' || 
+                      c.phoneNumber.includes(customerSearchPhone)
+                    ).length === 0 && customerSearchPhone && (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '30px',
+                        color: '#6c757d'
+                      }}>
+                        <p style={{ fontSize: '16px', margin: 0 }}>
+                          ❌ Không tìm thấy khách hàng với số điện thoại: <strong>{customerSearchPhone}</strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -798,7 +863,7 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
         onClick={onShowCustomerList}
         type="button"
       >
-        📋 Danh sách khách hàng
+         Danh sách khách hàng
       </button>
     </div>
     {isLoadingCustomer && (
