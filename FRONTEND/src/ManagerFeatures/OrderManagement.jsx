@@ -20,9 +20,6 @@ const OrderManagement = () => {
   useEffect(() => {
     loadOrders();
     
-    // Refresh every 30 seconds
-    const interval = setInterval(loadOrders, 30000);
-    return () => clearInterval(interval);
   }, [selectedStaff]);
 
   // Load danh sách nhân viên
@@ -69,6 +66,7 @@ const OrderManagement = () => {
           total: orderInfo.totalAmount || 0,
           paymentMethod: orderInfo.paymentMethod,
           createdDate: orderInfo.orderDate,
+          completedDate: orderInfo.completedDate,
           status: orderInfo.status,
           promotionId: orderInfo.promotionId,
           promotionName: orderInfo.promotionName,
@@ -169,7 +167,7 @@ const OrderManagement = () => {
       <div className="order-management-payment-header">
         <div className="order-management-header-content">
           <div className="order-management-header-text">
-            <h2>Quản lý Đơn hàng (Manager)</h2>
+            <h2>Quản lý Đơn hàng</h2>
             <p>Xác nhận và quản lý các đơn hàng của đại lý ({orders.length} đơn hàng)</p>
           </div>
           <button 
@@ -217,7 +215,7 @@ const OrderManagement = () => {
             </div>
             
             <div className="filter-section">
-              <label className="filter-label">👤 Nhân viên:</label>
+              <label className="filter-label">Nhân viên:</label>
               <select
                 value={selectedStaff}
                 onChange={(e) => setSelectedStaff(e.target.value)}
@@ -329,7 +327,7 @@ const OrderManagement = () => {
                       className="btn-view"
                       onClick={() => setSelectedPayment(payment)}
                     >
-                      📋 Chi tiết
+                      Chi tiết
                     </button>
                   </div>
                 </div>
@@ -371,8 +369,16 @@ const OrderManagement = () => {
                       <div><strong>{selectedPayment.orderCode}</strong></div>
                       <div>Trạng thái:</div>
                       <div>{renderStatusBadge(selectedPayment.status)}</div>
+                      <div>Nhân viên xử lý:</div>
+                      <div><strong>{selectedPayment.createdBy || 'N/A'}</strong></div>
                       <div>Ngày tạo:</div>
                       <div>{formatDateTime(selectedPayment.createdDate)}</div>
+                      {selectedPayment.completedDate && (
+                        <>
+                          <div>Ngày hoàn thành:</div>
+                          <div>{formatDateTime(selectedPayment.completedDate)}</div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -463,7 +469,7 @@ const OrderManagement = () => {
                         }}
                         disabled={updating}
                       >
-                        ✓ Xác nhận đơn hàng
+                        Xác nhận đơn hàng
                       </button>
                       <button 
                         className="reject-btn" 
@@ -473,7 +479,7 @@ const OrderManagement = () => {
                         }}
                         disabled={updating}
                       >
-                        ✕ Từ chối đơn hàng
+                        Từ chối đơn hàng
                       </button>
                     </>
                   )}

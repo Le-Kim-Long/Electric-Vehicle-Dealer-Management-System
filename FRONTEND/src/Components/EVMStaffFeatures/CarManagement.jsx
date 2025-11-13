@@ -54,7 +54,7 @@ const VehicleDetailModal = ({ vehicle, selectedColor, onColorChange, loading, on
 					</div>
 					<div className="vehicle-detail-info">
 						{loading && (
-							<div className="vehicle-detail-loading">⏳ Đang tải thông tin chi tiết...</div>
+							<div className="vehicle-detail-loading">Đang tải thông tin chi tiết...</div>
 						)}
 									{/* Đã xóa phần thông tin cơ bản theo yêu cầu */}
 									<div className="detail-section">
@@ -601,6 +601,8 @@ const CarManagement = () => {
 				variantName: req.variantName,
 				colorName: req.colorName,
 				quantity: req.quantity,
+				unitPriceAtApproval: req.unitPriceAtApproval, // NEW: Giá đơn vị
+				totalAmount: req.totalAmount, // NEW: Tổng giá trị
 				note: req.note || '', // API might have note field
 				rejectionReason: req.rejectionReason || '',
 				status: req.status,
@@ -1434,7 +1436,7 @@ const CarManagement = () => {
 							<div className="form-section">
 								<h4 className="form-section-title">Thông tin xe cần xóa</h4>
 								<div className="delete-car-instruction">
-									<p>📌 <strong>Lưu ý:</strong></p>
+									<p><strong>Lưu ý:</strong></p>
 									<ul>
 										<li>Chỉ chọn <strong>Dòng xe</strong> → Xóa toàn bộ model</li>
 										<li>Chọn <strong>Dòng xe + Phiên bản</strong> → Xóa toàn bộ variant</li>
@@ -1472,7 +1474,7 @@ const CarManagement = () => {
 				}}>
 					<div className="modal-content notification-modal-content staff-notification-modal" onClick={e => e.stopPropagation()}>
 						<div className="modal-header">
-							<h2>📬 Yêu cầu từ đại lý</h2>
+							<h2>Yêu cầu từ đại lý</h2>
 							<button className="close-btn" onClick={() => setShowStaffNotificationModal(false)}>×</button>
 						</div>
 						
@@ -1487,19 +1489,19 @@ const CarManagement = () => {
 								className="filter-status-select"
 							>
 								<option value="all">Tất cả trạng thái</option>
-								<option value="Chờ duyệt">⏳ Chờ duyệt</option>
-								<option value="Đã duyệt">✅ Đã duyệt</option>
-								<option value="Đang giao">🚚 Đang giao</option>
-								<option value="Đã giao">📦 Đã giao</option>
-								<option value="Từ chối">❌ Từ chối</option>
+								<option value="Chờ duyệt">Chờ duyệt</option>
+								<option value="Đã duyệt">Đã duyệt</option>
+								<option value="Đang giao">Đang giao</option>
+								<option value="Đã giao">Đã giao</option>
+								<option value="Từ chối">Từ chối</option>
 							</select>
 						</div>
 
 						<div className="modal-body notification-modal-body">
 							{loadingStaffNotifications ? (
-								<div className="loading-notifications">⏳ Đang tải...</div>
+								<div className="loading-notifications">Đang tải...</div>
 							) : staffNotifications.length === 0 ? (
-								<div className="no-notifications">📭 Không có yêu cầu nào</div>
+								<div className="no-notifications">Không có yêu cầu nào</div>
 							) : (
 								<div className="notifications-list">
 									{staffNotifications.map(notif => {
@@ -1516,27 +1518,49 @@ const CarManagement = () => {
 											className={`notification-item notification-${statusClass}`}
 										>
 											<div className="notification-header-item">
-												<h4>🏢 {notif.dealerName}</h4>
+												<h4>{notif.dealerName}</h4>
 												<span className={`status-badge-notification status-${statusClass}`}>
-													{notif.status === 'Chờ duyệt' && '⏳ Chờ duyệt'}
-													{notif.status === 'Đã duyệt' && '✅ Đã duyệt'}
-													{notif.status === 'Đang giao' && '🚚 Đang giao'}
-													{notif.status === 'Đã giao' && '📦 Đã giao'}
-													{notif.status === 'Từ chối' && '❌ Từ chối'}
+													{notif.status === 'Chờ duyệt' && 'Chờ duyệt'}
+													{notif.status === 'Đã duyệt' && 'Đã duyệt'}
+													{notif.status === 'Đang giao' && 'Đang giao'}
+													{notif.status === 'Đã giao' && 'Đã giao'}
+													{notif.status === 'Từ chối' && 'Từ chối'}
 												</span>
 											</div>
 											
 											<div className="notification-details">
 												<p>
-													<strong>🚗 Thông tin xe:</strong> 
+													<strong>Thông tin xe:</strong> 
 													<span>{notif.modelName} {notif.variantName} - {notif.colorName}</span>
 												</p>
 												<p>
-													<strong>📦 Số lượng:</strong> 
+													<strong>Số lượng:</strong> 
 													<span>{notif.quantity} xe</span>
 												</p>
+												{notif.unitPriceAtApproval && (
+													<p>
+														<strong>Giá đơn vị:</strong> 
+														<span>
+															{new Intl.NumberFormat('vi-VN', { 
+																style: 'currency', 
+																currency: 'VND' 
+															}).format(notif.unitPriceAtApproval)}
+														</span>
+													</p>
+												)}
+												{notif.totalAmount && (
+													<p>
+														<strong>Tổng giá trị:</strong> 
+														<span>
+															{new Intl.NumberFormat('vi-VN', { 
+																style: 'currency', 
+																currency: 'VND' 
+															}).format(notif.totalAmount)}
+														</span>
+													</p>
+												)}
 												<p>
-													<strong>📅 Ngày yêu cầu:</strong> 
+													<strong>Ngày yêu cầu:</strong> 
 													<span>{new Date(notif.createdAt).toLocaleString('vi-VN', {
 														year: 'numeric',
 														month: '2-digit',
@@ -1547,7 +1571,7 @@ const CarManagement = () => {
 												</p>
 												{notif.approvedAt && (
 													<p>
-														<strong>✅ Ngày duyệt:</strong> 
+														<strong>Ngày duyệt:</strong> 
 														<span>{new Date(notif.approvedAt).toLocaleString('vi-VN', {
 															year: 'numeric',
 															month: '2-digit',
@@ -1559,7 +1583,7 @@ const CarManagement = () => {
 												)}
 												{notif.expectedDeliveryDate && (
 													<p>
-														<strong>🚚 Ngày giao dự kiến:</strong> 
+														<strong>Ngày giao dự kiến:</strong> 
 														<span>{new Date(notif.expectedDeliveryDate).toLocaleString('vi-VN', {
 															year: 'numeric',
 															month: '2-digit',
@@ -1571,7 +1595,7 @@ const CarManagement = () => {
 												)}
 												{notif.actualDeliveryDate && (
 													<p>
-														<strong>📍 Ngày giao thực tế:</strong> 
+														<strong>Ngày giao thực tế:</strong> 
 														<span>{new Date(notif.actualDeliveryDate).toLocaleString('vi-VN', {
 															year: 'numeric',
 															month: '2-digit',
@@ -1581,33 +1605,31 @@ const CarManagement = () => {
 														})}</span>
 													</p>
 												)}
-												{notif.note && (
-													<p>
-														<strong>📝 Ghi chú:</strong> 
-														<span>{notif.note}</span>
-													</p>
-												)}
-												{notif.rejectionReason && (
-													<p style={{ borderBottom: 'none', color: '#e74c3c' }}>
-														<strong style={{ color: '#c0392b' }}>❌ Lý do từ chối:</strong> 
-														<span style={{ color: '#e74c3c' }}>{notif.rejectionReason}</span>
-													</p>
-												)}
-											</div>
-
-											{notif.status === 'Chờ duyệt' && (
+											{notif.note && (
+												<p>
+													<strong>Ghi chú:</strong> 
+													<span>{notif.note}</span>
+												</p>
+											)}
+											{notif.rejectionReason && (
+												<p className="rejection-reason">
+													<strong> Lý do từ chối:</strong> 
+													<span>{notif.rejectionReason}</span>
+												</p>
+											)}
+										</div>											{notif.status === 'Chờ duyệt' && (
 												<div className="approve-reject-buttons">
 													<button
 														className="approve-request-btn"
 														onClick={() => handleApproveRequest(notif.id)}
 													>
-														✅ Duyệt
+														Duyệt
 													</button>
 													<button
 														className="reject-request-btn"
 														onClick={() => setRejectModal({ open: true, requestId: notif.id })}
 													>
-														❌ Từ chối
+														Từ chối
 													</button>
 												</div>
 											)}
@@ -1621,7 +1643,7 @@ const CarManagement = () => {
 															setDeliveryDate('');
 														}}
 													>
-														📅 Thiết lập ngày giao
+														Thiết lập ngày giao
 													</button>
 												</div>
 											)}
@@ -1664,7 +1686,7 @@ const CarManagement = () => {
 								onClick={() => handleRejectRequest(rejectModal.requestId, rejectReason)}
 								disabled={rejectLoading}
 							>
-								{rejectLoading ? '⏳ Đang xử lý...' : '✓ Xác nhận từ chối'}
+								{rejectLoading ? 'Đang xử lý...' : '✓ Xác nhận từ chối'}
 							</button>
 						</div>
 					</div>
@@ -1681,7 +1703,7 @@ const CarManagement = () => {
 				}}>
 					<div className="modal-content delivery-modal-content" onClick={e => e.stopPropagation()}>
 						<div className="modal-header">
-							<h3>📅 Thiết lập ngày giao dự kiến</h3>
+							<h3>Thiết lập ngày giao dự kiến</h3>
 							<button className="close-btn" onClick={() => {
 								setDeliveryModal({ open: false, requestId: null });
 								setDeliveryDate('');
@@ -1699,7 +1721,7 @@ const CarManagement = () => {
 								onClick={handleSetDeliveryDate}
 								disabled={deliveryLoading || !deliveryDate}
 							>
-								{deliveryLoading ? '⏳ Đang xử lý...' : '✓ Xác nhận và bắt đầu giao'}
+								{deliveryLoading ? 'Đang xử lý...' : '✓ Xác nhận và bắt đầu giao'}
 							</button>
 						</div>
 					</div>

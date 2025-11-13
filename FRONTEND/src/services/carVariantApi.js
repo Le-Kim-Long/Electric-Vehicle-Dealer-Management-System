@@ -740,16 +740,10 @@ export const updatePromotion = async (promotionId, promotionData) => {
   
   // Validate dates if provided
   if (promotionData.startDate && promotionData.endDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
     const startDate = new Date(promotionData.startDate);
     const endDate = new Date(promotionData.endDate);
     
-    if (startDate < today) {
-      throw new Error('Ngày bắt đầu phải từ hôm nay trở đi');
-    }
-    
+    // Chỉ kiểm tra endDate phải sau startDate (cho phép sửa khuyến mãi đã bắt đầu)
     if (endDate <= startDate) {
       throw new Error('Ngày kết thúc phải sau ngày bắt đầu');
     }
@@ -2319,7 +2313,207 @@ export const confirmDelivery = async (requestId) => {
   return response.json();
 };
 
+// ==================== SALES REPORTS APIs ====================
+
+// Get sales report by period (month, quarter, year)
+export const getSalesReportByPeriod = async (periodType, year, month = null, quarter = null) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  // Build query parameters
+  let url = `${API_BASE_URL}/reports/sales/period?periodType=${periodType.toUpperCase()}&year=${year}`;
+  
+  if (periodType === 'MONTHLY' && month) {
+    url += `&month=${month}`;
+  }
+  
+  if (periodType === 'QUARTERLY' && quarter) {
+    url += `&quarter=${quarter}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Get revenue report details (for charts)
+export const getRevenueReportByPeriod = async (periodType, year, month = null, quarter = null) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  let url = '';
+  
+  if (periodType === 'YEARLY') {
+    url = `${API_BASE_URL}/reports/revenue/yearly?year=${year}`;
+  } else if (periodType === 'QUARTERLY') {
+    url = `${API_BASE_URL}/reports/revenue/quarterly?year=${year}&quarter=${quarter}`;
+  } else if (periodType === 'MONTHLY') {
+    url = `${API_BASE_URL}/reports/revenue/monthly?year=${year}&month=${month}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
 
 
 
+// Get revenue report by car model (for chart 2)
+export const getRevenueByModel = async (periodType, year, month = null, quarter = null) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  let url = '';
+  
+  if (periodType === 'YEARLY') {
+    url = `${API_BASE_URL}/reports/revenue/model/yearly?year=${year}`;
+  } else if (periodType === 'QUARTERLY') {
+    url = `${API_BASE_URL}/reports/revenue/model/quarterly?year=${year}&quarter=${quarter}`;
+  } else if (periodType === 'MONTHLY') {
+    url = `${API_BASE_URL}/reports/revenue/model/monthly?year=${year}&month=${month}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
 
+// Get revenue report by staff (for chart 3)
+export const getRevenueByStaff = async (periodType, year, month = null, quarter = null) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  let url = '';
+  
+  if (periodType === 'YEARLY') {
+    url = `${API_BASE_URL}/reports/revenue/staff/yearly?year=${year}`;
+  } else if (periodType === 'QUARTERLY') {
+    url = `${API_BASE_URL}/reports/revenue/staff/quarterly?year=${year}&quarter=${quarter}`;
+  } else if (periodType === 'MONTHLY') {
+    url = `${API_BASE_URL}/reports/revenue/staff/monthly?year=${year}&month=${month}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};
+
+// Get import cost report (for chart 4)
+export const getImportCostReport = async (periodType, year, month = null, quarter = null) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Không tìm thấy token. Vui lòng đăng nhập lại.');
+  
+  let url = '';
+  
+  if (periodType === 'YEARLY') {
+    url = `${API_BASE_URL}/reports/import-cost/yearly?year=${year}`;
+  } else if (periodType === 'QUARTERLY') {
+    url = `${API_BASE_URL}/reports/import-cost/quarterly?year=${year}&quarter=${quarter}`;
+  } else if (periodType === 'MONTHLY') {
+    url = `${API_BASE_URL}/reports/import-cost/monthly?year=${year}&month=${month}`;
+  }
+  
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+    
+    try {
+      const errorText = await response.text();
+      throw new Error(errorText || `HTTP error! status: ${response.status}`);
+    } catch (e) {
+      if (e.message) throw e;
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+  
+  return response.json();
+};

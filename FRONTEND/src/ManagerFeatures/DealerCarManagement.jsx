@@ -425,6 +425,8 @@ const DealerCarManagement = () => {
                 variantName: req.variantName,
                 colorName: req.colorName,
                 quantity: req.quantity,
+                unitPriceAtApproval: req.unitPriceAtApproval, // Giá đơn vị
+                totalAmount: req.totalAmount, // Tổng giá trị
                 note: '',
                 status: req.status,
                 createdAt: req.requestDate,
@@ -470,7 +472,6 @@ const DealerCarManagement = () => {
             <div className="vehicle-info-feature">
                 <div className="vehicle-info-header">
                     <div className="vehicle-header-content">
-                        <div className="vehicle-header-icon">🚗</div>
                         <div className="vehicle-header-text">
                             <h2>Đang tải dữ liệu xe...</h2>
                             <p>Vui lòng chờ trong giây lát</p>
@@ -489,7 +490,6 @@ const DealerCarManagement = () => {
             <div className="vehicle-info-feature">
                 <div className="vehicle-info-header">
                     <div className="vehicle-header-content">
-                        <div className="vehicle-header-icon">⚠️</div>
                         <div className="vehicle-header-text">
                             <h2>Lỗi tải dữ liệu</h2>
                             <p>{error}</p>
@@ -501,7 +501,7 @@ const DealerCarManagement = () => {
                         className="refresh-btn"
                         onClick={loadVehiclesFromAPI}
                     >
-                        🔄 Thử lại
+                        Thử lại
                     </button>
                 </div>
             </div>
@@ -512,7 +512,6 @@ const DealerCarManagement = () => {
         <div className="vehicle-info-feature">
             <div className="vehicle-info-header">
                 <div className="vehicle-header-content">
-                    <div className="vehicle-header-icon">🚗</div>
                     <div className="vehicle-header-text">
                         <h2>Quản lý xe cho đại lý</h2>
                         <p>
@@ -531,7 +530,7 @@ const DealerCarManagement = () => {
                     }}
                     title="Xem thông báo yêu cầu thêm xe"
                 >
-                    🔔 Thông báo
+                    Thông báo
                     {notifications.filter(n => n.status === 'Đang giao' || n.status === 'Đã duyệt').length > 0 && (
                         <span className="notification-badge">
                             {notifications.filter(n => n.status === 'Đang giao' || n.status === 'Đã duyệt').length}
@@ -546,13 +545,13 @@ const DealerCarManagement = () => {
                     className={`tab-btn ${activeTab === 'dealer' ? 'active' : ''}`}
                     onClick={() => setActiveTab('dealer')}
                 >
-                    📦 Xe tại đại lý
+                    Xe tại đại lý
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'manufacturer' ? 'active' : ''}`}
                     onClick={() => setActiveTab('manufacturer')}
                 >
-                    🏭 Danh mục xe từ hãng
+                    Danh mục xe từ hãng
                 </button>
             </div>
 
@@ -562,12 +561,12 @@ const DealerCarManagement = () => {
                 <div className="search-box">
                     <input
                         type="text"
-                        placeholder="🔍 Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
+                        placeholder="Tìm kiếm xe (VD: VF3, Eco, VF5 Plus)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     {isSearching && (
-                        <span className="searching-status">⏳ Đang tìm...</span>
+                        <span className="searching-status">Đang tìm...</span>
                     )}
                 </div>
 
@@ -618,14 +617,14 @@ const DealerCarManagement = () => {
                         }}
                         title="Làm mới bộ lọc và dữ liệu xe"
                     >
-                        🔄 Làm mới
+                        Làm mới
                     </button>
                 </div>
             </div>
 
             {searchTerm && (
                 <div className="search-result-info">
-                    🔍 Tìm thấy <strong>{filteredVehicles.length}</strong> xe với từ khóa "<strong>{searchTerm}</strong>"
+                    Tìm thấy <strong>{filteredVehicles.length}</strong> xe với từ khóa "<strong>{searchTerm}</strong>"
                 </div>
             )}
 
@@ -708,7 +707,7 @@ const DealerCarManagement = () => {
                                             setRequestForm({ quantity: 1, note: '', loading: false, error: '', success: false });
                                         }}
                                     >
-                                        📤 Gửi yêu cầu thêm xe
+                                        Gửi yêu cầu thêm xe
                                     </button>
                                 </div>
                             </div>
@@ -861,7 +860,7 @@ const DealerCarManagement = () => {
                                                             setRequestForm({ quantity: 1, note: '', loading: false, error: '', success: false });
                                                         }}
                                                     >
-                                                        📤 Gửi yêu cầu
+                                                        Gửi yêu cầu
                                                     </button>
                                                 </div>
                                             </div>
@@ -914,7 +913,7 @@ const DealerCarManagement = () => {
                                 {requestForm.loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
                             </button>
                             {requestForm.error && <div className="update-form-error">{requestForm.error}</div>}
-                            {requestForm.success && <div className="update-form-success">✅ Đã gửi yêu cầu thành công!</div>}
+                            {requestForm.success && <div className="update-form-success">Đã gửi yêu cầu thành công!</div>}
                         </div>
                     </div>
                 </div>
@@ -925,15 +924,15 @@ const DealerCarManagement = () => {
                 <div className="modal-overlay" onClick={() => setNotificationModal(false)}>
                     <div className="modal-content notification-modal-content" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>🔔 Thông báo yêu cầu thêm xe</h2>
+                            <h2>Thông báo yêu cầu thêm xe</h2>
                             <button className="close-btn" onClick={() => setNotificationModal(false)}>×</button>
                         </div>
                         <div className="notification-modal-body">
                             {loadingNotifications ? (
-                                <div className="loading-notifications">⏳ Đang tải thông báo...</div>
+                                <div className="loading-notifications">Đang tải thông báo...</div>
                             ) : notifications.length === 0 ? (
                                 <div className="no-notifications">
-                                    <p>📭 Chưa có thông báo nào</p>
+                                    <p>Chưa có thông báo nào</p>
                                 </div>
                             ) : (
                                 <div className="notifications-list">
@@ -950,15 +949,37 @@ const DealerCarManagement = () => {
                                             <div className="notification-header-item">
                                                 <h4>{notification.modelName} {notification.variantName} - {notification.colorName}</h4>
                                                 <span className={`status-badge-notification status-${statusClass}`}>
-                                                    {notification.status === 'Chờ duyệt' ? '⏳ Chờ duyệt' : 
-                                                     notification.status === 'Đã duyệt' ? '✅ Đã duyệt' : 
-                                                     notification.status === 'Đang giao' ? '🚚 Đang giao' :
-                                                     notification.status === 'Đã giao' ? '📦 Đã giao' :
-                                                     '❌ Từ chối'}
+                                                    {notification.status === 'Chờ duyệt' ? 'Chờ duyệt' : 
+                                                     notification.status === 'Đã duyệt' ? 'Đã duyệt' : 
+                                                     notification.status === 'Đang giao' ? 'Đang giao' :
+                                                     notification.status === 'Đã giao' ? 'Đã giao' :
+                                                     'Từ chối'}
                                                 </span>
                                             </div>
                                             <div className="notification-details">
                                                 <p><strong>Số lượng:</strong> {notification.quantity} xe</p>
+                                                {notification.unitPriceAtApproval && (
+                                                    <p>
+                                                        <strong>Giá đơn vị:</strong> 
+                                                        <span>
+                                                            {new Intl.NumberFormat('vi-VN', { 
+                                                                style: 'currency', 
+                                                                currency: 'VND' 
+                                                            }).format(notification.unitPriceAtApproval)}
+                                                        </span>
+                                                    </p>
+                                                )}
+                                                {notification.totalAmount && (
+                                                    <p>
+                                                        <strong>Tổng giá trị:</strong> 
+                                                        <span>
+                                                            {new Intl.NumberFormat('vi-VN', { 
+                                                                style: 'currency', 
+                                                                currency: 'VND' 
+                                                            }).format(notification.totalAmount)}
+                                                        </span>
+                                                    </p>
+                                                )}
                                                 <p><strong>Ngày gửi:</strong> {new Date(notification.createdAt).toLocaleString('vi-VN')}</p>
                                                 {notification.approvedAt && (
                                                     <p><strong>Ngày duyệt:</strong> {new Date(notification.approvedAt).toLocaleString('vi-VN')}</p>
@@ -1098,7 +1119,7 @@ const VehicleDetailModal = ({ vehicle, onClose }) => {
                     <div className="vehicle-detail-info">
                         {loadingConfig && (
                             <div className="modal-loading-detail">
-                                ⏳ Đang tải thông tin chi tiết...
+                                Đang tải thông tin chi tiết...
                             </div>
                         )}
                         <div className="detail-section">

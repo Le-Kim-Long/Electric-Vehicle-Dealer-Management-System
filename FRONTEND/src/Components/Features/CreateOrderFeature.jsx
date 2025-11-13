@@ -350,7 +350,6 @@ const CreateOrderFeature = () => {
         }
       } catch (error) {
         // Không hiển thị lỗi, chỉ không tự động điền
-        console.log('Customer not found:', error);
       }
     }
   };
@@ -555,13 +554,13 @@ const CreateOrderFeature = () => {
       const total = calculateTotal();
 
       // Notification thành công với thông tin chi tiết
-      const orderInfo = `📋 Mã đơn hàng: ORD-${String(orderId).padStart(6, '0')}
-👤 Khách hàng: ${orderData.customer.name}
-📧 Email: ${orderData.customer.email}
-📱 SĐT: ${orderData.customer.phone}
-🚗 Số xe: ${orderData.selectedVehicles.length}
-💰 Tổng tiền: ${formatPrice(total)}
-💳 Phương thức: ${orderData.financing.phuongThucThanhToan}
+      const orderInfo = `Mã đơn hàng: ORD-${String(orderId).padStart(6, '0')}
+Khách hàng: ${orderData.customer.name}
+Email: ${orderData.customer.email}
+SĐT: ${orderData.customer.phone}
+Số xe: ${orderData.selectedVehicles.length}
+Tổng tiền: ${formatPrice(total)}
+Phương thức: ${orderData.financing.phuongThucThanhToan}
 
 Đơn hàng đã được tạo với trạng thái "Chưa thanh toán".
 Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
@@ -704,18 +703,8 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
                 </div>
               ) : (
                 <>
-                  <div className="customer-search-box" style={{
-                    marginBottom: '20px',
-                    padding: '10px',
-                    background: '#f8f9fa',
-                    borderRadius: '8px'
-                  }}>
-                    <label style={{ 
-                      display: 'block', 
-                      marginBottom: '8px', 
-                      fontWeight: '600',
-                      color: '#333'
-                    }}>
+                  <div className="customer-search-box">
+                    <label>
                       🔍 Tìm kiếm theo số điện thoại:
                     </label>
                     <input
@@ -723,23 +712,9 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
                       placeholder="Nhập số điện thoại để tìm kiếm..."
                       value={customerSearchPhone}
                       onChange={(e) => setCustomerSearchPhone(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 15px',
-                        border: '2px solid #dee2e6',
-                        borderRadius: '6px',
-                        fontSize: '14px',
-                        transition: 'border-color 0.3s'
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = '#007bff'}
-                      onBlur={(e) => e.target.style.borderColor = '#dee2e6'}
                     />
                     {customerSearchPhone && (
-                      <div style={{
-                        marginTop: '8px',
-                        fontSize: '13px',
-                        color: '#666'
-                      }}>
+                      <div className="customer-search-results">
                         Tìm thấy: <strong>{allCustomers.filter(c => 
                           c.phoneNumber.includes(customerSearchPhone)
                         ).length}</strong> khách hàng
@@ -785,13 +760,9 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
                       customerSearchPhone === '' || 
                       c.phoneNumber.includes(customerSearchPhone)
                     ).length === 0 && customerSearchPhone && (
-                      <div style={{
-                        textAlign: 'center',
-                        padding: '30px',
-                        color: '#6c757d'
-                      }}>
-                        <p style={{ fontSize: '16px', margin: 0 }}>
-                          ❌ Không tìm thấy khách hàng với số điện thoại: <strong>{customerSearchPhone}</strong>
+                      <div className="no-customer-found">
+                        <p>
+                          Không tìm thấy khách hàng với số điện thoại: <strong>{customerSearchPhone}</strong>
                         </p>
                       </div>
                     )}
@@ -856,8 +827,8 @@ const PaymentStep = ({ orderData, setOrderData, total }) => {
 // Các components còn lại giữ nguyên
 const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customerError, onShowCustomerList }) => (
   <div className="step-content">
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-      <h3 style={{ margin: 0 }}>Thông tin khách hàng</h3>
+    <div className="customer-info-header">
+      <h3>Thông tin khách hàng</h3>
       <button 
         className="btn-show-customer-list"
         onClick={onShowCustomerList}
@@ -867,36 +838,13 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
       </button>
     </div>
     {isLoadingCustomer && (
-      <div style={{ 
-        padding: '12px 16px', 
-        background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)', 
-        borderRadius: '8px', 
-        marginBottom: '20px',
-        border: '1px solid #2196f3',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <span className="customer-loading">⏳</span>
+      <div className="customer-loading-notice">
         <p className="customer-loading-text">Đang tải thông tin khách hàng...</p>
       </div>
     )}
     {customerError && (
-      <div style={{ 
-        padding: '14px 18px', 
-        background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)', 
-        borderRadius: '8px', 
-        marginBottom: '20px',
-        border: '2px solid #ef5350',
-        boxShadow: '0 2px 8px rgba(239, 83, 80, 0.2)'
-      }}>
-        <p style={{ 
-          margin: 0, 
-          color: '#c62828', 
-          fontWeight: '600',
-          fontSize: '14px',
-          lineHeight: '1.6'
-        }}>
+      <div className="customer-error-notice">
+        <p>
           {customerError}
         </p>
       </div>
@@ -921,15 +869,8 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
       ))}
     </div>
     {!customerError && (
-      <div style={{ 
-        marginTop: '15px', 
-        padding: '10px', 
-        background: '#f5f5f5', 
-        borderRadius: '6px',
-        fontSize: '13px',
-        color: '#666'
-      }}>
-        <p className="customer-note-title">💡 <strong>Lưu ý:</strong></p>
+      <div className="customer-note-box">
+        <p className="customer-note-title"><strong>Lưu ý:</strong></p>
         <ul className="customer-note-list">
           <li>Họ tên: Chỉ chứa chữ cái và khoảng trắng</li>
           <li>Số điện thoại: Phải có 10 hoặc 11 chữ số (tự động tìm khách hàng cũ)</li>
@@ -1143,14 +1084,8 @@ const VehicleSelectionStep = ({
                   </div>
                 </div>
                 <label>Số lượng:</label>
-                <div className="stock-info" style={{ 
-                  margin: '5px 0', 
-                  padding: '8px', 
-                  background: '#e3f2fd', 
-                  borderRadius: '4px',
-                  fontSize: '13px'
-                }}>
-                  📦 Tồn kho màu {tempColor}: <strong>{getColorQuantity(tempSelectedVehicle, tempColor)} xe</strong>
+                <div className="stock-availability">
+                  Tồn kho màu {tempColor}: <strong>{getColorQuantity(tempSelectedVehicle, tempColor)} xe</strong>
                 </div>
                 <div className="quantity-controls">
                   <button 
@@ -1203,7 +1138,7 @@ const VehicleSelectionStep = ({
 
       {selectedVehicles.length > 0 && (
         <div className="shopping-cart">
-          <h4>🛒 Giỏ hàng ({selectedVehicles.length} mặt hàng)</h4>
+          <h4>Giỏ hàng ({selectedVehicles.length} mặt hàng)</h4>
           <div className="cart-items">
             {selectedVehicles.map((item, index) => (
               <div key={index} className="cart-item">
@@ -1262,35 +1197,16 @@ const PromotionStep = ({ promotions, selectedPromotion, onSelect, isLoading, err
         <p>Đang tải danh sách khuyến mãi...</p>
       </div>
     ) : error ? (
-      <div style={{ 
-        padding: '20px', 
-        background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)', 
-        borderRadius: '12px', 
-        border: '2px solid #ef5350',
-        textAlign: 'center',
-        marginTop: '20px'
-      }}>
-        <p style={{ 
-          margin: '0 0 10px 0', 
-          color: '#c62828', 
-          fontWeight: '600',
-          fontSize: '16px'
-        }}>
+      <div className="promotion-error-container">
+        <p>
           {error}
         </p>
         <p className="discount-hint">
-          💡 Nếu bạn không muốn áp dụng khuyến mãi, hãy bấm "Tiếp tục" để qua bước tiếp theo.
+          Nếu bạn không muốn áp dụng khuyến mãi, hãy bấm "Tiếp tục" để qua bước tiếp theo.
         </p>
       </div>
     ) : promotions.length === 0 ? (
-      <div style={{ 
-        padding: '30px', 
-        background: '#f8f9fa', 
-        borderRadius: '12px', 
-        textAlign: 'center',
-        border: '2px dashed #dee2e6'
-      }}>
-        <p className="empty-promotion-icon">📋</p>
+      <div className="empty-promotion-box">
         <h4 className="empty-promotion-title">Không có khuyến mãi nào</h4>
         <p className="empty-promotion-text">Hiện tại đại lý chưa có chương trình khuyến mãi nào đang hoạt động.</p>
       </div>
@@ -1327,12 +1243,7 @@ const PromotionStep = ({ promotions, selectedPromotion, onSelect, isLoading, err
               <div className="promotion-period">
                 Từ {new Date(promotion.startDate).toLocaleDateString('vi-VN')} đến {new Date(promotion.endDate).toLocaleDateString('vi-VN')}
               </div>
-              <div className="promotion-status" style={{
-                color: promotion.status === 'Đang hoạt động' ? '#28a745' : '#6c757d',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                marginTop: '5px'
-              }}>
+              <div className={`promotion-status-badge ${promotion.status === 'Đang hoạt động' ? 'active-status' : 'inactive-status'}`}>
                 {promotion.status}
               </div>
             </div>
@@ -1401,7 +1312,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice }) => {
               border: '1px solid #ffc107'
             }}>
               <p className="order-detail-item">
-                <strong>🎁 Khuyến mãi:</strong> {orderSummary.orderInfo.promotionName}
+                <strong>Khuyến mãi:</strong> {orderSummary.orderInfo.promotionName}
               </p>
             </div>
           )}
