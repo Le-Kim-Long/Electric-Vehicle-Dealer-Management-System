@@ -16,7 +16,8 @@ import {
   getOrderSummaryForConfirmation,
   updateOrderStatus,
   getAllCustomers,
-  searchCustomerByPhone
+  searchCustomerByPhone,
+  getOrderById
 } from '../../services/carVariantApi';
 import { showNotification } from '../Notification';
 
@@ -50,9 +51,157 @@ const CreateOrderFeature = () => {
     payment: { phuongThuc: 'Tiền mặt', ghiChu: '' }
   });
 
-  // Load customer data khi quay lại Step 1
-  // Đã xóa useEffect load customer từ sessionStorage
-  // Bây giờ thông tin sẽ tự động mất khi F5 hoặc chuyển trang
+  // Load draft order khi có draftOrderId trong sessionStorage
+  useEffect(() => {
+    const loadDraftOrder = async () => {
+      const draftOrderId = sessionStorage.getItem('draftOrderId');
+      if (!draftOrderId) return;
+
+      try {
+        setIsLoadingCustomer(true);
+
+        // Load full order info
+        const orderData = await getOrderById(draftOrderId);
+        const orderInfo = orderData.orderInfo || {};
+        const customer = orderData.customer || {};
+        const orderDetails = orderData.orderDetails || [];
+
+        // Set customer info
+        if (customer) {
+          setCustomerId(customer.customerId);
+          setOrderData(prev => ({
+            ...prev,
+            customer: {
+              name: customer.customerName || '',
+              phone: customer.customerPhone || '',
+              email: customer.customerEmail || ''
+            }
+          }));
+        }
+
+        // Set orderId
+        setOrderId(parseInt(draftOrderId));
+
+        // Set selected vehicles from order details - Format phải khớp với addVehicleToCart
+        if (orderDetails.length > 0) {
+          // Load danh sách xe để lấy thông tin đầy đủ
+          const apiData = await getCarVariantDetails();
+          const transformedData = transformCarVariantData(apiData);
+          const vehiclesData = transformedData.map((v, idx) => ({
+            ...v,
+            colorPricesRaw: apiData[idx]?.colorPrices || [],
+            maXe: v.id
+          }));
+          setVehicles(vehiclesData);
+
+          const loadedVehicles = orderDetails.map(detail => {
+            // Tìm vehicle info từ API
+            const vehicleInfo = vehiclesData.find(v => 
+              v.modelName === detail.modelName && v.variantName === detail.variantName
+            );
+
+            const colorName = detail.colorName || detail.selectedColor;
+            
+            // Dùng giá trực tiếp từ API order details (unitPrice hoặc finalPrice)
+            const vehiclePrice = detail.unitPrice || detail.finalPrice || 0;
+
+            return {
+              orderDetailId: detail.orderDetailId,
+              carVariantId: detail.carVariantId,
+              name: `${detail.modelName || ''} ${detail.variantName || ''}`.trim(),
+              modelName: detail.modelName,
+              variantName: detail.variantName,
+              color: colorName || 'N/A',
+              quantity: detail.quantity || 1,
+              price: vehiclePrice,
+              defaultImage: vehicleInfo?.defaultImage || detail.defaultImage || '',
+              images: vehicleInfo?.images || {},
+              maXe: detail.carId,
+              colorPricesRaw: vehicleInfo?.colorPricesRaw || [],
+              // Giữ nguyên vehicle object để tương thích
+              vehicle: vehicleInfo || {
+                id: detail.carVariantId,
+                carVariantId: detail.carVariantId,
+                name: `${detail.modelName} ${detail.variantName}`,
+                modelName: detail.modelName,
+                variantName: detail.variantName,
+                defaultImage: detail.defaultImage || '',
+                colorPricesRaw: []
+              }
+            };
+          });
+
+          setOrderData(prev => ({
+            ...prev,
+            selectedVehicles: loadedVehicles
+          }));
+        }
+
+        // Set promotion if exists
+        if (orderInfo.promotionId) {
+          setOrderData(prev => ({
+            ...prev,
+            promotion: {
+              promotionId: orderInfo.promotionId,
+              promotionName: orderInfo.promotionName || 'Khuyến mãi'
+            }
+          }));
+        }
+
+        // Set payment method
+        if (orderInfo.paymentMethod) {
+          setOrderData(prev => ({
+            ...prev,
+            payment: {
+              ...prev.payment,
+              phuongThuc: orderInfo.paymentMethod
+            },
+            financing: {
+              ...prev.financing,
+              phuongThucThanhToan: 'Trả thẳng' // Mặc định
+            }
+          }));
+        }
+
+        // Xác định bước tiếp theo dựa trên thông tin đã có
+        let nextStep = 2; // Mặc định bước 2
+        let stepMessage = 'Tiếp tục từ bước chọn xe';
+
+        if (orderDetails.length > 0) {
+          // Đã có xe
+          if (orderInfo.paymentMethod) {
+            // Đã có payment method → Chuyển sang bước 5 (xác nhận)
+            nextStep = 5;
+            stepMessage = 'Tiếp tục từ bước xác nhận đơn hàng';
+          } else if (orderInfo.promotionId !== undefined && orderInfo.promotionId !== null) {
+            // Đã chọn khuyến mãi (có thể là null = không dùng KM) → Chuyển sang bước 4
+            nextStep = 4;
+            stepMessage = 'Tiếp tục từ bước thanh toán';
+          } else {
+            // Chỉ có xe → Chuyển sang bước 3
+            nextStep = 3;
+            stepMessage = 'Tiếp tục từ bước chọn khuyến mãi';
+          }
+        }
+
+        setCurrentStep(nextStep);
+        
+        // Xóa draftOrderId trước khi show notification để tránh re-trigger
+        sessionStorage.removeItem('draftOrderId');
+        
+        // Chỉ hiển thị 1 notification duy nhất sau khi load xong
+        showNotification(`Đã tải thông tin đơn hàng. ${stepMessage}`, 'success');
+      } catch (error) {
+        console.error('Error loading draft order:', error);
+        showNotification('Không thể tải thông tin đơn hàng: ' + error.message, 'error');
+        sessionStorage.removeItem('draftOrderId');
+      } finally {
+        setIsLoadingCustomer(false);
+      }
+    };
+
+    loadDraftOrder();
+  }, []); // Chỉ chạy một lần khi component mount
 
   // Load vehicles từ API khi vào Step 2
   useEffect(() => {
@@ -86,9 +235,16 @@ const CreateOrderFeature = () => {
   }, [currentStep, vehicles.length]);
 
   // Load order details khi quay lại Step 2 để hiển thị xe đã chọn
+  // DISABLED - Draft order đã load sẵn selectedVehicles
+  // useEffect này chỉ dùng khi user tự tạo đơn từ đầu và quay lại bước 2
   useEffect(() => {
     const loadOrderDetails = async () => {
-      if (currentStep === 2 && orderId && orderData.selectedVehicles.length === 0) {
+      // Chỉ load nếu:
+      // 1. Đang ở step 2
+      // 2. Đã có orderId (đã tạo draft order)
+      // 3. Chưa có selectedVehicles (chưa load từ draft)
+      // 4. Có vehicles data để transform
+      if (currentStep === 2 && orderId && orderData.selectedVehicles.length === 0 && vehicles.length > 0) {
         try {
           const details = await getOrderDetails(orderId);
           
@@ -102,16 +258,24 @@ const CreateOrderFeature = () => {
               );
               
               return {
-                vehicle: vehicle || {
-                  id: detail.carId,
-                  name: `VinFast ${detail.modelName} ${detail.variantName}`,
-                  modelName: detail.modelName,
-                  variantName: detail.variantName
-                },
+                orderDetailId: detail.orderDetailId,
+                carVariantId: detail.carVariantId || vehicle?.carVariantId,
+                name: `${detail.modelName || ''} ${detail.variantName || ''}`.trim(),
+                modelName: detail.modelName,
+                variantName: detail.variantName,
                 color: detail.colorName,
                 quantity: detail.quantity,
-                colorPrice: detail.unitPrice,
-                orderDetailId: detail.orderDetailId
+                price: detail.unitPrice,
+                defaultImage: vehicle?.defaultImage || detail.defaultImage || '',
+                images: vehicle?.images || {},
+                maXe: detail.carId,
+                vehicle: vehicle || {
+                  id: detail.carId,
+                  carVariantId: detail.carVariantId,
+                  name: `${detail.modelName} ${detail.variantName}`,
+                  modelName: detail.modelName,
+                  variantName: detail.variantName
+                }
               };
             });
             
@@ -121,13 +285,14 @@ const CreateOrderFeature = () => {
             }));
           }
         } catch (error) {
+          console.warn('⚠️ Could not load order details:', error);
           // Ignore error - user can re-select vehicles
         }
       }
     };
 
     loadOrderDetails();
-  }, [currentStep, orderId, vehicles, orderData.selectedVehicles.length]);
+  }, [currentStep, orderId, vehicles.length, orderData.selectedVehicles.length]);
 
   // Load promotions khi vào Step 3
   useEffect(() => {

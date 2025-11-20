@@ -7,7 +7,8 @@ import {
   getPaymentsByOrderId,
   updatePaymentStatus,
   updatePaymentMethod,
-  updateOrderStatus
+  updateOrderStatus,
+  getOrderById
 } from '../../services/carVariantApi';
 import { showNotification } from '../Notification';
 
@@ -447,6 +448,14 @@ Số tiền: ${formatCurrency(result.amount)}`;
     }
   };
 
+  // Tiếp tục xử lý đơn hàng Chưa xác nhận
+  const handleContinueOrder = (orderId) => {
+    // Lưu orderId vào sessionStorage để CreateOrderFeature load lại
+    sessionStorage.setItem('draftOrderId', orderId.toString());
+    // Chuyển sang trang tạo đơn hàng
+    window.location.hash = 'create-order';
+  };
+
   return (
     <div className="order-management-payment-feature">
       {/* Header Section */}
@@ -652,8 +661,17 @@ Số tiền: ${formatCurrency(result.amount)}`;
                     })()}
                   </div>
 
-                  {/* Actions - Nút chi tiết và hủy */}
+                  {/* Actions - Nút tiếp tục xử lý, chi tiết và hủy */}
                   <div className="order-card-actions">
+                    {payment.status === 'Chưa xác nhận' && (
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleContinueOrder(payment.orderId)}
+                        style={{ flex: 1 }}
+                      >
+                        Tiếp tục xử lý
+                      </button>
+                    )}
                     {payment.status === 'Chưa thanh toán' && (
                       <button
                         className="btn-failed"

@@ -30,6 +30,7 @@ const DealerStaff = ({ user, onLogout }) => {
   const [dealerInfo, setDealerInfo] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [createOrderKey, setCreateOrderKey] = useState(0); // Key để force re-mount CreateOrderFeature
 
   useEffect(() => {
     const loadDealerInfo = async () => {
@@ -83,6 +84,11 @@ const DealerStaff = ({ user, onLogout }) => {
     setActiveFeature(featureId);
     // Update URL hash
     window.location.hash = featureId;
+    
+    // Force re-mount CreateOrderFeature khi chuyển đến create-order
+    if (featureId === 'create-order') {
+      setCreateOrderKey(prev => prev + 1);
+    }
   };
 
   // Listen to hash changes (browser back/forward)
@@ -91,6 +97,11 @@ const DealerStaff = ({ user, onLogout }) => {
       const hash = window.location.hash.slice(1);
       if (hash) {
         setActiveFeature(hash);
+        
+        // Force re-mount CreateOrderFeature khi hash change đến create-order
+        if (hash === 'create-order') {
+          setCreateOrderKey(prev => prev + 1);
+        }
       }
     };
 
@@ -101,15 +112,15 @@ const DealerStaff = ({ user, onLogout }) => {
   const renderMainContent = () => {
     switch (activeFeature) {
       case 'home':
-        return <HomePage onMenuClick={handleMenuClick} />;
+        return <HomePage key="home" onMenuClick={handleMenuClick} />;
       case 'vehicle-info':
-        return <VehicleInfoFeature />;
+        return <VehicleInfoFeature key="vehicle-info" />;
       case 'create-order':
-        return <CreateOrderFeature />;
+        return <CreateOrderFeature key={`create-order-${createOrderKey}`} />;
       case 'payment':
-        return <OrderFeatureManagementPayment />;
+        return <OrderFeatureManagementPayment key="payment" />;
       default:
-        return <HomePage onMenuClick={handleMenuClick} />;
+        return <HomePage key="home-default" onMenuClick={handleMenuClick} />;
     }
   };
 
