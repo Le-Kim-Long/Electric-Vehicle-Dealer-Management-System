@@ -73,6 +73,16 @@ public class CarDistributionRequestServiceImpl implements CarDistributionRequest
         distributionRequest.setRequestDate(LocalDateTime.now());
         distributionRequest.setStatus("Chờ duyệt");
 
+        // Thêm note nếu có
+        if (requestDto.getNote() != null && !requestDto.getNote().trim().isEmpty()) {
+            String note = requestDto.getNote().trim();
+            // Giới hạn độ dài note tối đa 250 ký tự
+            if (note.length() > 250) {
+                note = note.substring(0, 250);
+            }
+            distributionRequest.setNote(note);
+        }
+
         // Lưu vào database
         CarDistributionRequest savedRequest = distributionRequestRepository.save(distributionRequest);
 
@@ -157,9 +167,23 @@ public class CarDistributionRequestServiceImpl implements CarDistributionRequest
             throw new RuntimeException("Can only approve requests with status 'Chờ duyệt'. Current status: " + distributionRequest.getStatus());
         }
 
-        // Cập nhật trạng thái và thời gian duyệt
+        // Lấy manufacturer price của xe tại thời điểm duyệt
+        Long priceAsLong = distributionRequest.getCar().getPrice();
+        if (priceAsLong == null) {
+            throw new RuntimeException("Car price is not set. Cannot approve request.");
+        }
+
+        // Chuyển từ Long sang BigDecimal
+        BigDecimal manufacturerPrice = BigDecimal.valueOf(priceAsLong);
+
+        // Tính tổng tiền = manufacturer price * quantity
+        BigDecimal totalAmount = manufacturerPrice.multiply(BigDecimal.valueOf(distributionRequest.getQuantity()));
+
+        // Cập nhật trạng thái, thời gian duyệt, giá và tổng tiền
         distributionRequest.setStatus("Đã duyệt");
         distributionRequest.setApprovedDate(LocalDateTime.now());
+        distributionRequest.setUnitPriceAtApproval(manufacturerPrice);
+        distributionRequest.setTotalAmount(totalAmount);
 
         // Lưu thay đổi
         CarDistributionRequest savedRequest = distributionRequestRepository.save(distributionRequest);
@@ -169,7 +193,7 @@ public class CarDistributionRequestServiceImpl implements CarDistributionRequest
     }
 
     @Override
-    public DistributionRequestResponseDto rejectDistributionRequest(Integer requestId, String adminEmail) {
+    public DistributionRequestResponseDto rejectDistributionRequest(Integer requestId, String adminEmail, String rejectionReason) {
         // Tìm yêu cầu phân phối theo ID
         CarDistributionRequest distributionRequest = distributionRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Distribution request not found with ID: " + requestId));
@@ -181,7 +205,26 @@ public class CarDistributionRequestServiceImpl implements CarDistributionRequest
 
         // Cập nhật trạng thái
         distributionRequest.setStatus("Từ chối");
-        // Note: Có thể thêm field rejectedDate và rejectedBy nếu cần track thông tin này
+
+        // Cập nhật note với lý do từ chối
+        String currentNote = distributionRequest.getNote();
+        String rejectionNote = "LÝ DO TỪ CHỐI: " + rejectionReason.trim();
+
+        if (currentNote != null && !currentNote.trim().isEmpty()) {
+            // Nếu đã có note, thêm lý do từ chối vào cuối
+            String updatedNote = currentNote + " | " + rejectionNote;
+            // Giới hạn độ dài note tối đa 250 ký tự
+            if (updatedNote.length() > 250) {
+                updatedNote = updatedNote.substring(0, 250);
+            }
+            distributionRequest.setNote(updatedNote);
+        } else {
+            // Nếu chưa có note, chỉ set lý do từ chối
+            if (rejectionNote.length() > 250) {
+                rejectionNote = rejectionNote.substring(0, 250);
+            }
+            distributionRequest.setNote(rejectionNote);
+        }
 
         // Lưu thay đổi
         CarDistributionRequest savedRequest = distributionRequestRepository.save(distributionRequest);
@@ -297,9 +340,12 @@ public class CarDistributionRequestServiceImpl implements CarDistributionRequest
                 .quantity(request.getQuantity())
                 .requestDate(request.getRequestDate())
                 .status(request.getStatus())
+                .unitPriceAtApproval(request.getUnitPriceAtApproval())
+                .totalAmount(request.getTotalAmount())
                 .approvedDate(request.getApprovedDate())
                 .expectedDeliveryDate(request.getExpectedDeliveryDate())
                 .actualDeliveryDate(request.getActualDeliveryDate())
+                .note(request.getNote())
                 .build();
     }
 }
