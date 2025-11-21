@@ -366,6 +366,12 @@ VALUES
 INSERT INTO USER_ACCOUNT (FullName, Email, PasswordHash, PhoneNumber, RoleID, DealerID)
 VALUES 
 (N'Pham Van Nam', N'staff.dl1@vinfast.com', N'123456', N'0909000004', 3, 1);
+INSERT INTO USER_ACCOUNT (FullName, Email, PasswordHash, PhoneNumber, RoleID, DealerID)
+VALUES 
+(N'Mai Xuân Tín', N'tinmai.dl1@vinfast.com', N'123456', N'0834380433', 3, 1);
+INSERT INTO USER_ACCOUNT (FullName, Email, PasswordHash, PhoneNumber, RoleID, DealerID)
+VALUES 
+(N'Nguyễn Tuấn Toàn', N'toanpeo.dl1@vinfast.com', N'123456', N'0905111111', 3, 1);
 
 -- Dealer Staff (belongs to Dealer 2)
 INSERT INTO USER_ACCOUNT (FullName, Email, PasswordHash, PhoneNumber, RoleID, DealerID)
@@ -393,7 +399,8 @@ VALUES
 (N'Huỳnh Văn Minh', N'minh.huynh@gmail.com', N'0909001007'),
 (N'Ngô Thị Oanh', N'oanh.ngo@gmail.com', N'0909001008'),
 (N'Bùi Văn Quang', N'quang.bui@gmail.com', N'0909001009'),
-(N'Phan Thị Thảo', N'thao.phan@gmail.com', N'0909001010');
+(N'Phan Thị Thảo', N'thao.phan@gmail.com', N'0909001010'),
+(N'Mai Xuân Tín', N'tinne@gmail.com', N'0834380433');
 
 CREATE TABLE PROMOTION (
     PromotionId INT PRIMARY KEY IDENTITY(1,1),
@@ -424,8 +431,10 @@ CREATE TABLE ORDERS (
     OrderId INT PRIMARY KEY IDENTITY(1,1),
     CustomerId INT NOT NULL,
     DealerId INT NOT NULL,
+	UserId INT NOT NULL,
 
     OrderDate DATETIME DEFAULT GETDATE(),
+	CompletionDate DATETIME null,
     SubTotal DECIMAL(18,2) null,             -- Tổng trước giảm giá
     DiscountAmount DECIMAL(18,2) DEFAULT 0,      -- Giảm giá hóa đơn
     TotalAmount AS (SubTotal - DiscountAmount) PERSISTED,
@@ -435,14 +444,27 @@ CREATE TABLE ORDERS (
 
     PromotionId INT NULL,                        -- Nếu khuyến mãi áp dụng toàn đơn
     FOREIGN KEY (PromotionId) REFERENCES PROMOTION(PromotionId),
+	FOREIGN KEY (UserId) REFERENCES USER_ACCOUNT(UserID),
     FOREIGN KEY (CustomerId) REFERENCES CUSTOMER(CustomerId),
     FOREIGN KEY (DealerId) REFERENCES DEALER(DealerId)
 );
 
-INSERT INTO ORDERS (CustomerId, DealerId, SubTotal, DiscountAmount, PaymentMethod, Status, PromotionId)
+SET IDENTITY_INSERT ORDERS ON;
+
+INSERT INTO ORDERS (OrderId, CustomerId, DealerId, UserId, OrderDate, CompletionDate, SubTotal, DiscountAmount, PaymentMethod, Status, PromotionId)
 VALUES
-(1, 1, 1490000000, 0, N'Thanh toán chuyển khoản', N'Hoàn thành', NULL),
-(2, 1, 1200000000, 0, N'Thanh toán trả góp', N'Chờ xử lý', NULL);
+(1, 1, 1, 4, '2025-09-29 00:00:00', '2025-10-06 00:00:00', 6772500000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(2, 2, 1, 5, '2025-10-07 00:00:00', '2025-10-13 00:00:00', 4882500000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(3, 3, 1, 6, '2025-10-24 00:00:00', '2025-10-29 00:00:00', 4851000000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(4, 4, 1, 4, '2025-10-15 00:00:00', '2025-10-24 00:00:00', 4515000000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(5, 5, 1, 5, '2025-09-06 00:00:00', '2025-09-11 00:00:00', 2094750000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(6, 6, 1, 6, '2025-10-29 00:00:00', '2025-11-07 00:00:00', 1218000000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(7, 7, 1, 4, '2025-09-13 00:00:00', '2025-09-18 00:00:00', 4394250000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(8, 8, 1, 5, '2025-10-07 00:00:00', '2025-10-15 00:00:00', 1890000000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(9, 9, 1, 6, '2025-09-14 00:00:00', '2025-09-17 00:00:00', 4536000000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL),
+(10, 10, 1, 4, '2025-10-06 00:00:00', '2025-10-11 00:00:00', 1921500000.00, 0.00, N'Trả thẳng', N'Đã thanh toán', NULL);
+
+SET IDENTITY_INSERT ORDERS OFF;
 
 --13. Tạo bảng chi tiết đơn hàng
 CREATE TABLE ORDER_DETAILS (
@@ -457,15 +479,33 @@ CREATE TABLE ORDER_DETAILS (
     FOREIGN KEY (CarId) REFERENCES CAR(CarId)
 );
 
--- VF3 Eco White (CarId = giả sử 1)
 INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice)
 VALUES
-(1, 1, 1, 240000000);  -- Áp dụng khuyến mãi giảm 10 triệu cho VF3
-
--- VF9 Eco White (CarId = giả sử 21)
-INSERT INTO ORDER_DETAILS (OrderId, CarId, Quantity, UnitPrice)
-VALUES
-(1, 21, 1, 1250000000);    -- Không có khuyến mãi
+(10, 22, 1, 1018500000.00),
+(10, 11, 2, 451500000.00),
+(9, 2, 3, 262500000.00),
+(9, 5, 1, 315000000.00),
+(9, 27, 3, 1144500000.00),
+(8, 2, 3, 262500000.00),
+(8, 23, 1, 1102500000.00),
+(7, 14, 3, 687750000.00),
+(7, 19, 2, 777000000.00),
+(7, 7, 2, 388500000.00),
+(6, 12, 1, 456750000.00),
+(6, 16, 1, 761250000.00),
+(5, 18, 1, 771750000.00),
+(5, 9, 3, 441000000.00),
+(4, 22, 3, 1018500000.00),
+(4, 34, 1, 1459500000.00),
+(3, 2, 3, 262500000.00),
+(3, 13, 3, 682500000.00),
+(3, 21, 2, 1008000000.00),
+(2, 9, 2, 441000000.00),
+(2, 29, 2, 1323000000.00),
+(2, 11, 3, 451500000.00),
+(1, 23, 2, 1102500000.00),
+(1, 21, 3, 1008000000.00),
+(1, 18, 2, 771750000.00);
 
 
 --13. Tạo bảng lưu thông tin thanh toán
@@ -481,24 +521,19 @@ CREATE TABLE Payment (
     FOREIGN KEY (OrderId) REFERENCES ORDERS(OrderId)
 );
 
-INSERT INTO Payment (OrderId, Amount, Method, Status, Note)
+INSERT INTO Payment (OrderId, Amount, PaymentDate, Method, Status)
 VALUES
-(1, 1490000000, N'Thanh toán chuyển khoản', N'Thành công', N'Khách đã chuyển khoản toàn bộ số tiền');
+(1, 6772500000.00, '2025-10-06 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(2, 4882500000.00, '2025-10-13 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(3, 4851000000.00, '2025-10-29 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(4, 4515000000.00, '2025-10-24 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(5, 2094750000.00, '2025-09-11 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(6, 1218000000.00, '2025-11-07 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(7, 4394250000.00, '2025-09-18 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(8, 1890000000.00, '2025-10-15 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(9, 4536000000.00, '2025-09-17 00:00:00.000', N'Tiền mặt', N'Hoàn thành'),
+(10, 1921500000.00, '2025-10-11 00:00:00.000', N'Tiền mặt', N'Hoàn thành');
 
---14. Tạo bảng chi tiết trả góp 
-CREATE TABLE Installment (
-    InstallmentId INT PRIMARY KEY IDENTITY(1,1),
-    OrderId INT NOT NULL,                          -- FK -> ORDERS
-    PrincipalAmount DECIMAL(18,2) NOT NULL,        -- Tiền gốc (tổng giá trị đơn hàng)
-    TermCount INT NOT NULL,                        -- Số kỳ trả góp (12, 18, 24...)
-    InterestRate DECIMAL(5,2) NOT NULL,            -- % lãi suất theo năm
-    TotalInterest DECIMAL(18,2) NOT NULL,          -- Tổng số tiền lãi phải trả
-    TotalPay DECIMAL(18,2) NOT NULL,               -- Tổng phải trả = gốc + lãi
-    AmountPerTerm DECIMAL(18,2) NOT NULL,          -- Mỗi kỳ trả bao nhiêu
-    Note NVARCHAR(200) NULL,
-
-    FOREIGN KEY (OrderId) REFERENCES ORDERS(OrderId)
-);
 
 --15. Tạo bảng gửi yêu cầu nhập xe cho đại lý
 CREATE TABLE CAR_DISTRIBUTION_REQUEST (
@@ -515,11 +550,50 @@ CREATE TABLE CAR_DISTRIBUTION_REQUEST (
     -- Từ chối
     -- Đang giao
     -- Đã giao (đại lý xác nhận)
+	UnitPriceAtApproval DECIMAL(18,2) NULL,    -- Giá xe tại thời điểm duyệt
+    TotalAmount DECIMAL(18,2) NULL,            -- Tổng tiền = quantity * unitprice
 
     ApprovedDate DATETIME NULL,          -- Ngày hãng duyệt
     ExpectedDeliveryDate DATETIME NULL,  -- Hãng nhập ngày giao dự kiến
     ActualDeliveryDate DATETIME NULL,    -- Khi đại lý xác nhận đã nhận
+	Note NVARCHAR(250) NULL,
+
 
     CONSTRAINT FK_REQ_DEALER FOREIGN KEY (DealerID) REFERENCES DEALER(DealerID),
     CONSTRAINT FK_REQ_CAR FOREIGN KEY (CarID) REFERENCES CAR(CarID)
 );
+
+INSERT INTO CAR_DISTRIBUTION_REQUEST
+(DealerID, CarID, Quantity, RequestDate, Status, UnitPriceAtApproval, TotalAmount, ApprovedDate, ExpectedDeliveryDate, ActualDeliveryDate, Note)
+VALUES
+-- 1
+(1, 1, 10, '2025-09-05', N'Đã giao', 240000000.00, 2400000000.00, '2025-09-06', '2025-09-20', '2025-09-22', N'Xe giao đúng tiến độ'),
+
+-- 2
+(1, 3, 8, '2025-09-12', N'Đã giao', 310000000.00, 2480000000.00, '2025-09-14', '2025-09-28', '2025-09-30', N'Hoàn tất kiểm tra chất lượng'),
+
+-- 3
+(1, 5, 6, '2025-09-20', N'Đã giao', 300000000.00, 1800000000.00, '2025-09-22', '2025-10-05', '2025-10-06', N'Đã nhập kho đại lý'),
+
+-- 4
+(1, 7, 10, '2025-10-01', N'Đã giao', 370000000.00, 3700000000.00, '2025-10-02', '2025-10-15', '2025-10-17', N'Xe giao sớm hơn dự kiến'),
+
+-- 5
+(1, 10, 5, '2025-10-10', N'Đã giao', 425000000.00, 2125000000.00, '2025-10-12', '2025-10-25', '2025-10-26', N'Đại lý xác nhận đủ xe'),
+
+-- 6
+(1, 13, 7, '2025-10-25', N'Đã giao', 650000000.00, 4550000000.00, '2025-10-26', '2025-11-05', '2025-11-07', N'Xe cao cấp giao thành công'),
+
+-- 7
+(1, 15, 3, '2025-10-28', N'Đã giao', 720000000.00, 2160000000.00, '2025-10-29', '2025-11-08', '2025-11-09', N'Hoàn tất biên bản bàn giao'),
+
+-- 8
+(1, 19, 5, '2025-11-01', N'Đã giao', 740000000.00, 3700000000.00, '2025-11-02', '2025-11-10', '2025-11-11', N'Xe nhập đúng hạn'),
+
+-- 9
+(1, 23, 4, '2025-11-03', N'Đã giao', 1050000000.00, 4200000000.00, '2025-11-04', '2025-11-12', '2025-11-13', N'Hoàn tất quy trình nghiệm thu'),
+
+-- 10
+(1, 28, 2, '2025-11-05', N'Đã giao', 1250000000.00, 2500000000.00, '2025-11-06', '2025-11-12', '2025-11-13', N'Đại lý xác nhận nhận đủ xe');
+
+
