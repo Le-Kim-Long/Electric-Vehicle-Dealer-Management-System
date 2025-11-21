@@ -27,7 +27,7 @@ public interface CarDistributionRequestService {
     DistributionRequestResponseDto approveDistributionRequest(Integer requestId, String adminEmail);
 
     // Từ chối yêu cầu phân phối xe - chỉ Admin và EVM Staff
-    DistributionRequestResponseDto rejectDistributionRequest(Integer requestId, String adminEmail);
+    DistributionRequestResponseDto rejectDistributionRequest(Integer requestId, String adminEmail, String rejectionReason);
 
     // Set ngày giao xe dự kiến và chuyển status thành "Đang giao" - chỉ EVM Staff
     DistributionRequestResponseDto setDeliveryDateAndStartDelivery(Integer requestId, String evmStaffEmail, LocalDateTime expectedDeliveryDate);
