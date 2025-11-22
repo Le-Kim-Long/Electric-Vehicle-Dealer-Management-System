@@ -192,7 +192,50 @@ const CarManagement = () => {
 	const [deliveryLoading, setDeliveryLoading] = useState(false);
 	const [statusFilter, setStatusFilter] = useState('all'); // Filter notifications by status
 
+	// Confirm dialog states
+	const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+	const [confirmConfig, setConfirmConfig] = useState({
+		title: '',
+		message: '',
+		onConfirm: null,
+		confirmText: 'Xác nhận',
+		cancelText: 'Hủy',
+		type: 'warning'
+	});
+
 	// 2. Các hàm xử lý logic
+
+	// Show custom confirm dialog
+	const showConfirm = (title, message, onConfirm, type = 'warning') => {
+		setConfirmConfig({
+			title,
+			message,
+			onConfirm,
+			confirmText: 'Xác nhận',
+			cancelText: 'Hủy',
+			type
+		});
+		setShowConfirmDialog(true);
+	};
+
+	const handleConfirmClose = () => {
+		setShowConfirmDialog(false);
+		setConfirmConfig({
+			title: '',
+			message: '',
+			onConfirm: null,
+			confirmText: 'Xác nhận',
+			cancelText: 'Hủy',
+			type: 'warning'
+		});
+	};
+
+	const handleConfirmAction = () => {
+		if (confirmConfig.onConfirm) {
+			confirmConfig.onConfirm();
+		}
+		handleConfirmClose();
+	};
 
 	// Handler for modelName select in update config modal
 	const handleUpdateModelChange = async (modelName) => {
@@ -388,69 +431,73 @@ const CarManagement = () => {
 			
 			// Xác nhận trước khi xóa
 			let confirmMessage = '';
+			let confirmTitle = 'Xác nhận xóa xe';
 			if (!deleteCarData.variantName && !deleteCarData.colorName) {
-				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ MODEL "${deleteCarData.modelName}"?\nHành động này sẽ xóa tất cả các variant và màu xe thuộc model này!`;
+				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ MODEL "${deleteCarData.modelName}"?\n\nHành động này sẽ xóa tất cả các variant và màu xe thuộc model này!`;
 			} else if (!deleteCarData.colorName) {
-				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ VARIANT "${deleteCarData.variantName}" của model "${deleteCarData.modelName}"?\nHành động này sẽ xóa tất cả màu xe thuộc variant này!`;
+				confirmMessage = `Bạn có chắc chắn muốn xóa TOÀN BỘ VARIANT "${deleteCarData.variantName}" của model "${deleteCarData.modelName}"?\n\nHành động này sẽ xóa tất cả màu xe thuộc variant này!`;
 			} else {
 				confirmMessage = `Bạn có chắc chắn muốn xóa xe "${deleteCarData.modelName} ${deleteCarData.variantName}" màu "${deleteCarData.colorName}"?`;
 			}
 			
-			if (!window.confirm(confirmMessage)) {
-				setDeleteCarLoading(false);
-				return;
-			}
+			showConfirm(confirmTitle, confirmMessage, async () => {
+				try {
+					setDeleteCarLoading(true);
+					await deleteCarByModelVariantColor({
+						modelName: deleteCarData.modelName,
+						variantName: deleteCarData.variantName || null,
+						colorName: deleteCarData.colorName || null
+					});
+					
+					// Hiển thị thông báo chi tiết hơn
+					if (!deleteCarData.variantName && !deleteCarData.colorName) {
+						setDeleteCarMessage(`Xóa toàn bộ model "${deleteCarData.modelName}" thành công!`);
+					} else if (!deleteCarData.colorName) {
+						setDeleteCarMessage(`Xóa variant "${deleteCarData.variantName}" của model "${deleteCarData.modelName}" thành công!`);
+					} else {
+						setDeleteCarMessage(`Xóa xe màu "${deleteCarData.colorName}" thành công!`);
+					}
+					
+					// Reload vehicles and model options
+					loadVehicles();
+					// Cập nhật lại danh sách modelOptions sau khi xóa xe
+					fetchAllModelNames().then(models => setModelOptions(models)).catch(() => setModelOptions([]));
+					
+					// Reset form xóa xe sau khi xóa thành công
+					setDeleteCarData({ modelName: '', variantName: '', colorName: '' });
+					setDeleteVariantOptions([]);
+					setDeleteColorOptions([]);
+					
+					// Reset form tạo xe mới về trạng thái ban đầu
+					setCreateCarData({
+						model: { modelName: "", segment: "" },
+						variant: { variantName: "", description: "" },
+						configuration: {
+							batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
+						},
+						color: "",
+						car: { productionYear: "", price: "", status: "", imagePath: "" }
+					});
+					setVariantOptions([]);
+					setIsCustomModel(false);
+					setCustomModelName("");
+					setIsCustomVariant(false);
+					setCustomVariantName("");
+					setCreateCarError("");
+					setCreateCarSuccess("");
+				} catch (err) {
+					setDeleteCarMessage(err.message || 'Xóa xe thất bại!');
+				} finally {
+					setDeleteCarLoading(false);
+				}
+			}, 'error');
 			
-			await deleteCarByModelVariantColor({
-				modelName: deleteCarData.modelName,
-				variantName: deleteCarData.variantName || null,
-				colorName: deleteCarData.colorName || null
-			});
-			
-			// Hiển thị thông báo chi tiết hơn
-			if (!deleteCarData.variantName && !deleteCarData.colorName) {
-				setDeleteCarMessage(`Xóa toàn bộ model "${deleteCarData.modelName}" thành công!`);
-			} else if (!deleteCarData.colorName) {
-				setDeleteCarMessage(`Xóa variant "${deleteCarData.variantName}" của model "${deleteCarData.modelName}" thành công!`);
-			} else {
-				setDeleteCarMessage(`Xóa xe màu "${deleteCarData.colorName}" thành công!`);
-			}
-			
-			// Reload vehicles and model options
-			loadVehicles();
-			// Cập nhật lại danh sách modelOptions sau khi xóa xe
-			fetchAllModelNames().then(models => setModelOptions(models)).catch(() => setModelOptions([]));
-			
-			// Reset form xóa xe sau khi xóa thành công
-			setDeleteCarData({ modelName: '', variantName: '', colorName: '' });
-			setDeleteVariantOptions([]);
-			setDeleteColorOptions([]);
-			
-			// Reset form tạo xe mới về trạng thái ban đầu
-			setCreateCarData({
-				model: { modelName: "", segment: "" },
-				variant: { variantName: "", description: "" },
-				configuration: {
-					batteryCapacity: "", batteryType: "", fullChargeTime: "", rangeKm: "", power: "", torque: "", lengthMm: "", widthMm: "", heightMm: "", wheelbaseMm: "", weightKg: "", trunkVolumeL: "", seats: ""
-				},
-				color: "",
-				car: { productionYear: "", price: "", status: "", imagePath: "" }
-			});
-			setVariantOptions([]);
-			setIsCustomModel(false);
-			setCustomModelName("");
-			setIsCustomVariant(false);
-			setCustomVariantName("");
-			setCreateCarError("");
-			setCreateCarSuccess("");
+			setDeleteCarLoading(false);
 		} catch (err) {
-			setDeleteCarMessage(err.message || 'Xóa xe thất bại!');
-		} finally {
+			setDeleteCarMessage(err.message || 'Lỗi khi xử lý xóa xe!');
 			setDeleteCarLoading(false);
 		}
-	};
-
-	const handleViewDetail = async (vehicle) => {
+	};	const handleViewDetail = async (vehicle) => {
 		setSelectedVehicle(vehicle);
 		setVehicleDetailLoading(true);
 		try {
@@ -628,18 +675,23 @@ const CarManagement = () => {
 
 	// Approve dealer request
 	const handleApproveRequest = async (requestId) => {
-		if (!window.confirm("Bạn có chắc chắn muốn duyệt yêu cầu này?")) return;
-		
-		try {
-			await approveDistributionRequest(requestId);
-			
-			// Reload notifications to get updated status
-			await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
-			showNotification("Đã duyệt yêu cầu thành công!", "success");
-		} catch (error) {
-			console.error("Error approving request:", error);
-			showNotification("Có lỗi xảy ra khi duyệt yêu cầu: " + error.message, "error");
-		}
+		showConfirm(
+			'Xác nhận duyệt yêu cầu',
+			'Bạn có chắc chắn muốn duyệt yêu cầu này?',
+			async () => {
+				try {
+					await approveDistributionRequest(requestId);
+					
+					// Reload notifications to get updated status
+					await loadStaffNotifications(statusFilter !== 'all' ? statusFilter : null);
+					showNotification("Đã duyệt yêu cầu thành công!", "success");
+				} catch (error) {
+					console.error("Error approving request:", error);
+					showNotification("Có lỗi xảy ra khi duyệt yêu cầu: " + error.message, "error");
+				}
+			},
+			'success'
+		);
 	};
 
 	// Set delivery date and start delivery
@@ -651,10 +703,17 @@ const CarManagement = () => {
 
 		setDeliveryLoading(true);
 		try {
-			// Add 2 minutes buffer to ensure the date is in the future when backend validates
-			const selectedDate = new Date(deliveryDate);
-			selectedDate.setMinutes(selectedDate.getMinutes() + 2);
-			const isoDate = selectedDate.toISOString();
+			// Xử lý datetime-local: thêm timezone offset để giữ đúng giờ local
+			// datetime-local trả về "2025-11-22T17:35" (không có timezone)
+			// Cần chuyển thành ISO với timezone để backend nhận đúng giờ
+			const localDateTime = new Date(deliveryDate);
+			
+			// Lấy offset timezone (VN là -420 phút = -7 giờ so với UTC)
+			const timezoneOffset = localDateTime.getTimezoneOffset();
+			
+			// Bù lại offset để có đúng giờ local trong UTC
+			const adjustedDate = new Date(localDateTime.getTime() - (timezoneOffset * 60 * 1000));
+			const isoDate = adjustedDate.toISOString();
 			
 			await setExpectedDeliveryDate(deliveryModal.requestId, isoDate);
 			
@@ -664,7 +723,7 @@ const CarManagement = () => {
 			showNotification("Đã thiết lập ngày giao và bắt đầu giao xe thành công!", "success");
 		} catch (error) {
 			console.error("Error setting delivery date:", error);
-			showNotification("Có lỗi xảy ra: " + error.message, "error");
+			showNotification("Có lỗi xảy ra khi thiết lập ngày giao: " + (error.message || "Vui lòng chọn thời gian trong tương lai"), "error");
 		} finally {
 			setDeliveryLoading(false);
 		}
@@ -1722,6 +1781,40 @@ const CarManagement = () => {
 								disabled={deliveryLoading || !deliveryDate}
 							>
 								{deliveryLoading ? 'Đang xử lý...' : '✓ Xác nhận và bắt đầu giao'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Custom Confirm Dialog */}
+			{showConfirmDialog && (
+				<div className="modal-overlay" onClick={handleConfirmClose}>
+					<div className="modal-content confirm-dialog-modal" onClick={e => e.stopPropagation()}>
+						<div className={`confirm-dialog-header confirm-${confirmConfig.type}`}>
+							<div className="confirm-icon">
+								{confirmConfig.type === 'success' && '✓'}
+								{confirmConfig.type === 'warning' && '⚠'}
+								{confirmConfig.type === 'error' && '✕'}
+								{confirmConfig.type === 'info' && 'ℹ'}
+							</div>
+							<h3>{confirmConfig.title}</h3>
+						</div>
+
+					<div className="confirm-dialog-body">
+						<p className="confirm-message-text">{confirmConfig.message}</p>
+					</div>						<div className="confirm-dialog-footer">
+							<button
+								className="btn-confirm-cancel"
+								onClick={handleConfirmClose}
+							>
+								{confirmConfig.cancelText}
+							</button>
+							<button
+								className={`btn-confirm-action confirm-${confirmConfig.type}`}
+								onClick={handleConfirmAction}
+							>
+								{confirmConfig.confirmText}
 							</button>
 						</div>
 					</div>

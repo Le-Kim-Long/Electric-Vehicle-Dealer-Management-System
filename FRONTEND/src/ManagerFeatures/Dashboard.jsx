@@ -31,13 +31,14 @@ import './Dashboard.css';
 const Dashboard = () => {
   const [timeFilter, setTimeFilter] = useState('year'); // month, quarter, year
   const [selectedPeriod, setSelectedPeriod] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear()); // Năm riêng cho month/quarter
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
-  }, [timeFilter, selectedPeriod]);
+  }, [timeFilter, selectedPeriod, selectedYear]);
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -45,7 +46,7 @@ const Dashboard = () => {
     
     try {
       let periodType, month, quarter;
-      const year = timeFilter === 'year' ? selectedPeriod : new Date().getFullYear();
+      const year = timeFilter === 'year' ? selectedPeriod : selectedYear;
       
       if (timeFilter === 'month') {
         periodType = 'MONTHLY';
@@ -164,7 +165,7 @@ const Dashboard = () => {
     if (timeFilter === 'month') {
       return Array.from({ length: 12 }, (_, i) => ({
         value: i + 1,
-        label: `Tháng ${i + 1}/${currentYear}`
+        label: `Tháng ${i + 1}`
       }));
     } else if (timeFilter === 'quarter') {
       return [
@@ -179,6 +180,14 @@ const Dashboard = () => {
         label: `Năm ${currentYear - i}`
       }));
     }
+  };
+
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => ({
+      value: currentYear - i,
+      label: `Năm ${currentYear - i}`
+    }));
   };
 
   if (loading) {
@@ -260,8 +269,13 @@ const Dashboard = () => {
               value={timeFilter} 
               onChange={(e) => {
                 setTimeFilter(e.target.value);
-                setSelectedPeriod(e.target.value === 'year' ? new Date().getFullYear() : 
-                                 e.target.value === 'quarter' ? 1 : new Date().getMonth() + 1);
+                if (e.target.value === 'year') {
+                  setSelectedPeriod(new Date().getFullYear());
+                } else if (e.target.value === 'quarter') {
+                  setSelectedPeriod(1);
+                } else {
+                  setSelectedPeriod(new Date().getMonth() + 1);
+                }
               }}
               className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
             >
@@ -270,9 +284,27 @@ const Dashboard = () => {
               <option value="year">Theo năm</option>
             </select>
           </div>
+          {timeFilter !== 'year' && (
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Chọn năm
+              </label>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              >
+                {getYearOptions().map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex-1">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Chọn khoảng thời gian
+              Chọn {timeFilter === 'year' ? 'năm' : timeFilter === 'quarter' ? 'quý' : 'tháng'}
             </label>
             <select 
               value={selectedPeriod} 

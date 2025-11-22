@@ -17,7 +17,8 @@ import {
   updateOrderStatus,
   getAllCustomers,
   searchCustomerByPhone,
-  getOrderById
+  getOrderById,
+  updateOrderDetailQuantity
 } from '../../services/carVariantApi';
 import { showNotification } from '../Notification';
 
@@ -43,6 +44,20 @@ const CreateOrderFeature = () => {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false); // Loading danh sách khách hàng
   const [customerListError, setCustomerListError] = useState('');
   const [customerSearchPhone, setCustomerSearchPhone] = useState(''); // Search phone trong modal
+  
+  // State cho modal cập nhật số lượng xe
+  const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
+  const [updateQuantityData, setUpdateQuantityData] = useState({
+    index: null,
+    currentQuantity: 1,
+    newQuantity: 1,
+    maxQuantity: 1,
+    actualStock: 0, // Tồn kho thực tế từ API
+    vehicleName: '',
+    color: ''
+  });
+  const [isUpdatingQuantity, setIsUpdatingQuantity] = useState(false);
+  
   const [orderData, setOrderData] = useState({
     customer: { name: '', phone: '', email: '' },
     selectedVehicles: [], // Mỗi item sẽ có thêm orderDetailId
@@ -113,7 +128,7 @@ const CreateOrderFeature = () => {
               variantName: detail.variantName,
               color: colorName || 'N/A',
               quantity: detail.quantity || 1,
-              price: vehiclePrice,
+              colorPrice: vehiclePrice, // Fix Issue 1: Đổi từ 'price' sang 'colorPrice'
               defaultImage: vehicleInfo?.defaultImage || detail.defaultImage || '',
               images: vehicleInfo?.images || {},
               maXe: detail.carId,
@@ -202,6 +217,24 @@ const CreateOrderFeature = () => {
 
     loadDraftOrder();
   }, []); // Chỉ chạy một lần khi component mount
+
+  // Hàm reload vehicles - dùng để cập nhật tồn kho sau khi thêm/xóa/cập nhật xe
+  const reloadVehicles = async () => {
+    try {
+      const apiData = await getCarVariantDetails();
+      const transformedData = transformCarVariantData(apiData);
+      const withRaw = transformedData.map((v, idx) => ({
+        ...v,
+        colorPricesRaw: apiData[idx]?.colorPrices || [],
+        maXe: v.id
+      }));
+      setVehicles(withRaw);
+      return withRaw; // Trả về dữ liệu mới
+    } catch (error) {
+      console.error('Error reloading vehicles:', error);
+      return null;
+    }
+  };
 
   // Load vehicles từ API khi vào Step 2
   useEffect(() => {
@@ -426,20 +459,55 @@ const CreateOrderFeature = () => {
 
       const result = await createOrderDetail(orderDetailData);
 
-      // Thêm vào giỏ hàng với orderDetailId
-      setOrderData(prev => ({
-        ...prev,
-        selectedVehicles: [
-          ...prev.selectedVehicles, 
-          { 
-            vehicle, 
-            color, 
-            quantity, 
-            colorPrice,
-            orderDetailId: result.orderDetailId // Lưu orderDetailId để xóa sau này
-          }
-        ]
-      }));
+      // Reload danh sách xe để cập nhật tồn kho TRƯỚC
+      const updatedVehiclesList = await reloadVehicles();
+
+      // Tìm vehicle mới với tồn kho đã cập nhật cho xe vừa thêm
+      const updatedVehicle = updatedVehiclesList ? 
+        updatedVehiclesList.find(v => 
+          v.modelName === vehicle.modelName && 
+          v.variantName === vehicle.variantName
+        ) || vehicle : vehicle;
+
+      // Thêm vào giỏ hàng và cập nhật vehicle cho TẤT CẢ items cũ
+      if (updatedVehiclesList) {
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: [
+            // Cập nhật vehicle mới cho các items cũ
+            ...prev.selectedVehicles.map(item => {
+              const itemUpdatedVehicle = updatedVehiclesList.find(v => 
+                v.modelName === item.vehicle.modelName && 
+                v.variantName === item.vehicle.variantName
+              ) || item.vehicle;
+              return { ...item, vehicle: itemUpdatedVehicle };
+            }),
+            // Thêm item mới với vehicle đã cập nhật
+            { 
+              vehicle: updatedVehicle,
+              color, 
+              quantity, 
+              colorPrice,
+              orderDetailId: result.orderDetailId
+            }
+          ]
+        }));
+      } else {
+        // Nếu reload thất bại, chỉ thêm item mới
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: [
+            ...prev.selectedVehicles, 
+            { 
+              vehicle: updatedVehicle,
+              color, 
+              quantity, 
+              colorPrice,
+              orderDetailId: result.orderDetailId
+            }
+          ]
+        }));
+      }
 
       // Hiển thị thông báo thành công
       showNotification(`Đã thêm ${vehicle.name} (${color}) vào giỏ hàng!`, 'success');
@@ -464,11 +532,31 @@ const CreateOrderFeature = () => {
       // Gọi API deleteOrderDetail
       const result = await deleteOrderDetail(item.orderDetailId);
 
-      // Xóa khỏi giỏ hàng
-      setOrderData(prev => ({
-        ...prev,
-        selectedVehicles: prev.selectedVehicles.filter((_, i) => i !== index)
-      }));
+      // Reload danh sách xe để cập nhật tồn kho
+      const updatedVehiclesList = await reloadVehicles();
+
+      // Xóa khỏi giỏ hàng và cập nhật các vehicles còn lại
+      if (updatedVehiclesList) {
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: prev.selectedVehicles
+            .filter((_, i) => i !== index)
+            .map(item => {
+              // Cập nhật vehicle với dữ liệu mới cho các item còn lại
+              const updatedVehicle = updatedVehiclesList.find(v => 
+                v.modelName === item.vehicle.modelName && 
+                v.variantName === item.vehicle.variantName
+              );
+              return updatedVehicle ? { ...item, vehicle: updatedVehicle } : item;
+            })
+        }));
+      } else {
+        // Nếu reload thất bại, chỉ xóa item
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: prev.selectedVehicles.filter((_, i) => i !== index)
+        }));
+      }
 
       // Hiển thị thông báo thành công
       showNotification('Đã xóa xe khỏi giỏ hàng. Số lượng xe đã được hoàn trả về kho.', 'success');
@@ -477,13 +565,131 @@ const CreateOrderFeature = () => {
     }
   };
 
-  const updateVehicleInCart = (index, quantity) => {
-    setOrderData(prev => ({
-      ...prev,
-      selectedVehicles: prev.selectedVehicles.map((item, i) => 
-        i === index ? { ...item, quantity } : item
-      )
-    }));
+  // Mở modal cập nhật số lượng
+  const openUpdateQuantityModal = (index) => {
+    const item = orderData.selectedVehicles[index];
+    
+    // Lấy tồn kho thực tế từ API (backend đã trừ đơn hàng hiện tại)
+    const stockQuantity = getStockQuantity(item.vehicle, item.color);
+    
+    // Số lượng tối đa khi cập nhật:
+    // Backend đã trừ TẤT CẢ items trong đơn (bao gồm item này)
+    // Khi cập nhật, backend sẽ hoàn trả số lượng cũ của item này
+    // maxQty = tồn kho hiện tại (đã trừ tất cả) + số lượng cũ của item này
+    const maxQty = Math.max(0, stockQuantity + item.quantity);
+    
+    setUpdateQuantityData({
+      index: index,
+      currentQuantity: item.quantity,
+      newQuantity: item.quantity,
+      maxQuantity: maxQty,
+      actualStock: stockQuantity, // Tồn kho thực tế từ API
+      vehicleName: item.vehicle.name,
+      color: item.color
+    });
+    setShowUpdateQuantityModal(true);
+  };
+
+  // Xử lý cập nhật số lượng từ modal
+  const handleUpdateQuantity = async () => {
+    const { index, newQuantity } = updateQuantityData;
+    const item = orderData.selectedVehicles[index];
+    
+    if (!item.orderDetailId) {
+      // Nếu không có orderDetailId, chỉ cập nhật local state
+      setOrderData(prev => ({
+        ...prev,
+        selectedVehicles: prev.selectedVehicles.map((item, i) => 
+          i === index ? { ...item, quantity: newQuantity } : item
+        )
+      }));
+      setShowUpdateQuantityModal(false);
+      showNotification('Đã cập nhật số lượng xe!', 'success');
+      return;
+    }
+
+    try {
+      setIsUpdatingQuantity(true);
+      
+      // Gọi API updateOrderDetailQuantity - API sẽ thay thế số lượng cũ bằng số lượng mới
+      await updateOrderDetailQuantity(item.orderDetailId, newQuantity);
+      
+      // Reload danh sách xe để cập nhật tồn kho
+      const updatedVehiclesList = await reloadVehicles();
+
+      // Cập nhật state sau khi reload - cập nhật vehicle với dữ liệu mới cho TẤT CẢ items
+      if (updatedVehiclesList) {
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: prev.selectedVehicles.map((item, i) => {
+            // Tìm vehicle mới từ danh sách vừa reload cho TẤT CẢ items
+            const updatedVehicle = updatedVehiclesList.find(v => 
+              v.modelName === item.vehicle.modelName && 
+              v.variantName === item.vehicle.variantName
+            ) || item.vehicle;
+            
+            // Cập nhật số lượng cho item đang sửa, cập nhật vehicle cho tất cả
+            if (i === index) {
+              return { 
+                ...item, 
+                quantity: newQuantity,
+                vehicle: updatedVehicle
+              };
+            }
+            // Cập nhật vehicle cho các items khác
+            return { 
+              ...item, 
+              vehicle: updatedVehicle
+            };
+          })
+        }));
+      } else {
+        // Nếu reload thất bại, vẫn cập nhật số lượng
+        setOrderData(prev => ({
+          ...prev,
+          selectedVehicles: prev.selectedVehicles.map((item, i) => 
+            i === index ? { ...item, quantity: newQuantity } : item
+          )
+        }));
+      }
+
+      setShowUpdateQuantityModal(false);
+      showNotification('Đã cập nhật số lượng xe thành công!', 'success');
+    } catch (error) {
+      showNotification(`Lỗi khi cập nhật số lượng: ${error.message}`, 'error');
+    } finally {
+      setIsUpdatingQuantity(false);
+    }
+  };
+
+  // Helper function - lấy số lượng tồn kho thực tế từ API
+  // Backend đã tự động trừ các đơn hàng đang xử lý
+  const getStockQuantity = (vehicle, color) => {
+    if (vehicle.colorPricesRaw && Array.isArray(vehicle.colorPricesRaw)) {
+      const colorObj = vehicle.colorPricesRaw.find(c => c.colorName === color);
+      return colorObj ? colorObj.quantity : 0;
+    }
+    return vehicle.quantity || 0;
+  };
+
+  // Tính số lượng khả dụng cho việc thêm xe mới
+  // = Tồn kho - số lượng các item KHÁC cùng loại xe trong giỏ
+  const getColorQuantity = (vehicle, color, excludeIndex = null) => {
+    const stockQuantity = getStockQuantity(vehicle, color);
+
+    // Tính tổng số lượng các item KHÁC trong giỏ (không tính item excludeIndex)
+    const otherItemsQuantity = orderData.selectedVehicles
+      .filter((item, index) => {
+        const isSameVehicle = item.vehicle.modelName === vehicle.modelName && 
+                              item.vehicle.variantName === vehicle.variantName && 
+                              item.color === color;
+        const shouldExclude = excludeIndex !== null && index === excludeIndex;
+        return isSameVehicle && !shouldExclude;
+      })
+      .reduce((sum, item) => sum + item.quantity, 0);
+
+    // Nếu backend đã trừ các đơn hàng, chỉ cần trừ thêm các item KHÁC trong giỏ hiện tại
+    return Math.max(0, stockQuantity - otherItemsQuantity);
   };
 
   const handleCustomerChange = async (field, value) => {
@@ -552,6 +758,19 @@ const CreateOrderFeature = () => {
   const handlePromotionSelect = async (promotion) => {
     if (!orderId) {
       showNotification('Chưa có đơn hàng. Vui lòng quay lại bước đầu.', 'warning');
+      return;
+    }
+
+    if (promotion && promotion.status === 'Không hoạt động') {
+      showNotification('Không thể áp dụng khuyến mãi không hoạt động. Vui lòng chọn khuyến mãi khác.', 'error');
+      // Reset về mặc định (không chọn khuyến mãi)
+      setOrderData(prev => ({ ...prev, promotion: null }));
+      // Gọi API để bỏ chọn khuyến mãi nếu đã từng chọn
+      try {
+        await updateOrderPromotion(orderId, null);
+      } catch (error) {
+        // Không cần show lỗi ở đây, chỉ cần reset UI
+      }
       return;
     }
 
@@ -805,7 +1024,7 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
           onSeriesChange={setSelectedSeries}
           addVehicleToCart={addVehicleToCart}
           removeVehicleFromCart={removeVehicleFromCart}
-          updateVehicleInCart={updateVehicleInCart}
+          openUpdateQuantityModal={openUpdateQuantityModal}
           isLoadingVehicles={isLoadingVehicles}
           vehiclesError={vehiclesError}
           customizationRef={customizationRef}
@@ -845,6 +1064,86 @@ Vui lòng kiểm tra lại trong phần Quản lý Đơn hàng & Thanh toán!`;
           </button>
         )}
       </div>
+
+      {/* Modal cập nhật số lượng xe */}
+      {showUpdateQuantityModal && (
+        <div className="modal-overlay" onClick={() => setShowUpdateQuantityModal(false)}>
+          <div className="modal-content update-quantity-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Cập nhật số lượng xe</h3>
+              <button className="modal-close" onClick={() => setShowUpdateQuantityModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="update-quantity-info">
+                <p><strong>Xe:</strong> {updateQuantityData.vehicleName}</p>
+                <p><strong>Màu:</strong> {updateQuantityData.color}</p>
+                <p><strong>Số lượng hiện tại:</strong> {updateQuantityData.currentQuantity} xe</p>
+                <p><strong>Tồn kho:</strong> {updateQuantityData.actualStock} xe</p>
+                <p><strong>Tối đa có thể cập nhật:</strong> {updateQuantityData.maxQuantity} xe</p>
+              </div>
+              <div className="form-group">
+                <label>Số lượng mới *</label>
+                <div className="quantity-input-group">
+                  <button 
+                    className="quantity-btn"
+                    onClick={() => setUpdateQuantityData(prev => ({
+                      ...prev,
+                      newQuantity: Math.max(1, prev.newQuantity - 1)
+                    }))}
+                    disabled={updateQuantityData.newQuantity <= 1 || isUpdatingQuantity}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={updateQuantityData.newQuantity}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      setUpdateQuantityData(prev => ({
+                        ...prev,
+                        newQuantity: Math.min(Math.max(1, value), prev.maxQuantity)
+                      }));
+                    }}
+                    min="1"
+                    max={updateQuantityData.maxQuantity}
+                    className="quantity-input"
+                    disabled={isUpdatingQuantity}
+                  />
+                  <button 
+                    className="quantity-btn"
+                    onClick={() => setUpdateQuantityData(prev => ({
+                      ...prev,
+                      newQuantity: Math.min(prev.maxQuantity, prev.newQuantity + 1)
+                    }))}
+                    disabled={updateQuantityData.newQuantity >= updateQuantityData.maxQuantity || isUpdatingQuantity}
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="quantity-hint">
+                  Tối đa: {updateQuantityData.maxQuantity} xe
+                </span>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowUpdateQuantityModal(false)}
+                disabled={isUpdatingQuantity}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn-confirm" 
+                onClick={handleUpdateQuantity}
+                disabled={isUpdatingQuantity || updateQuantityData.newQuantity === updateQuantityData.currentQuantity}
+              >
+                {isUpdatingQuantity ? 'Đang cập nhật...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal danh sách khách hàng */}
       {showCustomerListModal && (
@@ -1049,7 +1348,7 @@ const CustomerInfoStep = ({ orderData, handleChange, isLoadingCustomer, customer
 
 const VehicleSelectionStep = ({ 
   vehicles, selectedVehicles, searchTerm, selectedSeries, vehicleSeries,
-  onSearchChange, onSeriesChange, addVehicleToCart, removeVehicleFromCart, updateVehicleInCart,
+  onSearchChange, onSeriesChange, addVehicleToCart, removeVehicleFromCart, openUpdateQuantityModal,
   isLoadingVehicles, vehiclesError, customizationRef
 }) => {
   const [tempSelectedVehicle, setTempSelectedVehicle] = useState(null);
@@ -1106,34 +1405,15 @@ const VehicleSelectionStep = ({
       <h3>Chọn xe</h3>
       
       {isLoadingVehicles && (
-        <div style={{ 
-          padding: '20px', 
-          textAlign: 'center',
-          background: '#f5f5f5',
-          borderRadius: '8px',
-          margin: '20px 0'
-        }}>
+        <div className="loading-vehicles-box">
           <div className="spinner spinner-centered"></div>
           <p>Đang tải danh sách xe...</p>
         </div>
       )}
       
       {vehiclesError && (
-        <div style={{ 
-          padding: '14px 18px', 
-          background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)', 
-          borderRadius: '8px', 
-          marginBottom: '20px',
-          border: '2px solid #ef5350',
-          boxShadow: '0 2px 8px rgba(239, 83, 80, 0.2)'
-        }}>
-          <p style={{ 
-            margin: 0, 
-            color: '#c62828', 
-            fontWeight: '600',
-            fontSize: '14px',
-            lineHeight: '1.6'
-          }}>
+        <div className="error-message-box">
+          <p className="error-message-text">
             ⚠️ {vehiclesError}
           </p>
         </div>
@@ -1325,14 +1605,12 @@ const VehicleSelectionStep = ({
                   <p className="cart-item-price">Thành tiền: {formatPrice(item.colorPrice * item.quantity)}</p>
                 </div>
                 <div className="cart-item-controls">
-                  <input
-                    type="number"
-                    value={item.quantity}
-                    min="1"
-                    max={getColorQuantity(item.vehicle, item.color)}
-                    onChange={(e) => updateVehicleInCart(index, parseInt(e.target.value) || 1)}
-                    className="cart-quantity-input"
-                  />
+                  <button 
+                    className="update-quantity-btn"
+                    onClick={() => openUpdateQuantityModal(index)}
+                  >
+                    Cập nhật số lượng
+                  </button>
                   <button 
                     className="remove-btn"
                     onClick={() => removeVehicleFromCart(index)}
@@ -1469,13 +1747,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice }) => {
             ))}
           </div>
           {orderSummary.orderInfo.promotionName && (
-            <div style={{ 
-              marginTop: '10px', 
-              padding: '10px', 
-              background: '#fff3cd', 
-              borderRadius: '5px',
-              border: '1px solid #ffc107'
-            }}>
+            <div className="promotion-box">
               <p className="order-detail-item">
                 <strong>Khuyến mãi:</strong> {orderSummary.orderInfo.promotionName}
               </p>
@@ -1487,36 +1759,17 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice }) => {
           <h4>Thanh toán</h4>
           <p><strong>Hình thức:</strong> {orderSummary.orderInfo.paymentMethod}</p>
           <p><strong>Ngày đặt:</strong> {new Date(orderSummary.orderInfo.orderDate).toLocaleString('vi-VN')}</p>
-          <p><strong>Trạng thái:</strong> <span style={{ 
-            color: orderSummary.orderInfo.status === 'Chưa xác nhận' ? '#ffc107' : '#28a745',
-            fontWeight: 'bold'
-          }}>{orderSummary.orderInfo.status}</span></p>
+          <p><strong>Trạng thái:</strong> <span className={`order-status-badge ${orderSummary.orderInfo.status === 'Chưa xác nhận' ? 'status-pending' : 'status-confirmed'}`}>{orderSummary.orderInfo.status}</span></p>
         </div>
         
-        <div className="summary-section" style={{
-          background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
-          padding: '20px',
-          borderRadius: '8px',
-          marginTop: '20px'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            marginBottom: '10px',
-            fontSize: '1.1rem'
-          }}>
+        <div className="summary-section summary-payment-box">
+          <div className="summary-row">
             <span><strong>Tạm tính:</strong></span>
             <span>{formatPrice(orderSummary.orderInfo.subTotal)}</span>
           </div>
           
           {orderSummary.orderInfo.discountAmount > 0 && (
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              marginBottom: '10px',
-              color: '#28a745',
-              fontSize: '1.1rem'
-            }}>
+            <div className="summary-row discount-row">
               <span><strong>Giảm giá:</strong></span>
               <span>- {formatPrice(orderSummary.orderInfo.discountAmount)}</span>
             </div>
@@ -1524,13 +1777,7 @@ const OrderSummary = ({ orderSummary, isLoading, formatPrice }) => {
           
           <hr className="summary-divider" />
           
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            color: '#c62828'
-          }}>
+          <div className="summary-row total-row">
             <span>Tổng thanh toán:</span>
             <span>{formatPrice(orderSummary.orderInfo.totalAmount)}</span>
           </div>

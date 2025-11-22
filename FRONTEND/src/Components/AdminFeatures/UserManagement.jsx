@@ -30,18 +30,65 @@ const UserManagement = () => {
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState("");
 
-  const handleDeleteUser = async (userId) => {
-    const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa tài khoản này?");
-    if (!confirmDelete) return;
+  // Confirm dialog states
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    type: 'warning'
+  });
 
-    try {
-      await deleteUserAccount(userId);
-      showNotification("Xóa tài khoản thành công!", "success");
-      const updatedUsers = await fetchAllUsers();
-      setUsers(updatedUsers);
-    } catch (err) {
-      showNotification("Xóa tài khoản thất bại!", "error");
+  // Show custom confirm dialog
+  const showConfirm = (title, message, onConfirm, type = 'warning') => {
+    setConfirmConfig({
+      title,
+      message,
+      onConfirm,
+      confirmText: 'Xác nhận',
+      cancelText: 'Hủy',
+      type
+    });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmDialog(false);
+    setConfirmConfig({
+      title: '',
+      message: '',
+      onConfirm: null,
+      confirmText: 'Xác nhận',
+      cancelText: 'Hủy',
+      type: 'warning'
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmConfig.onConfirm) {
+      confirmConfig.onConfirm();
     }
+    handleConfirmClose();
+  };
+
+  const handleDeleteUser = async (userId) => {
+    showConfirm(
+      'Xác nhận xóa tài khoản',
+      'Bạn có chắc chắn muốn xóa tài khoản này?',
+      async () => {
+        try {
+          await deleteUserAccount(userId);
+          showNotification("Xóa tài khoản thành công!", "success");
+          const updatedUsers = await fetchAllUsers();
+          setUsers(updatedUsers);
+        } catch (err) {
+          showNotification("Xóa tài khoản thất bại!", "error");
+        }
+      },
+      'error'
+    );
   };
 
 
@@ -504,6 +551,42 @@ const UserManagement = () => {
             )}
           </tbody>
         </table>
+      )}
+
+      {/* Custom Confirm Dialog */}
+      {showConfirmDialog && (
+        <div className="modal-overlay" onClick={handleConfirmClose}>
+          <div className="modal-content confirm-dialog-modal" onClick={e => e.stopPropagation()}>
+            <div className={`confirm-dialog-header confirm-${confirmConfig.type}`}>
+              <div className="confirm-icon">
+                {confirmConfig.type === 'success' && '✓'}
+                {confirmConfig.type === 'warning' && '⚠'}
+                {confirmConfig.type === 'error' && '✕'}
+                {confirmConfig.type === 'info' && 'ℹ'}
+              </div>
+              <h3>{confirmConfig.title}</h3>
+            </div>
+
+            <div className="confirm-dialog-body">
+              <p className="confirm-message-text">{confirmConfig.message}</p>
+            </div>
+
+            <div className="confirm-dialog-footer">
+              <button
+                className="btn-confirm-cancel"
+                onClick={handleConfirmClose}
+              >
+                {confirmConfig.cancelText}
+              </button>
+              <button
+                className={`btn-confirm-action confirm-${confirmConfig.type}`}
+                onClick={handleConfirmAction}
+              >
+                {confirmConfig.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

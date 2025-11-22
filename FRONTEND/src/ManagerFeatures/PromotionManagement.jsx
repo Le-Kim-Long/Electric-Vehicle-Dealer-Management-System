@@ -59,6 +59,14 @@ const PromotionManagement = () => {
 		try {
 			const data = await fetchPromotionsByDealer();
 			
+			// Handle case when backend returns text message (no promotions)
+			if (typeof data === 'string') {
+				// Backend returns message like "No promotions found for dealer: XXX"
+				setPromotions([]);
+				setFilteredPromotions([]);
+				return;
+			}
+			
 			// Handle nested array - API might return [[...]] instead of [...]
 			let promotionsArray = data;
 			if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0])) {
@@ -74,9 +82,16 @@ const PromotionManagement = () => {
 				setFilteredPromotions([]);
 			}
 		} catch (err) {
-			setError(err.message || 'Không thể tải danh sách khuyến mãi. Vui lòng thử lại.');
-			setPromotions([]);
-			setFilteredPromotions([]);
+			// Handle JSON parse error specifically
+			if (err.message && err.message.includes('is not valid JSON')) {
+				// Backend returned plain text, no promotions available
+				setPromotions([]);
+				setFilteredPromotions([]);
+			} else {
+				setError(err.message || 'Không thể tải danh sách khuyến mãi. Vui lòng thử lại.');
+				setPromotions([]);
+				setFilteredPromotions([]);
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -160,9 +175,16 @@ const PromotionManagement = () => {
 			
 			const status = startDate.getTime() === today.getTime() ? 'Đang hoạt động' : 'Không hoạt động';
 			
+			// Ensure data types are correct for backend
 			const dataToSubmit = {
-				...formData,
-				status: status
+				promotionName: formData.promotionName,
+				description: formData.description,
+				value: Number(formData.value),
+				type: formData.type,
+				scope: formData.scope,
+				status: status,
+				startDate: formData.startDate,
+				endDate: formData.endDate
 			};
 			
 			await createPromotion(dataToSubmit);
@@ -192,12 +214,19 @@ const PromotionManagement = () => {
 			
 			const status = startDate.getTime() <= today.getTime() ? 'Đang hoạt động' : 'Không hoạt động';
 			
+			// Ensure dates are in correct format for backend
 			const dataToSubmit = {
-				...formData,
-				status: status
+				promotionName: formData.promotionName,
+				description: formData.description,
+				value: Number(formData.value),
+				type: formData.type,
+				scope: formData.scope,
+				status: status,
+				startDate: formData.startDate, // Backend expects YYYY-MM-DD format
+				endDate: formData.endDate
 			};
 			
-			await updatePromotion(editModal.promotion.promotionId, dataToSubmit);
+				await updatePromotion(editModal.promotion.promotionId, dataToSubmit);
 			setFormSuccess(true);
 			setTimeout(() => {
 				setEditModal({ open: false, promotion: null });
@@ -205,7 +234,12 @@ const PromotionManagement = () => {
 				loadPromotionsFromAPI();
 			}, 1500);
 		} catch (err) {
-			setFormError(err.message || 'Không thể cập nhật khuyến mãi');
+			// Handle specific error for start date modification
+			if (err.message && err.message.includes('start date')) {
+				setFormError('Không thể thay đổi ngày bắt đầu sau khi khuyến mãi đã bắt đầu');
+			} else {
+				setFormError(err.message || 'Không thể cập nhật khuyến mãi');
+			}
 		} finally {
 			setFormLoading(false);
 		}
@@ -228,6 +262,30 @@ const PromotionManagement = () => {
 	const openCreateModal = () => {
 		resetForm();
 		setCreateModal({ open: true });
+	};
+
+	// Check if a promotion has already started
+	const hasPromotionStarted = (startDateValue) => {
+		if (!startDateValue) return false;
+		try {
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+			
+			let startDate;
+			if (Array.isArray(startDateValue)) {
+				// Backend returns [year, month, day]
+				startDate = new Date(startDateValue[0], startDateValue[1] - 1, startDateValue[2]);
+			} else if (typeof startDateValue === 'string') {
+				startDate = new Date(startDateValue);
+			} else {
+				return false;
+			}
+			
+			startDate.setHours(0, 0, 0, 0);
+			return startDate.getTime() <= today.getTime();
+		} catch (error) {
+			return false;
+		}
 	};
 
 	const openEditModal = (promotion) => {
@@ -421,9 +479,11 @@ const PromotionManagement = () => {
 							<button className="btn-view" onClick={() => openDetailModal(promotion)}>
 								 Chi tiết
 							</button>
-							<button className="btn-edit" onClick={() => openEditModal(promotion)}>
-								 Sửa
-							</button>
+							{promotion.status !== 'Đang hoạt động' && (
+								<button className="btn-edit" onClick={() => openEditModal(promotion)}>
+									 Sửa
+								</button>
+							)}
 							<button className="btn-delete" onClick={() => setDeleteModal({ open: true, promotion })}>
 								 Xóa
 							</button>
@@ -604,19 +664,25 @@ const PromotionManagement = () => {
 							<div className="form-row-promo">
 								<div className="form-group-promo">
 									<label>Ngày bắt đầu <span className="required">*</span></label>
-									<input
-										type="date"
-										value={formData.startDate}
-										onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-									/>
+									   <input
+										   type="date"
+										   value={formData.startDate}
+										   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+										   readOnly={editModal.promotion?.status === 'Đang hoạt động'}
+										   className={editModal.promotion?.status === 'Đang hoạt động' ? 'readonly-input' : ''}
+										   title={editModal.promotion?.status === 'Đang hoạt động' ? 'Không thể thay đổi ngày bắt đầu khi khuyến mãi đang hoạt động' : ''}
+									   />
 								</div>
 								<div className="form-group-promo">
 									<label>Ngày kết thúc <span className="required">*</span></label>
-									<input
-										type="date"
-										value={formData.endDate}
-										onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-									/>
+									   <input
+										   type="date"
+										   value={formData.endDate}
+										   onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+										   readOnly={editModal.promotion?.status === 'Đang hoạt động'}
+										   className={editModal.promotion?.status === 'Đang hoạt động' ? 'readonly-input' : ''}
+										   title={editModal.promotion?.status === 'Đang hoạt động' ? 'Không thể thay đổi ngày kết thúc khi khuyến mãi đang hoạt động' : ''}
+									   />
 								</div>
 							</div>
 							{formError && <div className="form-error-promo">{formError}</div>}

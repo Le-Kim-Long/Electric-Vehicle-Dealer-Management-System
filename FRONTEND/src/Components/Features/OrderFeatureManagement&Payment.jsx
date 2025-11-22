@@ -48,6 +48,17 @@ const OrderFeatureManagementPayment = () => {
   });
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
 
+  // Confirm dialog states
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    type: 'warning' // success, warning, error, info
+  });
+
   // Cache key constant (để xóa cache cũ khi load orders)
   const PAYMENT_CACHE_KEY = 'dealer_payment_cache';
 
@@ -254,16 +265,48 @@ const OrderFeatureManagementPayment = () => {
     }));
   };
 
+  // Show custom confirm dialog
+  const showConfirm = (title, message, onConfirm, type = 'warning') => {
+    setConfirmConfig({
+      title,
+      message,
+      onConfirm,
+      confirmText: 'Xác nhận',
+      cancelText: 'Hủy',
+      type
+    });
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmDialog(false);
+    setConfirmConfig({
+      title: '',
+      message: '',
+      onConfirm: null,
+      confirmText: 'Xác nhận',
+      cancelText: 'Hủy',
+      type: 'warning'
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmConfig.onConfirm) {
+      confirmConfig.onConfirm();
+    }
+    handleConfirmClose();
+  };
+
   // Xử lý tạo payment mới
   const handleCreatePayment = async () => {
     if (!currentOrderId) return;
 
-    if (!window.confirm('Bạn có chắc chắn muốn tạo thanh toán cho đơn hàng này?')) {
-      return;
-    }
-
-    try {
-      setPaymentFormLoading(true);
+    showConfirm(
+      'Xác nhận tạo thanh toán',
+      'Bạn có chắc chắn muốn tạo thanh toán cho đơn hàng này?',
+      async () => {
+        try {
+          setPaymentFormLoading(true);
 
       const paymentData = {
         orderId: currentOrderId,
@@ -285,30 +328,32 @@ ${result.message}`;
 
       showNotification(paymentInfo, 'success', 5000);
 
-      // Reload orders
-      await loadOrders();
+          // Reload orders
+          await loadOrders();
 
-      // Đóng form và mở lại danh sách (không cần cache nữa vì đã luôn gọi API)
-      handleClosePaymentForm();
-      await handleOpenPaymentList(currentOrderId, currentOrderStatus);
+          // Đóng form và mở lại danh sách (không cần cache nữa vì đã luôn gọi API)
+          handleClosePaymentForm();
+          await handleOpenPaymentList(currentOrderId, currentOrderStatus);
 
-    } catch (error) {
-      showNotification(`Lỗi tạo thanh toán: ${error.message}`, 'error');
-    } finally {
-      setPaymentFormLoading(false);
-    }
+        } catch (error) {
+          showNotification(`Lỗi tạo thanh toán: ${error.message}`, 'error');
+        } finally {
+          setPaymentFormLoading(false);
+        }
+      }
+    );
   };
 
   // Xử lý xóa payment
   const handleDeletePayment = async (paymentId) => {
     if (!paymentId) return;
 
-    if (!window.confirm('Bạn có chắc chắn muốn XÓA thanh toán này?\n\nHành động này không thể hoàn tác!')) {
-      return;
-    }
-
-    try {
-      setPaymentListLoading(true);
+    showConfirm(
+      'Xác nhận xóa thanh toán',
+      'Bạn có chắc chắn muốn XÓA thanh toán này?\n\nHành động này không thể hoàn tác!',
+      async () => {
+        try {
+          setPaymentListLoading(true);
 
       const result = await deletePayment(paymentId);
 
@@ -317,16 +362,19 @@ ${result.message}`;
       // Reload orders
       await loadOrders();
 
-      // Reload payment list để lấy data mới nhất từ API
-      if (currentOrderId) {
-        await handleOpenPaymentList(currentOrderId, currentOrderStatus);
-      }
+          // Reload payment list để lấy data mới nhất từ API
+          if (currentOrderId) {
+            await handleOpenPaymentList(currentOrderId, currentOrderStatus);
+          }
 
-    } catch (error) {
-      showNotification(`Lỗi xóa thanh toán: ${error.message}`, 'error');
-    } finally {
-      setPaymentListLoading(false);
-    }
+        } catch (error) {
+          showNotification(`Lỗi xóa thanh toán: ${error.message}`, 'error');
+        } finally {
+          setPaymentListLoading(false);
+        }
+      },
+      'error'
+    );
   };
 
   // Xử lý cập nhật trạng thái thanh toán (Chờ xử lý -> Hoàn thành)
@@ -339,12 +387,12 @@ ${result.message}`;
       return;
     }
 
-    if (!window.confirm('Xác nhận khách hàng đã thanh toán?\n\nTrạng thái sẽ được chuyển sang "Hoàn thành".')) {
-      return;
-    }
-
-    try {
-      setPaymentListLoading(true);
+    showConfirm(
+      'Xác nhận thanh toán',
+      'Xác nhận khách hàng đã thanh toán?\n\nTrạng thái sẽ được chuyển sang "Hoàn thành".',
+      async () => {
+        try {
+          setPaymentListLoading(true);
 
       const result = await updatePaymentStatus(paymentId, {
         status: 'Hoàn thành',
@@ -362,16 +410,19 @@ ${result.message}`;
       // Reload orders để cập nhật order status
       await loadOrders();
 
-      // Reload payment list để lấy data mới nhất từ API
-      if (currentOrderId) {
-        await handleOpenPaymentList(currentOrderId, currentOrderStatus);
-      }
+          // Reload payment list để lấy data mới nhất từ API
+          if (currentOrderId) {
+            await handleOpenPaymentList(currentOrderId, currentOrderStatus);
+          }
 
-    } catch (error) {
-      showNotification(`Lỗi cập nhật trạng thái: ${error.message}`, 'error');
-    } finally {
-      setPaymentListLoading(false);
-    }
+        } catch (error) {
+          showNotification(`Lỗi cập nhật trạng thái: ${error.message}`, 'error');
+        } finally {
+          setPaymentListLoading(false);
+        }
+      },
+      'success'
+    );
   };
 
   // Xử lý mở modal cập nhật phương thức thanh toán
@@ -398,12 +449,12 @@ ${result.message}`;
   const handleUpdatePayment = async () => {
     if (!updatePaymentData.paymentId) return;
 
-    if (!window.confirm('Xác nhận cập nhật thông tin thanh toán?')) {
-      return;
-    }
-
-    try {
-      setUpdatePaymentLoading(true);
+    showConfirm(
+      'Xác nhận cập nhật',
+      'Xác nhận cập nhật thông tin thanh toán?',
+      async () => {
+        try {
+          setUpdatePaymentLoading(true);
 
       const result = await updatePaymentMethod(updatePaymentData.paymentId, {
         method: updatePaymentData.method,
@@ -420,32 +471,37 @@ Số tiền: ${formatCurrency(result.amount)}`;
       handleCloseUpdatePayment();
       await loadOrders();
 
-      // Reload payment list để lấy data mới nhất từ API
-      if (currentOrderId) {
-        await handleOpenPaymentList(currentOrderId, currentOrderStatus);
-      }
+          // Reload payment list để lấy data mới nhất từ API
+          if (currentOrderId) {
+            await handleOpenPaymentList(currentOrderId, currentOrderStatus);
+          }
 
-    } catch (error) {
-      showNotification(`Lỗi cập nhật thanh toán: ${error.message}`, 'error');
-    } finally {
-      setUpdatePaymentLoading(false);
-    }
+        } catch (error) {
+          showNotification(`Lỗi cập nhật thanh toán: ${error.message}`, 'error');
+        } finally {
+          setUpdatePaymentLoading(false);
+        }
+      }
+    );
   };
 
   // Hủy đơn hàng
   const handleRejectOrder = async (orderId) => {
-    if (!window.confirm('Bạn có chắc chắn muốn hủy đơn hàng này?\n\nSố lượng xe trong đơn hàng sẽ được hoàn trả về kho.')) {
-      return;
-    }
-
-    try {
-      // API sẽ tự động cập nhật lại số lượng xe khi chuyển trạng thái sang "Đã hủy"
-      await updateOrderStatus(orderId, 'Đã hủy');
-      await loadOrders(); // Reload data để hiển thị trạng thái mới
-      showNotification('Hủy đơn hàng thành công!\n\nSố lượng xe đã được hoàn trả về kho.', 'success');
-    } catch (error) {
-      showNotification('Lỗi khi hủy đơn hàng: ' + error.message, 'error');
-    }
+    showConfirm(
+      'Xác nhận hủy đơn hàng',
+      'Bạn có chắc chắn muốn hủy đơn hàng này?\n\nSố lượng xe trong đơn hàng sẽ được hoàn trả về kho.',
+      async () => {
+        try {
+          // API sẽ tự động cập nhật lại số lượng xe khi chuyển trạng thái sang "Đã hủy"
+          await updateOrderStatus(orderId, 'Đã hủy');
+          await loadOrders(); // Reload data để hiển thị trạng thái mới
+          showNotification('Hủy đơn hàng thành công!\n\nSố lượng xe đã được hoàn trả về kho.', 'success');
+        } catch (error) {
+          showNotification('Lỗi khi hủy đơn hàng: ' + error.message, 'error');
+        }
+      },
+      'error'
+    );
   };
 
   // Tiếp tục xử lý đơn hàng Chưa xác nhận
@@ -665,9 +721,8 @@ Số tiền: ${formatCurrency(result.amount)}`;
                   <div className="order-card-actions">
                     {payment.status === 'Chưa xác nhận' && (
                       <button
-                        className="btn-primary"
+                        className="btn-primary btn-flex-1"
                         onClick={() => handleContinueOrder(payment.orderId)}
-                        style={{ flex: 1 }}
                       >
                         Tiếp tục xử lý
                       </button>
@@ -777,7 +832,7 @@ Số tiền: ${formatCurrency(result.amount)}`;
                         </div>
                       ))
                     ) : (
-                      <div style={{ fontStyle: 'italic', color: '#999', padding: '10px' }}>
+                      <div className="no-vehicles-text">
                         Chưa có xe nào trong đơn hàng
                       </div>
                     )}
@@ -854,7 +909,7 @@ Số tiền: ${formatCurrency(result.amount)}`;
                                 <span className="payment-id">ID: {payment.paymentId}</span>
                               </div>
                               <span className={`payment-status-badge status-${payment.status === 'Hoàn thành' ? 'completed' : 'pending'}`}>
-                                {payment.status === 'Hoàn thành' ? 'Hoàn thành' : 'Chờ xử lý'} {payment.status}
+                                {payment.status === 'Hoàn thành' ? 'Hoàn thành' : 'Chờ xử lý'}
                               </span>
                             </div>
 
@@ -1090,6 +1145,42 @@ Số tiền: ${formatCurrency(result.amount)}`;
                     disabled={updatePaymentLoading}
                   >
                     {updatePaymentLoading ? 'Đang xử lý...' : 'Cập nhật'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Custom Confirm Dialog */}
+          {showConfirmDialog && (
+            <div className="modal-overlay" onClick={handleConfirmClose}>
+              <div className="modal-content confirm-dialog-modal" onClick={e => e.stopPropagation()}>
+                <div className={`confirm-dialog-header confirm-${confirmConfig.type}`}>
+                  <div className="confirm-icon">
+                    {confirmConfig.type === 'success' && '✓'}
+                    {confirmConfig.type === 'warning' && '⚠'}
+                    {confirmConfig.type === 'error' && '✕'}
+                    {confirmConfig.type === 'info' && 'ℹ'}
+                  </div>
+                  <h3>{confirmConfig.title}</h3>
+                </div>
+
+                <div className="confirm-dialog-body">
+                  <p className="confirm-message-text">{confirmConfig.message}</p>
+                </div>
+
+                <div className="confirm-dialog-footer">
+                  <button
+                    className="btn-confirm-cancel"
+                    onClick={handleConfirmClose}
+                  >
+                    {confirmConfig.cancelText}
+                  </button>
+                  <button
+                    className={`btn-confirm-action confirm-${confirmConfig.type}`}
+                    onClick={handleConfirmAction}
+                  >
+                    {confirmConfig.confirmText}
                   </button>
                 </div>
               </div>

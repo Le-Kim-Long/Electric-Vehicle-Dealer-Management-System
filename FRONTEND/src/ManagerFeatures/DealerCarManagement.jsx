@@ -60,6 +60,49 @@ const DealerCarManagement = () => {
     const [notifications, setNotifications] = useState([]);
     const [loadingNotifications, setLoadingNotifications] = useState(false);
 
+    // Confirm dialog states
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState({
+        title: '',
+        message: '',
+        onConfirm: null,
+        confirmText: 'Xác nhận',
+        cancelText: 'Hủy',
+        type: 'warning'
+    });
+
+    // Show custom confirm dialog
+    const showConfirm = (title, message, onConfirm, type = 'warning') => {
+        setConfirmConfig({
+            title,
+            message,
+            onConfirm,
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            type
+        });
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmClose = () => {
+        setShowConfirmDialog(false);
+        setConfirmConfig({
+            title: '',
+            message: '',
+            onConfirm: null,
+            confirmText: 'Xác nhận',
+            cancelText: 'Hủy',
+            type: 'warning'
+        });
+    };
+
+    const handleConfirmAction = () => {
+        if (confirmConfig.onConfirm) {
+            confirmConfig.onConfirm();
+        }
+        handleConfirmClose();
+    };
+
     useEffect(() => {
         fetchAllModelNames()
             .then(models => setModelOptions(models))
@@ -446,21 +489,25 @@ const DealerCarManagement = () => {
 
     // Function xác nhận request (Dealer confirms received vehicles)
     const handleConfirmRequest = async (requestId) => {
-        if (!window.confirm('Xác nhận bạn đã nhận đủ số lượng xe?')) return;
-        
-        try {
-            await confirmDelivery(requestId);
-            
-            showNotification('Đã xác nhận nhận xe thành công! Số lượng xe đã được cập nhật vào kho.', 'success');
-            await loadNotifications();
-            await loadVehiclesFromAPI(); // Reload vehicles to show updated inventory
-        } catch (err) {
-            console.error('Error confirming request:', err);
-            showNotification('Có lỗi xảy ra: ' + err.message, 'error');
-        }
+        showConfirm(
+            'Xác nhận nhận xe',
+            'Xác nhận bạn đã nhận đủ số lượng xe?',
+            async () => {
+                try {
+                    await confirmDelivery(requestId);
+                    
+                    showNotification('Đã xác nhận nhận xe thành công! Số lượng xe đã được cập nhật vào kho.', 'success');
+                    await loadNotifications();
+                    await loadVehiclesFromAPI(); // Reload vehicles to show updated inventory
+                } catch (err) {
+                    console.error('Error confirming request:', err);
+                    showNotification('Có lỗi xảy ra: ' + err.message, 'error');
+                }
+            },
+            'success'
+        );
     };
 
-    // Load manufacturer vehicles khi chuyển sang tab 2    // Load manufacturer vehicles khi chuyển sang tab 2
     useEffect(() => {
         if (activeTab === 'manufacturer' && manufacturerVehicles.length === 0) {
             loadManufacturerVehicles();
@@ -1016,6 +1063,42 @@ const DealerCarManagement = () => {
                     vehicle={selectedVehicle}
                     onClose={() => setSelectedVehicle(null)}
                 />
+            )}
+
+            {/* Custom Confirm Dialog */}
+            {showConfirmDialog && (
+                <div className="modal-overlay" onClick={handleConfirmClose}>
+                    <div className="modal-content confirm-dialog-modal" onClick={e => e.stopPropagation()}>
+                        <div className={`confirm-dialog-header confirm-${confirmConfig.type}`}>
+                            <div className="confirm-icon">
+                                {confirmConfig.type === 'success' && '✓'}
+                                {confirmConfig.type === 'warning' && '⚠'}
+                                {confirmConfig.type === 'error' && '✕'}
+                                {confirmConfig.type === 'info' && 'ℹ'}
+                            </div>
+                            <h3>{confirmConfig.title}</h3>
+                        </div>
+
+                        <div className="confirm-dialog-body">
+                            <p className="confirm-message-text">{confirmConfig.message}</p>
+                        </div>
+
+                        <div className="confirm-dialog-footer">
+                            <button
+                                className="btn-confirm-cancel"
+                                onClick={handleConfirmClose}
+                            >
+                                {confirmConfig.cancelText}
+                            </button>
+                            <button
+                                className={`btn-confirm-action confirm-${confirmConfig.type}`}
+                                onClick={handleConfirmAction}
+                            >
+                                {confirmConfig.confirmText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

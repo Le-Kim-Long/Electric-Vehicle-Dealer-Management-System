@@ -10,6 +10,7 @@ const OrderManagement = () => {
   const [staffNames, setStaffNames] = useState([]); // Danh sách nhân viên
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updating, setUpdating] = useState(false);
 
   // Load staff names khi component mount
   useEffect(() => {
@@ -129,6 +130,16 @@ const OrderManagement = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Placeholder functions - Manager không thực hiện xác nhận/từ chối đơn hàng
+  // Chức năng này đã chuyển sang Dealer Staff
+  const handleConfirmOrder = (orderId, paymentMethod) => {
+    console.log('Manager không thể xác nhận đơn hàng. Chức năng này dành cho Dealer Staff.');
+  };
+
+  const handleRejectOrder = (orderId) => {
+    console.log('Manager không thể từ chối đơn hàng. Chức năng này dành cho Dealer Staff.');
   };
 
   // ĐÃ XÓA - Chức năng xác nhận/hủy đã chuyển sang Dealer Staff
@@ -459,30 +470,7 @@ const OrderManagement = () => {
                   <button className="cancel-btn" onClick={() => setSelectedPayment(null)}>
                     Đóng
                   </button>
-                  {(selectedPayment.status === 'Chưa xác nhận' || selectedPayment.status === 'Đang xử lý') && (
-                    <>
-                      <button 
-                        className="confirm-btn" 
-                        onClick={() => {
-                          handleConfirmOrder(selectedPayment.orderId, selectedPayment.paymentMethod);
-                          setSelectedPayment(null);
-                        }}
-                        disabled={updating}
-                      >
-                        Xác nhận đơn hàng
-                      </button>
-                      <button 
-                        className="reject-btn" 
-                        onClick={() => {
-                          handleRejectOrder(selectedPayment.orderId);
-                          setSelectedPayment(null);
-                        }}
-                        disabled={updating}
-                      >
-                        Từ chối đơn hàng
-                      </button>
-                    </>
-                  )}
+                  {/* Manager không có quyền xác nhận/từ chối đơn hàng - chức năng này dành cho Dealer Staff */}
                 </div>
               </div>
             </div>

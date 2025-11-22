@@ -15,7 +15,7 @@ const HomePage = ({ onMenuClick }) => {
     },
     {
       id: 'payment',
-      title: 'Thanh toán',
+      title: 'Đơn hàng & Thanh toán',
       description: 'Xử lý thanh toán và hóa đơn'
     },
     
