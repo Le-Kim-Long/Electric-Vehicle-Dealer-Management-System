@@ -27,38 +27,38 @@ public class ReportServiceImpl implements ReportService {
     private final CarDistributionRequestRepository carDistributionRequestRepository;
 
     /**
-     * Tạo báo cáo tổng quát trong khoảng thời gian
+     * Tạo báo cáo tổng quát trong khoảng thời gian cho dealer cụ thể
      */
-    public SalesReportResponse generateSalesReport(LocalDateTime startDate, LocalDateTime endDate) {
+    public SalesReportResponse generateSalesReportForDealer(LocalDateTime startDate, LocalDateTime endDate, Integer dealerId) {
 
-        // Tổng đơn hàng đã thanh toán (tính theo completedDate)
-        Long totalCompletedOrders = ordersRepository.countCompletedOrdersByCompletedDateRange(
-            startDate, endDate
+        // Tổng đơn hàng đã thanh toán (tính theo completedDate) cho dealer cụ thể
+        Long totalCompletedOrders = ordersRepository.countCompletedOrdersByCompletedDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
-        // Tổng đơn hàng chưa hoàn thành (tính theo orderDate)
-        Long totalPendingOrders = ordersRepository.countPendingOrdersByOrderDateRange(
-            startDate, endDate
+        // Tổng đơn hàng chưa hoàn thành (tính theo orderDate) cho dealer cụ thể
+        Long totalPendingOrders = ordersRepository.countPendingOrdersByOrderDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
-        // Tổng xe bán được từ đơn hàng đã thanh toán
-        Long totalCarsSold = ordersRepository.countTotalCarsSoldByCompletedDateRange(
-            startDate, endDate
+        // Tổng xe bán được từ đơn hàng đã thanh toán cho dealer cụ thể
+        Long totalCarsSold = ordersRepository.countTotalCarsSoldByCompletedDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
-        // Tổng doanh thu từ đơn hàng đã thanh toán
-        BigDecimal totalRevenue = ordersRepository.sumTotalRevenueByCompletedDateRange(
-            startDate, endDate
+        // Tổng doanh thu từ đơn hàng đã thanh toán cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.sumTotalRevenueByCompletedDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
-        // Tổng lợi nhuận (dealer price - manufacturer price)
-        BigDecimal totalProfit = ordersRepository.sumTotalProfitByCompletedDateRange(
-            startDate, endDate
+        // Tổng lợi nhuận (dealer price - manufacturer price) cho dealer cụ thể
+        BigDecimal totalProfit = ordersRepository.sumTotalProfitByCompletedDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
-        // Tổng số xe nhập vào từ các yêu cầu phân phối đã giao
-        Long totalCarsDistributed = carDistributionRequestRepository.sumTotalCarsDistributedByDeliveryDateRange(
-            startDate, endDate
+        // Tổng số xe nhập vào từ các yêu cầu phân phối đã giao cho dealer cụ thể
+        Long totalCarsDistributed = carDistributionRequestRepository.sumTotalCarsDistributedByDeliveryDateRangeAndDealer(
+            startDate, endDate, dealerId
         );
 
         return SalesReportResponse.builder()
@@ -71,15 +71,17 @@ public class ReportServiceImpl implements ReportService {
             .build();
     }
 
-    /**
-     * Tạo báo cáo doanh thu theo tháng
-     */
-    public RevenueReportResponse generateMonthlyRevenueReport(Integer year, Integer month) {
-        // Lấy tổng doanh thu của tháng
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByMonth(year, month);
+    // ===== DEALER-SPECIFIC REVENUE REPORT METHODS =====
 
-        // Lấy doanh thu theo từng ngày trong tháng
-        List<Object[]> dailyRevenueData = ordersRepository.getDailyRevenueByMonth(year, month);
+    /**
+     * Tạo báo cáo doanh thu theo tháng cho dealer cụ thể
+     */
+    public RevenueReportResponse generateMonthlyRevenueReportForDealer(Integer year, Integer month, Integer dealerId) {
+        // Lấy tổng doanh thu của tháng cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByMonthForDealer(year, month, dealerId);
+
+        // Lấy doanh thu theo từng ngày trong tháng cho dealer cụ thể
+        List<Object[]> dailyRevenueData = ordersRepository.getDailyRevenueByMonthForDealer(year, month, dealerId);
 
         // Xác định số ngày trong tháng
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -114,18 +116,18 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * Tạo báo cáo doanh thu theo quý
+     * Tạo báo cáo doanh thu theo quý cho dealer cụ thể
      */
-    public RevenueReportResponse generateQuarterlyRevenueReport(Integer year, Integer quarter) {
+    public RevenueReportResponse generateQuarterlyRevenueReportForDealer(Integer year, Integer quarter, Integer dealerId) {
         // Tính tháng bắt đầu và kết thúc của quý
         int startMonth = (quarter - 1) * 3 + 1;
         int endMonth = startMonth + 2;
 
-        // Lấy tổng doanh thu của quý
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByQuarter(year, startMonth, endMonth);
+        // Lấy tổng doanh thu của quý cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
-        // Lấy doanh thu theo từng tháng trong quý
-        List<Object[]> monthlyRevenueData = ordersRepository.getMonthlyRevenueByQuarter(year, startMonth, endMonth);
+        // Lấy doanh thu theo từng tháng trong quý cho dealer cụ thể
+        List<Object[]> monthlyRevenueData = ordersRepository.getMonthlyRevenueByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
         // Tạo map để dễ dàng tra cứu doanh thu theo tháng
         Map<Integer, BigDecimal> revenueMap = new HashMap<>();
@@ -160,14 +162,14 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * Tạo báo cáo doanh thu theo năm
+     * Tạo báo cáo doanh thu theo năm cho dealer cụ thể
      */
-    public RevenueReportResponse generateYearlyRevenueReport(Integer year) {
-        // Lấy tổng doanh thu của năm
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByYear(year);
+    public RevenueReportResponse generateYearlyRevenueReportForDealer(Integer year, Integer dealerId) {
+        // Lấy tổng doanh thu của năm cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueByYearForDealer(year, dealerId);
 
-        // Lấy doanh thu theo từng tháng trong năm
-        List<Object[]> monthlyRevenueData = ordersRepository.getMonthlyRevenueByYear(year);
+        // Lấy doanh thu theo từng tháng trong năm cho dealer cụ thể
+        List<Object[]> monthlyRevenueData = ordersRepository.getMonthlyRevenueByYearForDealer(year, dealerId);
 
         // Tạo map để dễ dàng tra cứu doanh thu theo tháng
         Map<Integer, BigDecimal> revenueMap = new HashMap<>();
@@ -199,68 +201,68 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
+    // ===== DEALER-SPECIFIC REVENUE BY MODEL REPORT METHODS =====
+
     /**
-     * Tạo báo cáo doanh thu theo model theo tháng
+     * Tạo báo cáo doanh thu theo model theo tháng cho dealer cụ thể
      */
-    public RevenueByModelReportResponse generateRevenueByModelMonthlyReport(Integer year, Integer month) {
-        // Lấy doanh thu theo model trong tháng
-        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByMonth(year, month);
+    public RevenueByModelReportResponse generateRevenueByModelMonthlyReportForDealer(Integer year, Integer month, Integer dealerId) {
+        // Lấy doanh thu theo model trong tháng cho dealer cụ thể
+        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByMonthForDealer(year, month, dealerId);
 
-        // Lấy tổng doanh thu từ finalPrice trong tháng
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByMonth(year, month);
+        // Lấy tổng doanh thu từ finalPrice trong tháng cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByMonthForDealer(year, month, dealerId);
 
-        return buildRevenueByModelReport(modelRevenueData, totalRevenue, "MONTHLY",
+        return buildRevenueByModelReportForDealer(modelRevenueData, totalRevenue, "MONTHLY",
                                        year + "-" + String.format("%02d", month) + "-01",
                                        year + "-" + String.format("%02d", month) + "-" +
-                                       YearMonth.of(year, month).lengthOfMonth());
+                                       YearMonth.of(year, month).lengthOfMonth(), dealerId);
     }
 
     /**
-     * Tạo báo cáo doanh thu theo model theo quý
+     * Tạo báo cáo doanh thu theo model theo quý cho dealer cụ thể
      */
-    public RevenueByModelReportResponse generateRevenueByModelQuarterlyReport(Integer year, Integer quarter) {
+    public RevenueByModelReportResponse generateRevenueByModelQuarterlyReportForDealer(Integer year, Integer quarter, Integer dealerId) {
         // Tính tháng bắt đầu và kết thúc của quý
         int startMonth = (quarter - 1) * 3 + 1;
         int endMonth = startMonth + 2;
 
-        // Lấy doanh thu theo model trong quý
-        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByQuarter(year, startMonth, endMonth);
+        // Lấy doanh thu theo model trong quý cho dealer cụ thể
+        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
-        // Lấy tổng doanh thu từ finalPrice trong quý
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByQuarter(year, startMonth, endMonth);
+        // Lấy tổng doanh thu từ finalPrice trong quý cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
-        return buildRevenueByModelReport(modelRevenueData, totalRevenue, "QUARTERLY",
+        return buildRevenueByModelReportForDealer(modelRevenueData, totalRevenue, "QUARTERLY",
                                        year + "-" + String.format("%02d", startMonth) + "-01",
                                        year + "-" + String.format("%02d", endMonth) + "-" +
-                                       YearMonth.of(year, endMonth).lengthOfMonth());
+                                       YearMonth.of(year, endMonth).lengthOfMonth(), dealerId);
     }
 
     /**
-     * Tạo báo cáo doanh thu theo model theo năm
+     * Tạo báo cáo doanh thu theo model theo năm cho dealer cụ thể
      */
-    public RevenueByModelReportResponse generateRevenueByModelYearlyReport(Integer year) {
-        // Lấy doanh thu theo model trong năm
-        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByYear(year);
+    public RevenueByModelReportResponse generateRevenueByModelYearlyReportForDealer(Integer year, Integer dealerId) {
+        // Lấy doanh thu theo model trong năm cho dealer cụ thể
+        List<Object[]> modelRevenueData = ordersRepository.getRevenueByModelByYearForDealer(year, dealerId);
 
-        // Lấy tổng doanh thu từ finalPrice trong năm
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByYear(year);
+        // Lấy tổng doanh thu từ finalPrice trong năm cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByYearForDealer(year, dealerId);
 
-        return buildRevenueByModelReport(modelRevenueData, totalRevenue, "YEARLY",
-                                       year + "-01-01", year + "-12-31");
+        return buildRevenueByModelReportForDealer(modelRevenueData, totalRevenue, "YEARLY",
+                                       year + "-01-01", year + "-12-31", dealerId);
     }
 
     /**
-     * Helper method để build response báo cáo doanh thu theo model
+     * Helper method để build response báo cáo doanh thu theo model cho dealer cụ thể
      * Trả về tất cả model của đại lý (kể cả model không có doanh thu)
      */
-    private RevenueByModelReportResponse buildRevenueByModelReport(List<Object[]> modelRevenueData,
+    private RevenueByModelReportResponse buildRevenueByModelReportForDealer(List<Object[]> modelRevenueData,
                                                                   BigDecimal totalRevenue,
                                                                   String reportType,
                                                                   String startDate,
-                                                                  String endDate) {
-        // TODO: Tạm thời sử dụng dealerId = 1, cần thêm tham số dealerId vào các method
-        Integer dealerId = 1;
-
+                                                                  String endDate,
+                                                                  Integer dealerId) {
         // Lấy tất cả model của đại lý
         List<Object[]> allModelsData = ordersRepository.getAllModelsByDealer(dealerId);
 
@@ -309,68 +311,62 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
-    /**
-     * Tạo báo cáo doanh thu theo staff theo tháng
-     */
-    public RevenueByStaffReportResponse generateRevenueByStaffMonthlyReport(Integer year, Integer month) {
-        // Lấy doanh thu theo staff trong tháng
-        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByMonth(year, month);
+    // ===== DEALER-SPECIFIC REVENUE BY STAFF REPORT METHODS =====
 
-        // Lấy tổng doanh thu từ finalPrice trong tháng
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByMonth(year, month);
+    @Override
+    public RevenueByStaffReportResponse generateRevenueByStaffMonthlyReportForDealer(Integer year, Integer month, Integer dealerId) {
+        // Lấy doanh thu theo staff trong tháng cho dealer cụ thể
+        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByMonthForDealer(year, month, dealerId);
 
-        return buildRevenueByStaffReport(staffRevenueData, totalRevenue, "MONTHLY",
+        // Lấy tổng doanh thu từ finalPrice trong tháng cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueForStaffReportByMonthForDealer(year, month, dealerId);
+
+        return buildRevenueByStaffReportForDealer(staffRevenueData, totalRevenue, "MONTHLY",
                                        year + "-" + String.format("%02d", month) + "-01",
                                        year + "-" + String.format("%02d", month) + "-" +
-                                       YearMonth.of(year, month).lengthOfMonth());
+                                       YearMonth.of(year, month).lengthOfMonth(), dealerId);
     }
 
-    /**
-     * Tạo báo cáo doanh thu theo staff theo quý
-     */
-    public RevenueByStaffReportResponse generateRevenueByStaffQuarterlyReport(Integer year, Integer quarter) {
+    @Override
+    public RevenueByStaffReportResponse generateRevenueByStaffQuarterlyReportForDealer(Integer year, Integer quarter, Integer dealerId) {
         // Tính tháng bắt đầu và kết thúc của quý
         int startMonth = (quarter - 1) * 3 + 1;
         int endMonth = startMonth + 2;
 
-        // Lấy doanh thu theo staff trong quý
-        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByQuarter(year, startMonth, endMonth);
+        // Lấy doanh thu theo staff trong quý cho dealer cụ thể
+        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
-        // Lấy tổng doanh thu từ finalPrice trong quý
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByQuarter(year, startMonth, endMonth);
+        // Lấy tổng doanh thu từ finalPrice trong quý cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueForStaffReportByQuarterForDealer(year, startMonth, endMonth, dealerId);
 
-        return buildRevenueByStaffReport(staffRevenueData, totalRevenue, "QUARTERLY",
+        return buildRevenueByStaffReportForDealer(staffRevenueData, totalRevenue, "QUARTERLY",
                                        year + "-" + String.format("%02d", startMonth) + "-01",
                                        year + "-" + String.format("%02d", endMonth) + "-" +
-                                       YearMonth.of(year, endMonth).lengthOfMonth());
+                                       YearMonth.of(year, endMonth).lengthOfMonth(), dealerId);
+    }
+
+    @Override
+    public RevenueByStaffReportResponse generateRevenueByStaffYearlyReportForDealer(Integer year, Integer dealerId) {
+        // Lấy doanh thu theo staff trong năm cho dealer cụ thể
+        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByYearForDealer(year, dealerId);
+
+        // Lấy tổng doanh thu từ finalPrice trong năm cho dealer cụ thể
+        BigDecimal totalRevenue = ordersRepository.getTotalRevenueForStaffReportByYearForDealer(year, dealerId);
+
+        return buildRevenueByStaffReportForDealer(staffRevenueData, totalRevenue, "YEARLY",
+                                       year + "-01-01", year + "-12-31", dealerId);
     }
 
     /**
-     * Tạo báo cáo doanh thu theo staff theo năm
-     */
-    public RevenueByStaffReportResponse generateRevenueByStaffYearlyReport(Integer year) {
-        // Lấy doanh thu theo staff trong năm
-        List<Object[]> staffRevenueData = ordersRepository.getRevenueByStaffByYear(year);
-
-        // Lấy tổng doanh thu từ finalPrice trong năm
-        BigDecimal totalRevenue = ordersRepository.getTotalRevenueFromFinalPriceByYear(year);
-
-        return buildRevenueByStaffReport(staffRevenueData, totalRevenue, "YEARLY",
-                                       year + "-01-01", year + "-12-31");
-    }
-
-    /**
-     * Helper method để build response báo cáo doanh thu theo staff
+     * Helper method để build response báo cáo doanh thu theo staff cho dealer cụ thể
      * Trả về tất cả staff của đại lý (kể cả staff không có doanh thu)
      */
-    private RevenueByStaffReportResponse buildRevenueByStaffReport(List<Object[]> staffRevenueData,
+    private RevenueByStaffReportResponse buildRevenueByStaffReportForDealer(List<Object[]> staffRevenueData,
                                                                   BigDecimal totalRevenue,
                                                                   String reportType,
                                                                   String startDate,
-                                                                  String endDate) {
-        // TODO: Tạm thời sử dụng dealerId = 1, cần thêm tham số dealerId vào các method
-        Integer dealerId = 1;
-
+                                                                  String endDate,
+                                                                  Integer dealerId) {
         // Lấy tất cả staff của đại lý
         List<Object[]> allStaffData = ordersRepository.getAllStaffByDealer(dealerId);
 
@@ -388,7 +384,6 @@ public class ReportServiceImpl implements ReportService {
         for (Object[] staffRow : allStaffData) {
             Integer staffId = (Integer) staffRow[0];
             String staffName = (String) staffRow[1];
-            String username = (String) staffRow[2];
 
             // Lấy dữ liệu doanh thu (nếu có)
             Object[] revenueRow = revenueMap.get(staffId);
@@ -397,8 +392,8 @@ public class ReportServiceImpl implements ReportService {
             BigDecimal revenue = BigDecimal.ZERO;
 
             if (revenueRow != null) {
-                carsSold = ((Number) revenueRow[3]).longValue();
-                revenue = (BigDecimal) revenueRow[4];
+                carsSold = ((Number) revenueRow[2]).longValue();
+                revenue = (BigDecimal) revenueRow[3];
                 totalCarsSold += carsSold;
             }
 
@@ -409,7 +404,6 @@ public class ReportServiceImpl implements ReportService {
                     .revenue(revenue != null ? revenue : BigDecimal.ZERO)
                     .build());
         }
-
         return RevenueByStaffReportResponse.builder()
                 .reportType(reportType)
                 .startDate(startDate)
@@ -418,13 +412,14 @@ public class ReportServiceImpl implements ReportService {
                 .totalCarsSold(totalCarsSold)
                 .staffRevenueDetails(staffRevenueDetails)
                 .build();
+
     }
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo tháng
+     * Tạo báo cáo chi phí nhập xe theo tháng cho dealer cụ thể
      */
-    public CarImportCostReportResponse generateMonthlyImportCostReport(Integer year, Integer month) {
-        List<Object[]> dailyData = carDistributionRequestRepository.findDailyImportCostInMonth(year, month);
+    public CarImportCostReportResponse generateMonthlyImportCostReportForDealer(Integer year, Integer month, Integer dealerId) {
+        List<Object[]> dailyData = carDistributionRequestRepository.findDailyImportCostInMonthForDealer(year, month, dealerId);
 
         List<CarImportCostReportResponse.ImportCostDetail> importCostDetails = new ArrayList<>();
         BigDecimal totalImportCost = BigDecimal.ZERO;
@@ -465,6 +460,7 @@ public class ReportServiceImpl implements ReportService {
                 .reportType("MONTHLY")
                 .year(year)
                 .month(month)
+                .dealerId(dealerId)
                 .totalImportCost(totalImportCost)
                 .totalCarsImported(totalCarsImported)
                 .importCostDetails(importCostDetails)
@@ -472,13 +468,13 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo quý
+     * Tạo báo cáo chi phí nhập xe theo quý cho dealer cụ thể
      */
-    public CarImportCostReportResponse generateQuarterlyImportCostReport(Integer year, Integer quarter) {
+    public CarImportCostReportResponse generateQuarterlyImportCostReportForDealer(Integer year, Integer quarter, Integer dealerId) {
         int startMonth = (quarter - 1) * 3 + 1;
         int endMonth = startMonth + 2;
 
-        List<Object[]> monthlyData = carDistributionRequestRepository.findMonthlyImportCostInQuarter(year, startMonth, endMonth);
+        List<Object[]> monthlyData = carDistributionRequestRepository.findMonthlyImportCostInQuarterForDealer(year, startMonth, endMonth, dealerId);
 
         List<CarImportCostReportResponse.ImportCostDetail> importCostDetails = new ArrayList<>();
         BigDecimal totalImportCost = BigDecimal.ZERO;
@@ -516,6 +512,7 @@ public class ReportServiceImpl implements ReportService {
                 .reportType("QUARTERLY")
                 .year(year)
                 .quarter(quarter)
+                .dealerId(dealerId)
                 .totalImportCost(totalImportCost)
                 .totalCarsImported(totalCarsImported)
                 .importCostDetails(importCostDetails)
@@ -523,10 +520,10 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo năm
+     * Tạo báo cáo chi phí nhập xe theo năm cho dealer cụ thể
      */
-    public CarImportCostReportResponse generateYearlyImportCostReport(Integer year) {
-        List<Object[]> monthlyData = carDistributionRequestRepository.findMonthlyImportCostInYear(year);
+    public CarImportCostReportResponse generateYearlyImportCostReportForDealer(Integer year, Integer dealerId) {
+        List<Object[]> monthlyData = carDistributionRequestRepository.findMonthlyImportCostInYearForDealer(year, dealerId);
 
         List<CarImportCostReportResponse.ImportCostDetail> importCostDetails = new ArrayList<>();
         BigDecimal totalImportCost = BigDecimal.ZERO;
@@ -563,6 +560,7 @@ public class ReportServiceImpl implements ReportService {
         return CarImportCostReportResponse.builder()
                 .reportType("YEARLY")
                 .year(year)
+                .dealerId(dealerId)
                 .totalImportCost(totalImportCost)
                 .totalCarsImported(totalCarsImported)
                 .importCostDetails(importCostDetails)

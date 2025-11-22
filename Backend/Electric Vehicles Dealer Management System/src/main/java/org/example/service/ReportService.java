@@ -11,67 +11,67 @@ import java.time.LocalDateTime;
 public interface ReportService {
 
     /**
-     * Tạo báo cáo tổng quát trong khoảng thời gian
+     * Tạo báo cáo tổng quát trong khoảng thời gian cho dealer cụ thể
      */
-    SalesReportResponse generateSalesReport(LocalDateTime startDate, LocalDateTime endDate);
+    SalesReportResponse generateSalesReportForDealer(LocalDateTime startDate, LocalDateTime endDate, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo tháng
+     * Tạo báo cáo doanh thu theo tháng cho dealer cụ thể
      */
-    RevenueReportResponse generateMonthlyRevenueReport(Integer year, Integer month);
+    RevenueReportResponse generateMonthlyRevenueReportForDealer(Integer year, Integer month, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo quý
+     * Tạo báo cáo doanh thu theo quý cho dealer cụ thể
      */
-    RevenueReportResponse generateQuarterlyRevenueReport(Integer year, Integer quarter);
+    RevenueReportResponse generateQuarterlyRevenueReportForDealer(Integer year, Integer quarter, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo năm
+     * Tạo báo cáo doanh thu theo năm cho dealer cụ thể
      */
-    RevenueReportResponse generateYearlyRevenueReport(Integer year);
+    RevenueReportResponse generateYearlyRevenueReportForDealer(Integer year, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo model theo tháng
+     * Tạo báo cáo doanh thu theo model theo tháng cho dealer cụ thể
      */
-    RevenueByModelReportResponse generateRevenueByModelMonthlyReport(Integer year, Integer month);
+    RevenueByModelReportResponse generateRevenueByModelMonthlyReportForDealer(Integer year, Integer month, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo model theo quý
+     * Tạo báo cáo doanh thu theo model theo quý cho dealer cụ thể
      */
-    RevenueByModelReportResponse generateRevenueByModelQuarterlyReport(Integer year, Integer quarter);
+    RevenueByModelReportResponse generateRevenueByModelQuarterlyReportForDealer(Integer year, Integer quarter, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo model theo năm
+     * Tạo báo cáo doanh thu theo model theo năm cho dealer cụ thể
      */
-    RevenueByModelReportResponse generateRevenueByModelYearlyReport(Integer year);
+    RevenueByModelReportResponse generateRevenueByModelYearlyReportForDealer(Integer year, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo staff theo tháng
+     * Tạo báo cáo doanh thu theo staff theo tháng cho dealer cụ thể
      */
-    RevenueByStaffReportResponse generateRevenueByStaffMonthlyReport(Integer year, Integer month);
+    RevenueByStaffReportResponse generateRevenueByStaffMonthlyReportForDealer(Integer year, Integer month, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo staff theo quý
+     * Tạo báo cáo doanh thu theo staff theo quý cho dealer cụ thể
      */
-    RevenueByStaffReportResponse generateRevenueByStaffQuarterlyReport(Integer year, Integer quarter);
+    RevenueByStaffReportResponse generateRevenueByStaffQuarterlyReportForDealer(Integer year, Integer quarter, Integer dealerId);
 
     /**
-     * Tạo báo cáo doanh thu theo staff theo năm
+     * Tạo báo cáo doanh thu theo staff theo năm cho dealer cụ thể
      */
-    RevenueByStaffReportResponse generateRevenueByStaffYearlyReport(Integer year);
+    RevenueByStaffReportResponse generateRevenueByStaffYearlyReportForDealer(Integer year, Integer dealerId);
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo tháng
+     * Tạo báo cáo chi phí nhập xe theo tháng cho dealer cụ thể
      */
-    CarImportCostReportResponse generateMonthlyImportCostReport(Integer year, Integer month);
+    CarImportCostReportResponse generateMonthlyImportCostReportForDealer(Integer year, Integer month, Integer dealerId);
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo quý
+     * Tạo báo cáo chi phí nhập xe theo quý cho dealer cụ thể
      */
-    CarImportCostReportResponse generateQuarterlyImportCostReport(Integer year, Integer quarter);
+    CarImportCostReportResponse generateQuarterlyImportCostReportForDealer(Integer year, Integer quarter, Integer dealerId);
 
     /**
-     * Tạo báo cáo chi phí nhập xe theo năm
+     * Tạo báo cáo chi phí nhập xe theo năm cho dealer cụ thể
      */
-    CarImportCostReportResponse generateYearlyImportCostReport(Integer year);
+    CarImportCostReportResponse generateYearlyImportCostReportForDealer(Integer year, Integer dealerId);
 }
